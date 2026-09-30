@@ -4,6 +4,14 @@
 # Dependencias y build
 node_modules/
 .next/
+/out/
+/build
+/coverage
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+*.pem
+npm-debug.log*
 
 # Configuración local de Claude Code
 .claude/settings.local.json
