@@ -1,0 +1,674 @@
+{
+  "_leeme": "Semilla INICIAL. Todo es editable desde la app. Generado por codigo a partir de los archivos originales (sin transcripcion manual). Las tasas estan como texto decimal para evitar errores de punto flotante.",
+  "generado": "2026-09-30",
+  "entidades": [
+    {
+      "clave": "CREDIFLEXI",
+      "razon_social": "CREDIFLEXI, S.A.P.I. DE C.V."
+    },
+    {
+      "clave": "RAMI_SISE",
+      "razon_social": "RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R.",
+      "nota": "Opera bajo la marca Crediflexi (folleto CREDIFLEXI_FPI_2026.pdf)"
+    }
+  ],
+  "reglas_de_calculo": {
+    "interes": "simple",
+    "pago_mensual": "capital * tasa_anual / 12",
+    "ganancia_total": "capital * tasa_anual * meses / 12",
+    "redondeo_pptx": "pesos enteros, mitad hacia arriba (512.5 -> 513)",
+    "redondeo_app_por_defecto": "2 decimales; el usuario confirma en la vista previa"
+  },
+  "tasas_mxn": {
+    "fuente": "TABLA_RENDIMIENTOS_EJEMPLOS.pptx (subido 2026-09-30, 'la buena' segun el usuario)",
+    "limite_inferior_inclusivo": true,
+    "aplica_a_entidades": [
+      "CREDIFLEXI",
+      "RAMI_SISE"
+    ],
+    "nota_entidades": "El usuario dice que las entidades tienen tasas distintas pero pidio usar esta tabla para todo; la app permite una tabla propia por entidad (vacia = hereda).",
+    "tramos": [
+      {
+        "desde": 30000,
+        "hasta": 199999.99,
+        "montos_de_referencia_pptx": [
+          30000
+        ],
+        "estatus": "POR_CONFIRMAR_BLOQUEA_COTIZACION",
+        "mensual": {
+          "6": "0.2",
+          "12": "0.205",
+          "18": "0.21",
+          "24": "0.215"
+        },
+        "final_del_plazo": {
+          "6": "0.22",
+          "12": "0.225",
+          "18": "0.23",
+          "24": "0.235"
+        },
+        "notas": "El pptx trae 20%-21.5% (mensual) para $30,000; Excel y folleto traen 16%-17.5% para 30,000-200,000. Una tasa que BAJA al subir el monto contradice el manual ('a mayor monto, mayor tasa')."
+      },
+      {
+        "desde": 200000,
+        "hasta": 399999.99,
+        "montos_de_referencia_pptx": [
+          200000,
+          300000
+        ],
+        "estatus": "SEGUN_USUARIO_PPTX",
+        "mensual": {
+          "6": "0.165",
+          "12": "0.17",
+          "18": "0.175",
+          "24": "0.18"
+        },
+        "final_del_plazo": {
+          "6": "0.185",
+          "12": "0.19",
+          "18": "0.195",
+          "24": "0.2"
+        },
+        "notas": null
+      },
+      {
+        "desde": 400000,
+        "hasta": 599999.99,
+        "montos_de_referencia_pptx": [
+          400000,
+          500000
+        ],
+        "estatus": "SEGUN_USUARIO_PPTX",
+        "mensual": {
+          "6": "0.17",
+          "12": "0.175",
+          "18": "0.18",
+          "24": "0.185"
+        },
+        "final_del_plazo": {
+          "6": "0.19",
+          "12": "0.195",
+          "18": "0.2",
+          "24": "0.205"
+        },
+        "notas": null
+      },
+      {
+        "desde": 600000,
+        "hasta": 799999.99,
+        "montos_de_referencia_pptx": [
+          600000,
+          700000
+        ],
+        "estatus": "SEGUN_USUARIO_PPTX",
+        "mensual": {
+          "6": "0.175",
+          "12": "0.18",
+          "18": "0.185",
+          "24": "0.19"
+        },
+        "final_del_plazo": {
+          "6": "0.195",
+          "12": "0.2",
+          "18": "0.205",
+          "24": "0.21"
+        },
+        "notas": null
+      },
+      {
+        "desde": 800000,
+        "hasta": 999999.99,
+        "montos_de_referencia_pptx": [
+          800000,
+          900000
+        ],
+        "estatus": "SEGUN_USUARIO_PPTX",
+        "mensual": {
+          "6": "0.18",
+          "12": "0.185",
+          "18": "0.19",
+          "24": "0.195"
+        },
+        "final_del_plazo": {
+          "6": "0.2",
+          "12": "0.205",
+          "18": "0.21",
+          "24": "0.215"
+        },
+        "notas": null
+      },
+      {
+        "desde": 1000000,
+        "hasta": null,
+        "montos_de_referencia_pptx": [
+          1000000,
+          1500000,
+          4200000
+        ],
+        "estatus": "SEGUN_USUARIO_PPTX",
+        "mensual": {
+          "6": "0.185",
+          "12": "0.19",
+          "18": "0.195",
+          "24": "0.2"
+        },
+        "final_del_plazo": {
+          "6": "0.205",
+          "12": "0.21",
+          "18": "0.215",
+          "24": "0.22"
+        },
+        "notas": null
+      }
+    ],
+    "caso_2M_mas": {
+      "monto_ref": 2000000,
+      "plazos_meses": [
+        24,
+        36
+      ],
+      "mensual": {
+        "24": "0.2",
+        "36": "0.2"
+      },
+      "final_del_plazo": {
+        "24": "0.22",
+        "36": "0.22"
+      },
+      "notas": "El pptx muestra 6 y 12 meses como N/A para $2,000,000 pero el renglon de $4,200,000 si ofrece 6-24 meses. Plazo de 36 meses solo aparece aqui."
+    }
+  },
+  "tasas_usd": {
+    "fuente": "Tasas_Interes_Pesos_y_Dolares_2026.xlsx (hoja 'Esquema en Dólares'); NO esta en el pptx",
+    "estatus": "POR_CONFIRMAR",
+    "mensual": [
+      {
+        "desde": 4000,
+        "hasta": 40000,
+        "6": "0.08",
+        "12": "0.085",
+        "18": "0.09",
+        "24": "0.095"
+      },
+      {
+        "desde": 40001,
+        "hasta": 80000,
+        "6": "0.085",
+        "12": "0.09",
+        "18": "0.095",
+        "24": "0.1"
+      },
+      {
+        "desde": 80001,
+        "hasta": 120000,
+        "6": "0.09",
+        "12": "0.095",
+        "18": "0.1",
+        "24": "0.105"
+      },
+      {
+        "desde": 120001,
+        "hasta": 160000,
+        "6": "0.095",
+        "12": "0.1",
+        "18": "0.105",
+        "24": "0.11"
+      },
+      {
+        "desde": 160001,
+        "hasta": 200000,
+        "6": "0.1",
+        "12": "0.105",
+        "18": "0.11",
+        "24": "0.115"
+      },
+      {
+        "desde": 200001,
+        "hasta": null,
+        "6": "0.105",
+        "12": "0.11",
+        "18": "0.115",
+        "24": "0.12"
+      }
+    ],
+    "final_del_plazo": [
+      {
+        "desde": 4000,
+        "hasta": 40000,
+        "6": "0.1",
+        "12": "0.105",
+        "18": "0.11",
+        "24": "0.115"
+      },
+      {
+        "desde": 40001,
+        "hasta": 80000,
+        "6": "0.105",
+        "12": "0.11",
+        "18": "0.115",
+        "24": "0.12"
+      },
+      {
+        "desde": 80001,
+        "hasta": 120000,
+        "6": "0.11",
+        "12": "0.115",
+        "18": "0.12",
+        "24": "0.125"
+      },
+      {
+        "desde": 120001,
+        "hasta": 160000,
+        "6": "0.115",
+        "12": "0.12",
+        "18": "0.125",
+        "24": "0.13"
+      },
+      {
+        "desde": 160001,
+        "hasta": 200000,
+        "6": "0.12",
+        "12": "0.125",
+        "18": "0.13",
+        "24": "0.135"
+      },
+      {
+        "desde": 200001,
+        "hasta": null,
+        "6": "0.125",
+        "12": "0.13",
+        "18": "0.135",
+        "24": "0.14"
+      }
+    ]
+  },
+  "comisiones": {
+    "unidad": "fraccion del capital de cada inversion (0.0264 = 2.64%)",
+    "aplica_por": "inversion individual (supuesto, por confirmar)",
+    "nuevos": {
+      "N1": [
+        {
+          "desde": 30000,
+          "hasta": 300000,
+          "6": "0.012",
+          "12": "0.0264",
+          "18": "0.0408",
+          "24": "0.0552"
+        },
+        {
+          "desde": 300001,
+          "hasta": 600000,
+          "6": "0.0123",
+          "12": "0.02706",
+          "18": "0.04182",
+          "24": "0.05658"
+        },
+        {
+          "desde": 600001,
+          "hasta": 900000,
+          "6": "0.0126",
+          "12": "0.02772",
+          "18": "0.04284",
+          "24": "0.05796"
+        },
+        {
+          "desde": 900001,
+          "hasta": 1200000,
+          "6": "0.0129",
+          "12": "0.02838",
+          "18": "0.04386",
+          "24": "0.05934"
+        },
+        {
+          "desde": 1200001,
+          "hasta": 1500000,
+          "6": "0.0132",
+          "12": "0.02904",
+          "18": "0.04488",
+          "24": "0.06072"
+        },
+        {
+          "desde": 1500001,
+          "hasta": null,
+          "6": "0.0135",
+          "12": "0.0297",
+          "18": "0.0459",
+          "24": "0.0621"
+        }
+      ],
+      "N2": [
+        {
+          "desde": 30000,
+          "hasta": 300000,
+          "6": "0.0096",
+          "12": "0.02112",
+          "18": "0.03264",
+          "24": "0.04416"
+        },
+        {
+          "desde": 300001,
+          "hasta": 600000,
+          "6": "0.00984",
+          "12": "0.021648",
+          "18": "0.033456",
+          "24": "0.045264"
+        },
+        {
+          "desde": 600001,
+          "hasta": 900000,
+          "6": "0.01008",
+          "12": "0.022176",
+          "18": "0.034272",
+          "24": "0.046368"
+        },
+        {
+          "desde": 900001,
+          "hasta": 1200000,
+          "6": "0.01032",
+          "12": "0.022704",
+          "18": "0.035088",
+          "24": "0.047472"
+        },
+        {
+          "desde": 1200001,
+          "hasta": 1500000,
+          "6": "0.01056",
+          "12": "0.023232",
+          "18": "0.035904",
+          "24": "0.048576"
+        },
+        {
+          "desde": 1500001,
+          "hasta": null,
+          "6": "0.0108",
+          "12": "0.02376",
+          "18": "0.03672",
+          "24": "0.04968"
+        }
+      ],
+      "N3": [
+        {
+          "desde": 30000,
+          "hasta": 300000,
+          "6": "0.01",
+          "12": "0.01848",
+          "18": "0.02856",
+          "24": "0.03864"
+        },
+        {
+          "desde": 300001,
+          "hasta": 600000,
+          "6": "0.00861",
+          "12": "0.018942",
+          "18": "0.029274",
+          "24": "0.039606"
+        },
+        {
+          "desde": 600001,
+          "hasta": 900000,
+          "6": "0.00882",
+          "12": "0.019404",
+          "18": "0.029988",
+          "24": "0.040572"
+        },
+        {
+          "desde": 900001,
+          "hasta": 1200000,
+          "6": "0.00903",
+          "12": "0.019866",
+          "18": "0.030702",
+          "24": "0.041538"
+        },
+        {
+          "desde": 1200001,
+          "hasta": 1500000,
+          "6": "0.00924",
+          "12": "0.020328",
+          "18": "0.031416",
+          "24": "0.042504"
+        },
+        {
+          "desde": 1500001,
+          "hasta": null,
+          "6": "0.00945",
+          "12": "0.02079",
+          "18": "0.03213",
+          "24": "0.04347"
+        }
+      ]
+    },
+    "renovaciones": {
+      "N1": [
+        {
+          "desde": 30000,
+          "hasta": 300000,
+          "6": "0.006",
+          "12": "0.0132",
+          "18": "0.0204",
+          "24": "0.0276"
+        },
+        {
+          "desde": 300001,
+          "hasta": 600000,
+          "6": "0.00615",
+          "12": "0.01353",
+          "18": "0.02091",
+          "24": "0.02829"
+        },
+        {
+          "desde": 600001,
+          "hasta": 900000,
+          "6": "0.0063",
+          "12": "0.01386",
+          "18": "0.02142",
+          "24": "0.02898"
+        },
+        {
+          "desde": 900001,
+          "hasta": 1200000,
+          "6": "0.00645",
+          "12": "0.01419",
+          "18": "0.02193",
+          "24": "0.02967"
+        },
+        {
+          "desde": 1200001,
+          "hasta": 1500000,
+          "6": "0.0066",
+          "12": "0.01452",
+          "18": "0.02244",
+          "24": "0.03036"
+        },
+        {
+          "desde": 1500001,
+          "hasta": null,
+          "6": "0.00675",
+          "12": "0.01485",
+          "18": "0.02295",
+          "24": "0.03105"
+        }
+      ],
+      "N2": [
+        {
+          "desde": 30000,
+          "hasta": 300000,
+          "6": "0.0024",
+          "12": "0.00528",
+          "18": "0.00828",
+          "24": "0.012"
+        },
+        {
+          "desde": 300001,
+          "hasta": 600000,
+          "6": "0.0027",
+          "12": "0.00594",
+          "18": "0.009315",
+          "24": "0.0135"
+        },
+        {
+          "desde": 600001,
+          "hasta": 900000,
+          "6": "0.003",
+          "12": "0.0066",
+          "18": "0.01035",
+          "24": "0.015"
+        },
+        {
+          "desde": 900001,
+          "hasta": 1200000,
+          "6": "0.0033",
+          "12": "0.00726",
+          "18": "0.011385",
+          "24": "0.0165"
+        },
+        {
+          "desde": 1200001,
+          "hasta": 1500000,
+          "6": "0.0036",
+          "12": "0.00792",
+          "18": "0.01242",
+          "24": "0.018"
+        },
+        {
+          "desde": 1500001,
+          "hasta": null,
+          "6": "0.0039",
+          "12": "0.00858",
+          "18": "0.013455",
+          "24": "0.0195"
+        }
+      ],
+      "N3": [
+        {
+          "desde": 30000,
+          "hasta": 300000,
+          "6": "0.0025",
+          "12": "0.0132",
+          "18": "0.0207",
+          "24": "0.03"
+        },
+        {
+          "desde": 300001,
+          "hasta": 600000,
+          "6": "0.0028",
+          "12": "0.01353",
+          "18": "0.0212175",
+          "24": "0.03075"
+        },
+        {
+          "desde": 600001,
+          "hasta": 900000,
+          "6": "0.0031",
+          "12": "0.01386",
+          "18": "0.021735",
+          "24": "0.0315"
+        },
+        {
+          "desde": 900001,
+          "hasta": 1200000,
+          "6": "0.0034",
+          "12": "0.01419",
+          "18": "0.0222525",
+          "24": "0.03225"
+        },
+        {
+          "desde": 1200001,
+          "hasta": 1500000,
+          "6": "0.0037",
+          "12": "0.01452",
+          "18": "0.02277",
+          "24": "0.033"
+        },
+        {
+          "desde": 1500001,
+          "hasta": null,
+          "6": "0.004",
+          "12": "0.01485",
+          "18": "0.0232875",
+          "24": "0.03375"
+        }
+      ]
+    },
+    "notas": [
+      "Tabla N3 nuevos: todo es 70% de N1 excepto 6 meses/primer tramo (0.01 vs 0.0084).",
+      "Tablas de renovaciones N2/N3 son explicitas y NO siguen los porcentajes de 'Supuestos': se cargan tal cual.",
+      "Los limites de tramo de este Excel son 'hasta' inclusivo (300,000 cae en el primer tramo)."
+    ]
+  },
+  "incentivos_propuesta": [
+    {
+      "tipo": "INTERNOS",
+      "cumplimiento": "100% META",
+      "sueldo_base": 15000,
+      "desde": 1000000,
+      "hasta": 1499999,
+      "condicion": "$0 + Comisión de lo ingresado en el mes; < $1,000,000 se evaluará su estadía en la compañía"
+    },
+    {
+      "tipo": "INTERNOS",
+      "cumplimiento": "150% META",
+      "sueldo_base": 15000,
+      "desde": 1500000,
+      "hasta": 1999999,
+      "condicion": "$5,000 + Comisión de lo ingresado en el mes; < $1,000,000 se evaluará su estadía en la compañía"
+    },
+    {
+      "tipo": "INTERNOS",
+      "cumplimiento": "200% META",
+      "sueldo_base": 15000,
+      "desde": 2000000,
+      "hasta": null,
+      "condicion": "$10,000 + Comisión de lo ingresado en el mes; < $1,000,000 se evaluará su estadía en la compañía"
+    },
+    {
+      "tipo": "EXTERNOS",
+      "cumplimiento": "100% META INTERNA",
+      "sueldo_base": 0,
+      "desde": 1000000,
+      "hasta": 1499999,
+      "condicion": "$15,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)"
+    },
+    {
+      "tipo": "EXTERNOS",
+      "cumplimiento": "150% META INTERNA",
+      "sueldo_base": 0,
+      "desde": 1500000,
+      "hasta": 1999999,
+      "condicion": "$20,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)"
+    },
+    {
+      "tipo": "EXTERNOS",
+      "cumplimiento": "200% META INTERNA",
+      "sueldo_base": 0,
+      "desde": 2000000,
+      "hasta": null,
+      "condicion": "$25,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)"
+    }
+  ],
+  "parametros": {
+    "umbral_desbloqueo": "0.80",
+    "porcentaje_sobre_red_externa": "0.30",
+    "metas_mensuales": {
+      "EJECUTIVO": 1000000,
+      "GERENTE": 2000000,
+      "DIRECTOR_REGIONAL": null
+    },
+    "periodos_de_pago": "quincenal (1-15 y 16-fin de mes)",
+    "cuenta_para_meta": [
+      "captacion_nueva",
+      "incremento_de_capital"
+    ],
+    "renovaciones_cuentan_para_meta": false,
+    "renovaciones_pagan_comision": "POR_CONFIRMAR (editable)",
+    "comision_bloqueada_al_cierre_de_mes": "se_pierde (POR_CONFIRMAR, editable)"
+  },
+  "discrepancias_abiertas": [
+    "D1 Limite de tramos: pptx 'Desde' inclusivo (200,000 -> 16.5%); Excel y folleto 'hasta' inclusivo (200,000 -> 16.0%). Afecta justo los montos redondos.",
+    "D2 Tramo 30,000-199,999: pptx 20%-21.5% vs Excel/folleto 16%-17.5%.",
+    "D3 $2,000,000: 6 y 12 meses N/A pero $4,200,000 si los ofrece; 36 meses solo en $2M.",
+    "D4 Lamina 8 del pptx ($800,000): 10 cifras copiadas de la lamina de $700,000 (pagos mensuales y ganancias).",
+    "D5 Calculadora Excel: 24% escrito a mano en 'SIMULADOR'; no existe en ninguna tabla.",
+    "D6 Contrato machote (ambas entidades): 20% a 24 meses con $30,000; ninguna tabla lo da.",
+    "D7 Tabla N3 nuevos: celda 6 meses/primer tramo no sigue el 70% de N1."
+  ]
+}

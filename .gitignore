@@ -1,0 +1,25 @@
+# Variables de entorno y secretos
+.env*
+
+# Dependencias y build
+node_modules/
+.next/
+
+# Configuración local de Claude Code
+.claude/settings.local.json
+
+# Datos reales y respaldos
+datos-reales/
+backups/
+
+# Respaldos SQL (las migraciones de Supabase sí se versionan)
+*.sql
+!supabase/migrations/*.sql
+
+# Hojas de cálculo y datos tabulares
+*.xlsx
+*.xls
+*.csv
+
+# Sistema operativo
+.DS_Store
