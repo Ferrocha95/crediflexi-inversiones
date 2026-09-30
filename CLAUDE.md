@@ -26,3 +26,5 @@ Si `BLUEPRINT.md` contradice esta sección, **manda CLAUDE.md**.
 - No hay exportación a YUNIUS.
 - Los externos solo tienen nombre, contacto, nivel y producción.
 - Desarrollo y pruebas con datos sintéticos. Los datos reales básicos solo entran en producción, con autorización de la gerente.
+
+@AGENTS.md
