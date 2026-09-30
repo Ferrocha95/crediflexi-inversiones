@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/.env*)",
+      "Read(datos-reales/**)",
+      "Read(backups/**)"
+    ]
+  }
+}
