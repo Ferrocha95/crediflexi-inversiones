@@ -18,3 +18,6 @@ export const Decimal = DecimalJs.clone({
 export type Decimal = DecimalJs;
 
 export const ROUND_HALF_UP = DecimalJs.ROUND_HALF_UP;
+
+/** Cantidad no negativa escrita sin comas ni exponentes, con máximo 2 decimales. */
+export const RE_MONTO = /^\d+(\.\d{1,2})?$/;

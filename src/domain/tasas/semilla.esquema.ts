@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { Decimal } from "../comun/decimal";
+import { Decimal, RE_MONTO } from "../comun/decimal";
 
 // ---------------------------------------------------------------------------
 // Tipos del dominio (forma normalizada de la semilla)
@@ -86,7 +86,6 @@ export interface Semilla {
 // ---------------------------------------------------------------------------
 
 const RE_TASA = /^(0(\.\d+)?|1(\.0+)?)$/;
-const RE_MONTO = /^\d+(\.\d{1,2})?$/;
 const RE_PLAZO = /^[1-9]\d*$/;
 
 const estatus = z.enum(ESTATUS, {
