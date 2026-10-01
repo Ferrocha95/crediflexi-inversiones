@@ -1,6 +1,14 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      // Fuera de Next (sin la condición "react-server"), server-only lanza al
+      // importarse. En las pruebas se sustituye por su módulo vacío.
+      "server-only": fileURLToPath(new URL("./node_modules/server-only/empty.js", import.meta.url)),
+    },
+  },
   test: {
     projects: [
       {

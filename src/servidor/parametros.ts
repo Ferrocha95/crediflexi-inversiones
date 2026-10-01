@@ -1,0 +1,84 @@
+import "server-only";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { cargarRazonesSociales } from "../aplicacion/entidades";
+import { error, ok, type ResultadoApp } from "../aplicacion/resultado";
+import { cargarTextos, type TextosCotizacion } from "../aplicacion/textos";
+import { cargarSemilla } from "../domain/tasas/semilla";
+import type { Semilla } from "../domain/tasas/semilla.esquema";
+
+export const RUTA_SEMILLA = path.join(process.cwd(), "seed", "parametros_iniciales.json");
+export const RUTA_TEXTOS = path.join(process.cwd(), "seed", "textos_cotizacion.json");
+
+export interface RutasParametros {
+  readonly semilla: string;
+  readonly textos: string;
+}
+
+export interface ParametrosCotizacion {
+  readonly semilla: Semilla;
+  /** Clave de la entidad -> razón social completa. */
+  readonly razonesSociales: ReadonlyMap<string, string>;
+  readonly textos: TextosCotizacion;
+}
+
+/** Ruta relativa al proyecto si está dentro de él ("seed/x.json"); si no, la ruta completa. */
+function nombreVisible(ruta: string): string {
+  const relativa = path.relative(process.cwd(), ruta);
+  const dentro = relativa !== "" && !relativa.startsWith("..") && !path.isAbsolute(relativa);
+  return (dentro ? relativa : ruta).split(path.sep).join("/");
+}
+
+async function leerJson(ruta: string): Promise<ResultadoApp<unknown>> {
+  const nombre = nombreVisible(ruta);
+  let texto: string;
+  try {
+    texto = await readFile(ruta, "utf8");
+  } catch (e) {
+    const codigo = (e as NodeJS.ErrnoException).code;
+    const motivo = codigo === "ENOENT" ? "no existe" : `no se pudo abrir (${codigo ?? "error desconocido"})`;
+    return error(
+      "ARCHIVO_ILEGIBLE",
+      `No se pudo leer el archivo ${nombre}: ${motivo}. Verifica que esté en esa ubicación y vuelve a intentarlo.`,
+    );
+  }
+  try {
+    // Algunos editores de Windows guardan el archivo con BOM; JSON.parse no lo acepta.
+    return ok(JSON.parse(texto.replace(/^﻿/, "")));
+  } catch (e) {
+    return error(
+      "ARCHIVO_ILEGIBLE",
+      `El archivo ${nombre} no es JSON válido (${(e as Error).message}). Corrige el formato y vuelve a intentarlo.`,
+    );
+  }
+}
+
+/**
+ * Lee en cada llamada la semilla y los textos de la cotización desde disco y
+ * los valida. No guarda nada en memoria: un cambio en los archivos se ve en la
+ * siguiente llamada, sin reconstruir la app.
+ */
+export async function leerParametrosCotizacion(
+  rutas: RutasParametros = { semilla: RUTA_SEMILLA, textos: RUTA_TEXTOS },
+): Promise<ResultadoApp<ParametrosCotizacion>> {
+  const [jsonSemilla, jsonTextos] = await Promise.all([leerJson(rutas.semilla), leerJson(rutas.textos)]);
+  if (!jsonSemilla.ok) return jsonSemilla;
+  if (!jsonTextos.ok) return jsonTextos;
+
+  const semilla = cargarSemilla(jsonSemilla.valor);
+  if (!semilla.ok) {
+    return error(
+      "SEMILLA_INVALIDA",
+      `${nombreVisible(rutas.semilla)}: ${semilla.error.mensaje}`,
+      semilla.error.detalles,
+    );
+  }
+
+  const razonesSociales = cargarRazonesSociales(jsonSemilla.valor, nombreVisible(rutas.semilla));
+  if (!razonesSociales.ok) return razonesSociales;
+
+  const textos = cargarTextos(jsonTextos.valor, nombreVisible(rutas.textos));
+  if (!textos.ok) return textos;
+
+  return ok({ semilla: semilla.valor, razonesSociales: razonesSociales.valor, textos: textos.valor });
+}
