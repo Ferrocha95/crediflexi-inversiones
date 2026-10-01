@@ -13,3 +13,10 @@
 - (k) El manejador de SIGINT/SIGTERM de `scripts/mutacion.mjs` no se probó; en Windows, Node no recibe SIGTERM externo.
 - (l) Las pruebas de escritura pasan en parte por ausencia de permisos: al abrir la escritura hay que redefinirlas (ya está en d) y añadir el caso de insertar con RETURNING.
 - (m) `scripts/mutacion.mjs` escribe su bitácora en `C:\dev\informes`, fuera del repositorio.
+- (n) Semilla 0.4: `desde` y `hasta` de los tramos como texto decimal (hoy son números JSON y se convierten con `String(n)`).
+- (o) Vigencias de las tablas de tasas y herencia de tablas por entidad (tabla propia por entidad; vacía = hereda).
+- (p) Actualizar la sección 9 del blueprint con `src/domain/comun` (decimal, errores, formato y resultado).
+- (q) Semántica de límites de la tabla USD al desbloquearla (`limite_inferior_inclusivo`) y qué hacer con huecos entre tramos.
+- (r) El plazo adicional (36 meses) compara siempre con `>=` contra `aplica_desde_monto`, aunque la tabla tenga límite inferior no inclusivo.
+- (s) Las pruebas del resolver usan la semilla real: crear una semilla sintética para las pruebas de lógica y dejar la real solo para las pruebas de oro.
+- (t) La vista previa de la cotización debe mostrar el estatus del tramo (`SEGUN_USUARIO_PPTX` o `CONFIRMADA`).
