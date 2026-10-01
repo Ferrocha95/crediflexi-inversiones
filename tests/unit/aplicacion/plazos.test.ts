@@ -23,11 +23,11 @@ function codigo(cambios: Partial<ConsultaPlazos>): string {
 }
 
 describe.each(["CREDIFLEXI", "RAMI_SISE"])("plazosDisponibles (%s)", (entidad) => {
-  it.each(["mensual", "final_del_plazo"] as const)("esquema %s: $1,999,999.99 ofrece 6, 12, 18 y 24", (esquema) => {
+  it.each(["mensual", "final_del_plazo"] as const)("esquema %s: 1,999,999.99 pesos ofrece 6, 12, 18 y 24", (esquema) => {
     expect(plazos({ entidad, esquema, monto: "1999999.99" })).toEqual([6, 12, 18, 24]);
   });
 
-  it.each(["mensual", "final_del_plazo"] as const)("esquema %s: $2,000,000.00 agrega 36", (esquema) => {
+  it.each(["mensual", "final_del_plazo"] as const)("esquema %s: 2,000,000.00 pesos agrega 36", (esquema) => {
     expect(plazos({ entidad, esquema, monto: "2000000.00" })).toEqual([6, 12, 18, 24, 36]);
   });
 
