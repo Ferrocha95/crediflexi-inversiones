@@ -1,10 +1,19 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useReducer, useState } from "react";
+import type { ModeloVistaPrevia } from "../../aplicacion/modelo";
 import type { OpcionesCotizador } from "../../aplicacion/opciones";
 import type { Esquema, Moneda } from "../../domain/tasas/semilla.esquema";
 import type { RespuestaVistaPrevia } from "../../servidor/vistaPrevia";
 import { previsualizar } from "./acciones";
+import {
+  estadoInicial,
+  huellaDeCampos,
+  motivoPdfDeshabilitado,
+  puedeGenerarPdf,
+  reducirConfirmacion,
+  vistaPreviaVigente,
+} from "./confirmacion";
 import { TEXTOS } from "./textosPantalla";
 import { VistaPrevia } from "./VistaPrevia";
 
@@ -19,6 +28,16 @@ interface Campos {
   readonly plazo: number | null;
 }
 
+function camposIniciales(opciones: OpcionesCotizador): Campos {
+  return {
+    entidad: opciones.entidades[0]?.clave ?? "",
+    moneda: (opciones.monedas.find((m) => m.habilitada) ?? opciones.monedas[0])?.moneda ?? "MXN",
+    esquema: opciones.esquemas[0]?.esquema ?? "mensual",
+    monto: "",
+    plazo: null,
+  };
+}
+
 const clasesCampo =
   "w-full rounded-md border border-black/25 bg-transparent px-3 py-2 text-base dark:border-white/30 disabled:opacity-50";
 
@@ -28,20 +47,22 @@ const clasesCampo =
  */
 export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
   const id = useId();
-  const [campos, setCampos] = useState<Campos>(() => ({
-    entidad: opciones.entidades[0]?.clave ?? "",
-    moneda: (opciones.monedas.find((m) => m.habilitada) ?? opciones.monedas[0])?.moneda ?? "MXN",
-    esquema: opciones.esquemas[0]?.esquema ?? "mensual",
-    monto: "",
-    plazo: null,
-  }));
+  const [campos, setCampos] = useState<Campos>(() => camposIniciales(opciones));
   /** Sube con cada cambio de campos: es el número de petición de la vista previa. */
   const [version, setVersion] = useState(0);
   const [respuesta, setRespuesta] = useState<RespuestaVistaPrevia | null>(null);
+  const [confirmacion, despachar] = useReducer(reducirConfirmacion<ModeloVistaPrevia>, opciones, (o) =>
+    estadoInicial<ModeloVistaPrevia>(huellaDeCampos(camposIniciales(o))),
+  );
+  const [mensajePdf, setMensajePdf] = useState<string | null>(null);
 
   function cambiar(cambio: Partial<Campos>) {
-    setCampos((c) => ({ ...c, ...cambio }));
+    const nuevos = { ...campos, ...cambio };
+    setCampos(nuevos);
     setVersion((v) => v + 1);
+    // Cualquier cambio en los campos invalida la vista previa y la confirmación.
+    despachar({ tipo: "campoCambiado", huella: huellaDeCampos(nuevos) });
+    setMensajePdf(null);
   }
 
   const hayMonto = campos.monto.trim() !== "";
@@ -59,8 +80,18 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
       // Si los campos cambiaron mientras tanto, la respuesta es vieja y se descarta.
       if (!vigente || r.peticion !== version) return;
       setRespuesta(r);
+      despachar({
+        tipo: "vistaPreviaRecibida",
+        huella: huellaDeCampos(campos),
+        vistaPrevia: r.resultado.tipo === "vista_previa" ? r.resultado.vistaPrevia : null,
+      });
+      // El plazo elegido dejó de estar disponible para este monto: se borra (y eso cuenta como cambio).
       if (campos.plazo !== null && r.plazos !== null && !r.plazos.some((p) => p.valor === campos.plazo)) {
-        cambiar({ plazo: null });
+        const sinPlazo = { ...campos, plazo: null };
+        setCampos(sinPlazo);
+        setVersion((v) => v + 1);
+        despachar({ tipo: "campoCambiado", huella: huellaDeCampos(sinPlazo) });
+        setMensajePdf(null);
       }
     }, PAUSA_MS);
     return () => {
@@ -72,6 +103,8 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
   const actual = hayMonto && respuesta !== null && respuesta.peticion === version ? respuesta : null;
   const plazos = hayMonto ? (respuesta?.plazos ?? []) : [];
   const monedaElegida = opciones.monedas.find((m) => m.moneda === campos.moneda);
+  const puedePdf = puedeGenerarPdf(confirmacion);
+  const motivoPdf = motivoPdfDeshabilitado(confirmacion);
   const motivosMoneda = opciones.monedas.filter((m) => !m.habilitada && m.motivo !== null);
 
   return (
@@ -220,6 +253,37 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
           ) : (
             <VistaPrevia vista={actual.resultado.vistaPrevia} />
           )}
+        </div>
+
+        <div className="mt-2 flex flex-col gap-3 border-t border-black/15 pt-4 dark:border-white/20">
+          <h3 className="font-semibold">{TEXTOS.tituloConfirmacion}</h3>
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              className="mt-1 size-4"
+              checked={confirmacion.confirmado}
+              disabled={!vistaPreviaVigente(confirmacion)}
+              onChange={(e) => despachar({ tipo: e.target.checked ? "confirmar" : "desconfirmar" })}
+            />
+            <span>{TEXTOS.confirmo}</span>
+          </label>
+          <button
+            type="button"
+            className="w-full rounded-md bg-foreground px-4 py-2 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:self-start"
+            disabled={!puedePdf}
+            aria-describedby={motivoPdf === null ? undefined : `${id}-motivo-pdf`}
+            onClick={() => setMensajePdf(TEXTOS.pdfSiguienteEtapa)}
+          >
+            {TEXTOS.generarPdf}
+          </button>
+          {motivoPdf !== null && (
+            <p id={`${id}-motivo-pdf`} className="text-sm opacity-80">
+              {motivoPdf}
+            </p>
+          )}
+          <p role="status" className="text-sm">
+            {mensajePdf}
+          </p>
         </div>
       </section>
     </div>

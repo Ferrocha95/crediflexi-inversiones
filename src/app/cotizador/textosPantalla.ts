@@ -38,6 +38,14 @@ export const TEXTOS = {
   tituloAvisos: "Aviso",
   versionTasas: (version: string, fecha: string) => `Tasas versión ${version} del ${fecha}.`,
 
+  tituloConfirmacion: "Confirmación",
+  confirmo: "Confirmo que los números son correctos",
+  generarPdf: "Generar PDF",
+  motivoSinVistaPrevia: "El PDF se habilita cuando haya una vista previa válida.",
+  motivoVistaPreviaVieja: "La vista previa no corresponde a los datos actuales; espera a que se actualice.",
+  motivoSinConfirmar: 'Marca la casilla "Confirmo que los números son correctos" para habilitar el PDF.',
+  pdfSiguienteEtapa: "La descarga del PDF se agrega en la siguiente etapa.",
+
   tituloErrorParametros: "No se pudieron cargar los parámetros del cotizador",
   ayudaErrorParametros: "Corrige el archivo indicado y vuelve a cargar la página.",
 } as const;
