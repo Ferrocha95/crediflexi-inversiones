@@ -44,7 +44,7 @@ async function leerJson(ruta: string): Promise<ResultadoApp<unknown>> {
   }
   try {
     // Algunos editores de Windows guardan el archivo con BOM; JSON.parse no lo acepta.
-    return ok(JSON.parse(texto.replace(/^﻿/, "")));
+    return ok(JSON.parse(texto.replace(/^\uFEFF/, "")));
   } catch (e) {
     return error(
       "ARCHIVO_ILEGIBLE",

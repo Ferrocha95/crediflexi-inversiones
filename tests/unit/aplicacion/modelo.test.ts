@@ -1,0 +1,278 @@
+import { describe, expect, it } from "vitest";
+import semillaJson from "../../../seed/parametros_iniciales.json";
+import textosJson from "../../../seed/textos_cotizacion.json";
+import { cargarRazonesSociales } from "../../../src/aplicacion/entidades";
+import {
+  modeloPdf,
+  modeloVistaPrevia,
+  TOPES,
+  type EntradaPdf,
+  type ModeloPdf,
+} from "../../../src/aplicacion/modelo";
+import { cargarTextos, type TextosCotizacion } from "../../../src/aplicacion/textos";
+import { ESTATUS } from "../../../src/domain/tasas/semilla.esquema";
+import { cargar, copiaSemilla, cotizarBien } from "../oro/ayudas";
+
+function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: string } }): T {
+  if (!r.ok) throw new Error(r.error.mensaje);
+  return r.valor;
+}
+
+const textos: TextosCotizacion = sinError(cargarTextos(textosJson, "seed/textos_cotizacion.json"));
+const razonesSociales = sinError(cargarRazonesSociales(semillaJson, "seed/parametros_iniciales.json"));
+const contexto = { razonesSociales, textos };
+
+/** 1 de octubre de 2026, 12:00 en la Ciudad de México. */
+const AHORA = new Date("2026-10-01T18:00:00Z");
+
+const ENTIDADES = [
+  { clave: "CREDIFLEXI", razonSocial: "CREDIFLEXI, S.A.P.I. DE C.V." },
+  { clave: "RAMI_SISE", razonSocial: "RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R." },
+] as const;
+
+const pieEsperado = (razonSocial: string) =>
+  `Cotización informativa para ${razonSocial}. Las cifras se calculan con interés simple sobre la tasa anual ` +
+  "indicada, con las tasas de la versión 0.3 del 01/10/2026. El rendimiento anual es un equivalente a 12 meses; " +
+  "la ganancia total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables " +
+  "son las del contrato que se firme.";
+
+const ENTRADA_COMPLETA: EntradaPdf = {
+  preparadoPara: "Persona Sintética Uno",
+  ejecutivo: "Ejecutivo Prueba · ejecutivo.prueba@ejemplo.test",
+  vigencia: "15 días naturales",
+  notaAdicional: "Nota sintética de prueba.",
+};
+
+function pdf(entidad: string, entrada: EntradaPdf = {}, cambios = {}): ModeloPdf {
+  return sinError(modeloPdf(cotizarBien({ entidad, ...cambios }), contexto, entrada, AHORA));
+}
+
+const cuenta = (texto: string, buscado: string) => texto.split(buscado).length - 1;
+
+describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
+  it("ejemplo oficial: $1,500,000 a 12 meses, mensual, 19% -> $23,750.00 y $285,000.00", () => {
+    const m = pdf(clave);
+    expect(m.tasa).toBe("19.00%");
+    expect(m.cifras).toEqual([
+      { clave: "rendimiento_mensual_pesos", etiqueta: "Pago mensual", cifra: "$23,750.00" },
+      {
+        clave: "rendimiento_anual_pesos",
+        etiqueta: "Rendimiento anual equivalente (12 meses)",
+        cifra: "$285,000.00",
+      },
+      { clave: "ganancia_total_plazo", etiqueta: "Ganancia total en el plazo", cifra: "$285,000.00" },
+    ]);
+  });
+
+  it("final del plazo: etiquetas del esquema y 21% -> $26,250.00 y $315,000.00", () => {
+    const m = pdf(clave, {}, { esquema: "final_del_plazo" });
+    expect(m.solicitud.esquema).toBe("Al final del plazo");
+    expect(m.tasa).toBe("21.00%");
+    expect(m.cifras.map((c) => [c.etiqueta, c.cifra])).toEqual([
+      ["Rendimiento mensual equivalente (se paga al final del plazo)", "$26,250.00"],
+      ["Rendimiento anual equivalente (12 meses)", "$315,000.00"],
+      ["Ganancia total al final del plazo", "$315,000.00"],
+    ]);
+  });
+
+  it("datos de la solicitud, fecha y versión de las tasas", () => {
+    const m = pdf(clave);
+    expect(m.fecha).toBe("01/10/2026");
+    expect(m.solicitud).toEqual({
+      moneda: "MXN",
+      esquema: "Rendimientos mensuales",
+      monto: "$1,500,000.00 MXN",
+      plazo: "12 meses",
+    });
+    expect(m.tasas).toEqual({ version: "0.3", fecha: "01/10/2026" });
+  });
+
+  it("la fecha del PDF es la de la Ciudad de México", () => {
+    const m = sinError(modeloPdf(cotizarBien({ entidad: clave }), contexto, {}, new Date("2026-10-02T05:00:00Z")));
+    expect(m.fecha).toBe("01/10/2026");
+  });
+
+  it("el encabezado lleva la razón social completa de la entidad", () => {
+    expect(pdf(clave).encabezado.razonSocial).toBe(razonSocial);
+  });
+
+  it("el pie base lleva la razón social de la entidad, la versión y la fecha de las tasas", () => {
+    expect(pdf(clave).pie.base).toBe(pieEsperado(razonSocial));
+  });
+
+  it("la razón social solo aparece en el encabezado y en el pie (el PDF no dice que las tasas sean de la entidad)", () => {
+    expect(cuenta(JSON.stringify(pdf(clave, ENTRADA_COMPLETA)), razonSocial)).toBe(2);
+  });
+
+  it("sin los campos opcionales, el pie no trae las líneas opcionales", () => {
+    const m = pdf(clave);
+    expect(m.preparadoPara).toBeNull();
+    expect(m.pie).toEqual({ base: pieEsperado(razonSocial), preparadoPor: null, vigencia: null, notaAdicional: null });
+  });
+
+  it("con los campos opcionales, el pie trae las dos líneas y la nota después", () => {
+    const m = pdf(clave, ENTRADA_COMPLETA);
+    expect(m.preparadoPara).toBe("Persona Sintética Uno");
+    expect(m.pie).toEqual({
+      base: pieEsperado(razonSocial),
+      preparadoPor: "Preparado por Ejecutivo Prueba · ejecutivo.prueba@ejemplo.test.",
+      vigencia: "Vigencia: 15 días naturales.",
+      notaAdicional: "Nota sintética de prueba.",
+    });
+  });
+
+  it("solo una de las líneas opcionales", () => {
+    expect(pdf(clave, { vigencia: "30 días" }).pie).toMatchObject({ preparadoPor: null, vigencia: "Vigencia: 30 días." });
+    expect(pdf(clave, { ejecutivo: "Ejecutivo Prueba" }).pie).toMatchObject({
+      preparadoPor: "Preparado por Ejecutivo Prueba.",
+      vigencia: null,
+    });
+  });
+
+  it("los campos con solo espacios o caracteres de control cuentan como vacíos", () => {
+    const m = pdf(clave, { preparadoPara: "  \n ", ejecutivo: "\t", vigencia: "\u0000", notaAdicional: "   " });
+    expect(m.preparadoPara).toBeNull();
+    expect(m.pie).toMatchObject({ preparadoPor: null, vigencia: null, notaAdicional: null });
+  });
+
+  it("los campos se limpian de caracteres de control", () => {
+    const m = pdf(clave, { preparadoPara: "Persona\nSintética\u202EUno", notaAdicional: "Línea uno\r\nLínea dos" });
+    expect(m.preparadoPara).toBe("Persona Sintética Uno");
+    expect(m.pie.notaAdicional).toBe("Línea uno Línea dos");
+  });
+
+  it("la nota adicional se recorta a 300 caracteres", () => {
+    const nota = `${"n".repeat(299)}ñX${"z".repeat(50)}`;
+    const m = pdf(clave, { notaAdicional: nota });
+    expect(TOPES.notaAdicional).toBe(300);
+    expect(m.pie.notaAdicional).toBe(`${"n".repeat(299)}ñ`);
+  });
+
+  it("topes: preparado para 120, ejecutivo 120 y vigencia 60", () => {
+    expect(TOPES).toEqual({ preparadoPara: 120, ejecutivo: 120, vigencia: 60, notaAdicional: 300 });
+    const m = pdf(clave, { preparadoPara: "p".repeat(200), ejecutivo: "e".repeat(200), vigencia: "v".repeat(200) });
+    expect(m.preparadoPara).toBe("p".repeat(120));
+    expect(m.pie.preparadoPor).toBe(`Preparado por ${"e".repeat(120)}.`);
+    expect(m.pie.vigencia).toBe(`Vigencia: ${"v".repeat(60)}.`);
+  });
+
+  it("el modelo del PDF jamás incluye el estatus del tramo", () => {
+    for (const cambios of [{}, { monto: "2000000", plazo: 36 }, { monto: "30000", plazo: 6 }]) {
+      const texto = JSON.stringify(pdf(clave, ENTRADA_COMPLETA, cambios));
+      expect(texto).not.toMatch(/estatus/i);
+      for (const e of ESTATUS) {
+        expect(texto).not.toContain(e);
+        expect(texto).not.toContain(textos.estatusTramo[e]);
+      }
+    }
+  });
+
+  it("el modelo del PDF tampoco incluye un estatus CONFIRMADA (semilla modificada en la prueba)", () => {
+    const j = copiaSemilla();
+    j.tasas_mxn.tramos[5].estatus = "CONFIRMADA";
+    const c = cotizarBien({ entidad: clave }, cargar(j));
+    expect(c.tramo.estatus).toBe("CONFIRMADA");
+    const texto = JSON.stringify(sinError(modeloPdf(c, contexto, ENTRADA_COMPLETA, AHORA)));
+    expect(texto).not.toContain("CONFIRMADA");
+    expect(texto).not.toContain(textos.estatusTramo.CONFIRMADA);
+  });
+
+  it("el modelo del PDF no trae los avisos de la pantalla", () => {
+    const texto = JSON.stringify(pdf(clave, {}, { monto: "30000", plazo: 6 }));
+    expect(texto).not.toContain("TASA_MAYOR_QUE_TRAMO_SIGUIENTE");
+  });
+});
+
+describe("modeloPdf: errores", () => {
+  it("si la entidad no tiene razón social, falla con un mensaje en español", () => {
+    const r = modeloPdf(cotizarBien({}), { razonesSociales: new Map(), textos }, {}, AHORA);
+    if (r.ok) throw new Error("Se esperaba un error");
+    expect(r.error.codigo).toBe("ENTIDADES_INVALIDAS");
+    expect(r.error.mensaje).toContain("CREDIFLEXI");
+    expect(r.error.mensaje).toContain("razon_social");
+  });
+});
+
+describe.each(ENTIDADES)("modeloVistaPrevia ($clave)", ({ clave }) => {
+  it("ejemplo oficial con su desglose: fórmula y operación con números", () => {
+    const v = modeloVistaPrevia(cotizarBien({ entidad: clave }), textos);
+    expect(v.tasa).toBe("19.00%");
+    expect(v.salidas).toEqual([
+      {
+        clave: "rendimiento_mensual_pesos",
+        etiqueta: "Pago mensual",
+        cifra: "$23,750.00",
+        formula: "monto × tasa anual ÷ 12",
+        operacion: "1,500,000.00 × 0.19 ÷ 12 = 23,750.00",
+      },
+      {
+        clave: "rendimiento_anual_pesos",
+        etiqueta: "Rendimiento anual equivalente (12 meses)",
+        cifra: "$285,000.00",
+        formula: "monto × tasa anual",
+        operacion: "1,500,000.00 × 0.19 = 285,000.00",
+      },
+      {
+        clave: "ganancia_total_plazo",
+        etiqueta: "Ganancia total en el plazo",
+        cifra: "$285,000.00",
+        formula: "monto × tasa anual × plazo ÷ 12",
+        operacion: "1,500,000.00 × 0.19 × 12 ÷ 12 = 285,000.00",
+      },
+    ]);
+  });
+
+  it("datos de la solicitud y versión de las tasas", () => {
+    const v = modeloVistaPrevia(cotizarBien({ entidad: clave }), textos);
+    expect(v.solicitud).toEqual({
+      entidad: clave,
+      moneda: "MXN",
+      esquema: "Rendimientos mensuales",
+      monto: "$1,500,000.00 MXN",
+      plazo: "12 meses",
+    });
+    expect(v.tasas).toEqual({ version: "0.3", fecha: "01/10/2026" });
+  });
+
+  it("muestra el tramo aplicado con su estatus y la explicación del archivo de textos (pendiente t)", () => {
+    const v = modeloVistaPrevia(cotizarBien({ entidad: clave }), textos);
+    expect(v.origenTasa).toBe("tramo");
+    expect(v.tramo).toEqual({
+      rango: "Desde $1,000,000.00 MXN",
+      estatus: "SEGUN_USUARIO_PPTX",
+      explicacionEstatus: "Tasa según la tabla de rendimientos vigente; aún sin confirmación formal.",
+    });
+  });
+
+  it("tramo con límite superior", () => {
+    const v = modeloVistaPrevia(cotizarBien({ entidad: clave, monto: "250000" }), textos);
+    expect(v.tramo.rango).toBe("Desde $200,000.00 MXN hasta $399,999.99 MXN");
+  });
+
+  it("36 meses: la tasa sale del plazo adicional y el estatus es el del tramo del monto", () => {
+    const v = modeloVistaPrevia(cotizarBien({ entidad: clave, monto: "2000000", plazo: 36 }), textos);
+    expect(v.origenTasa).toBe("plazo_adicional");
+    expect(v.tasa).toBe("20.00%");
+    expect(v.tramo.estatus).toBe("SEGUN_USUARIO_PPTX");
+    expect(v.solicitud.plazo).toBe("36 meses");
+  });
+
+  it("un estatus CONFIRMADA muestra su explicación (semilla modificada en la prueba)", () => {
+    const j = copiaSemilla();
+    j.tasas_mxn.tramos[5].estatus = "CONFIRMADA";
+    const v = modeloVistaPrevia(cotizarBien({ entidad: clave }, cargar(j)), textos);
+    expect(v.tramo.estatus).toBe("CONFIRMADA");
+    expect(v.tramo.explicacionEstatus).toBe("Tasa confirmada.");
+  });
+
+  it("trae los avisos no bloqueantes tal cual los da el dominio", () => {
+    const c = cotizarBien({ entidad: clave, monto: "30000", plazo: 6 });
+    const v = modeloVistaPrevia(c, textos);
+    expect(c.avisos).toHaveLength(1);
+    expect(v.avisos).toEqual([{ codigo: "TASA_MAYOR_QUE_TRAMO_SIGUIENTE", mensaje: c.avisos[0].mensaje }]);
+  });
+
+  it("sin avisos, la lista va vacía", () => {
+    expect(modeloVistaPrevia(cotizarBien({ entidad: clave }), textos).avisos).toEqual([]);
+  });
+});
