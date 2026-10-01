@@ -1,11 +1,23 @@
 import type { Decimal } from "./decimal";
 import { ROUND_HALF_UP } from "./decimal";
 
+function conMiles(monto: Decimal): string {
+  const [entero, centavos] = monto.abs().toFixed(2, ROUND_HALF_UP).split(".");
+  return `${entero.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${centavos}`;
+}
+
+function signo(monto: Decimal): string {
+  return monto.isNegative() && !monto.isZero() ? "-" : "";
+}
+
+/** "1,500,000.00": como formatearPesos, sin el signo de pesos (para los desgloses). */
+export function formatearCantidad(monto: Decimal): string {
+  return `${signo(monto)}${conMiles(monto)}`;
+}
+
 /** "$1,500,000.00": 2 decimales, mitad hacia arriba, comas de miles. */
 export function formatearPesos(monto: Decimal): string {
-  const [entero, centavos] = monto.abs().toFixed(2, ROUND_HALF_UP).split(".");
-  const conMiles = entero.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${monto.isNegative() && !monto.isZero() ? "-" : ""}$${conMiles}.${centavos}`;
+  return `${signo(monto)}$${conMiles(monto)}`;
 }
 
 /** "$1,500,000.00 MXN" */

@@ -73,6 +73,19 @@ export interface ReglasDeCalculo {
   };
 }
 
+/**
+ * Único lugar donde se relaciona el esquema de los tramos (final_del_plazo)
+ * con la clave de etiquetas de la semilla (final).
+ */
+const CLAVE_ETIQUETAS: Readonly<Record<Esquema, keyof ReglasDeCalculo["etiquetas"]>> = {
+  mensual: "mensual",
+  final_del_plazo: "final",
+};
+
+export function etiquetasDelEsquema(reglas: ReglasDeCalculo, esquema: Esquema): EtiquetasCotizacion {
+  return reglas.etiquetas[CLAVE_ETIQUETAS[esquema]];
+}
+
 export interface Semilla {
   readonly version: string;
   readonly generado: string;
