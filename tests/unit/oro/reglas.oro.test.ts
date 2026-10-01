@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Esquema } from "../../../src/domain/tasas/semilla.esquema";
-import { casos, cargar, codigoDeError, copiaSemilla, cotizarBien, salida, semillaReal } from "./ayudas";
+import { cargar, codigoDeError, copiaSemilla, cotizarBien, salida, semillaReal } from "./ayudas";
+import { casos } from "./golden";
 
 const ESQUEMAS: readonly Esquema[] = ["mensual", "final_del_plazo"];
 const PLAZOS = [6, 12, 18, 24];

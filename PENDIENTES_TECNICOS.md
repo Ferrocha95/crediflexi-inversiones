@@ -20,3 +20,5 @@
 - (r) El plazo adicional (36 meses) compara siempre con `>=` contra `aplica_desde_monto`, aunque la tabla tenga límite inferior no inclusivo.
 - (s) Las pruebas del resolver usan la semilla real: crear una semilla sintética para las pruebas de lógica y dejar la real solo para las pruebas de oro.
 - (t) La vista previa de la cotización debe mostrar el estatus del tramo (`SEGUN_USUARIO_PPTX` o `CONFIRMADA`).
+- (u) Si el tramo siguiente está POR_CONFIRMAR, el mensaje del aviso de coherencia no debe decir "Así lo define la tabla vigente".
+- (v) Las tres cifras de rendimiento del golden se calcularon con las mismas fórmulas del motor: verifican la implementación, no la fórmula. Lo independiente son las 140 cifras del pptx.
