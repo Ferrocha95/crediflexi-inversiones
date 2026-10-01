@@ -31,10 +31,16 @@ const ENTIDADES = [
 ] as const;
 
 const pieEsperado = (razonSocial: string) =>
-  `Cotización informativa para ${razonSocial}. Las cifras se calculan con interés simple sobre la tasa anual ` +
-  "indicada, con las tasas de la versión 0.3 del 01/10/2026. El rendimiento anual es un equivalente a 12 meses; " +
+  `Cotización informativa para ${razonSocial}, calculada con interés simple sobre la tasa anual indicada ` +
+  "y con las tasas de la versión 0.3 del 01/10/2026. El rendimiento anual es un equivalente a 12 meses; " +
   "la ganancia total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables " +
   "son las del contrato que se firme.";
+
+/** Textos reales con otros nombres de esquema, para probar que el nombre sale del archivo. */
+const textosOtrosNombres: TextosCotizacion = {
+  ...textos,
+  nombreEsquema: { mensual: "Esquema sintético A", final_del_plazo: "Esquema sintético B" },
+};
 
 const ENTRADA_COMPLETA: EntradaPdf = {
   preparadoPara: "Persona Sintética Uno",
@@ -50,7 +56,7 @@ function pdf(entidad: string, entrada: EntradaPdf = {}, cambios = {}): ModeloPdf
 const cuenta = (texto: string, buscado: string) => texto.split(buscado).length - 1;
 
 describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
-  it("ejemplo oficial: $1,500,000 a 12 meses, mensual, 19% -> $23,750.00 y $285,000.00", () => {
+  it("ejemplo oficial: 1,500,000 pesos a 12 meses, mensual, 19% -> 23,750.00 y 285,000.00", () => {
     const m = pdf(clave);
     expect(m.tasa).toBe("19.00%");
     expect(m.cifras).toEqual([
@@ -64,7 +70,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     ]);
   });
 
-  it("final del plazo: etiquetas del esquema y 21% -> $26,250.00 y $315,000.00", () => {
+  it("final del plazo: etiquetas del esquema y 21% -> 26,250.00 y 315,000.00", () => {
     const m = pdf(clave, {}, { esquema: "final_del_plazo" });
     expect(m.solicitud.esquema).toBe("Al final del plazo");
     expect(m.tasa).toBe("21.00%");
@@ -98,6 +104,23 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
 
   it("el pie base lleva la razón social de la entidad, la versión y la fecha de las tasas", () => {
     expect(pdf(clave).pie.base).toBe(pieEsperado(razonSocial));
+  });
+
+  it('el pie no contiene ".." en ningún lugar, con o sin las líneas opcionales', () => {
+    for (const entrada of [{}, ENTRADA_COMPLETA]) {
+      const { pie } = pdf(clave, entrada);
+      for (const linea of [pie.base, pie.preparadoPor, pie.vigencia, pie.notaAdicional]) {
+        expect(linea ?? "").not.toContain("..");
+      }
+    }
+  });
+
+  it("el nombre del esquema sale del archivo de textos", () => {
+    const c = cotizarBien({ entidad: clave });
+    const f = cotizarBien({ entidad: clave, esquema: "final_del_plazo" });
+    const ctx = { razonesSociales, textos: textosOtrosNombres };
+    expect(sinError(modeloPdf(c, ctx, {}, AHORA)).solicitud.esquema).toBe("Esquema sintético A");
+    expect(sinError(modeloPdf(f, ctx, {}, AHORA)).solicitud.esquema).toBe("Esquema sintético B");
   });
 
   it("la razón social solo aparece en el encabezado y en el pie (el PDF no dice que las tasas sean de la entidad)", () => {
@@ -274,5 +297,17 @@ describe.each(ENTIDADES)("modeloVistaPrevia ($clave)", ({ clave }) => {
 
   it("sin avisos, la lista va vacía", () => {
     expect(modeloVistaPrevia(cotizarBien({ entidad: clave }), textos).avisos).toEqual([]);
+  });
+
+  it("el nombre del esquema sale del archivo de textos", () => {
+    const v = modeloVistaPrevia(cotizarBien({ entidad: clave, esquema: "final_del_plazo" }), textosOtrosNombres);
+    expect(v.solicitud.esquema).toBe("Esquema sintético B");
+  });
+});
+
+describe("modelo.ts ya no define nombres de esquema", () => {
+  it("no exporta NOMBRE_ESQUEMA", async () => {
+    const modulo: Record<string, unknown> = await import("../../../src/aplicacion/modelo");
+    expect(modulo.NOMBRE_ESQUEMA).toBeUndefined();
   });
 });

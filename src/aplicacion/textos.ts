@@ -1,5 +1,6 @@
 import * as z from "zod";
-import type { Estatus } from "../domain/tasas/semilla.esquema";
+import { listaEnEspanol } from "../domain/comun/formato";
+import type { Esquema, Estatus } from "../domain/tasas/semilla.esquema";
 import { validar, type ResultadoApp } from "./resultado";
 
 /** Marcadores que se pueden usar en seed/textos_cotizacion.json. */
@@ -13,8 +14,13 @@ export const MARCADORES = [
 ] as const;
 export type Marcador = (typeof MARCADORES)[number];
 
-/** {moneda} solo tiene sentido en moneda_deshabilitada. */
-const MARCADORES_GENERALES: readonly Marcador[] = MARCADORES.filter((m) => m !== "moneda");
+/** Marcadores permitidos en cada campo; los de estatus_tramo y nombre_esquema no admiten ninguno. */
+export const MARCADORES_POR_CAMPO = {
+  pie_base: ["razon_social", "version_tasas", "fecha_tasas"],
+  linea_preparado_por: ["ejecutivo"],
+  linea_vigencia: ["vigencia"],
+  moneda_deshabilitada: ["moneda"],
+} as const satisfies Readonly<Record<string, readonly Marcador[]>>;
 
 export interface TextosCotizacion {
   readonly version: string;
@@ -23,29 +29,35 @@ export interface TextosCotizacion {
   readonly lineaVigencia: string;
   /** Explicación del estatus del tramo: solo se muestra en pantalla, nunca en el PDF. */
   readonly estatusTramo: Readonly<Record<Estatus, string>>;
+  /** Nombre del esquema en la pantalla y en el PDF. */
+  readonly nombreEsquema: Readonly<Record<Esquema, string>>;
   readonly monedaDeshabilitada: string;
 }
 
 const RE_MARCADOR = /\{([^{}]*)\}/g;
 
-const lista = (ms: readonly Marcador[]) => ms.map((m) => `{${m}}`).join(", ");
+function permitidosEn(campo: string, permitidos: readonly Marcador[]): string {
+  return permitidos.length === 0
+    ? `En ${campo} no se permite ningún marcador.`
+    : `En ${campo} solo se permite${permitidos.length === 1 ? "" : "n"}: ${listaEnEspanol(permitidos.map((m) => `{${m}}`))}.`;
+}
 
-function textoConMarcadores(permitidos: readonly Marcador[]) {
+/** Texto no vacío que solo usa los marcadores permitidos en `campo`. */
+function texto(campo: string, permitidos: readonly Marcador[] = []) {
   return z
     .string({ error: "Debe ser un texto." })
     .trim()
     .min(1, { error: "El texto no puede estar vacío.", abort: true })
-    .superRefine((texto, ctx) => {
-      for (const [, nombre] of texto.matchAll(RE_MARCADOR)) {
+    .superRefine((t, ctx) => {
+      for (const [, nombre] of t.matchAll(RE_MARCADOR)) {
         if (!(permitidos as readonly string[]).includes(nombre)) {
-          const soloMoneda = nombre === "moneda" ? " {moneda} solo se permite en moneda_deshabilitada." : "";
           ctx.addIssue({
             code: "custom",
-            message: `El marcador {${nombre}} no está permitido aquí.${soloMoneda} Usa solo: ${lista(permitidos)}.`,
+            message: `El marcador {${nombre}} no está permitido. ${permitidosEn(campo, permitidos)}`,
           });
         }
       }
-      if (/[{}]/.test(texto.replace(RE_MARCADOR, ""))) {
+      if (/[{}]/.test(t.replace(RE_MARCADOR, ""))) {
         ctx.addIssue({
           code: "custom",
           message: "Hay una llave { o } sin cerrar. Cada marcador se escribe entre llaves, por ejemplo {razon_social}.",
@@ -53,8 +65,6 @@ function textoConMarcadores(permitidos: readonly Marcador[]) {
       }
     });
 }
-
-const texto = textoConMarcadores(MARCADORES_GENERALES);
 
 function claveDesconocida(iss: { code: string; keys?: readonly string[] }): string | undefined {
   if (iss.code !== "unrecognized_keys" || iss.keys === undefined) return undefined;
@@ -65,18 +75,25 @@ const esquemaTextos = z
   .strictObject(
     {
       version: z.string({ error: "Falta la versión del archivo (texto)." }).trim().min(1),
-      pie_base: texto,
-      linea_preparado_por: texto,
-      linea_vigencia: texto,
+      pie_base: texto("pie_base", MARCADORES_POR_CAMPO.pie_base),
+      linea_preparado_por: texto("linea_preparado_por", MARCADORES_POR_CAMPO.linea_preparado_por),
+      linea_vigencia: texto("linea_vigencia", MARCADORES_POR_CAMPO.linea_vigencia),
       estatus_tramo: z.strictObject(
         {
-          SEGUN_USUARIO_PPTX: texto,
-          CONFIRMADA: texto,
-          POR_CONFIRMAR: texto,
+          SEGUN_USUARIO_PPTX: texto("estatus_tramo.SEGUN_USUARIO_PPTX"),
+          CONFIRMADA: texto("estatus_tramo.CONFIRMADA"),
+          POR_CONFIRMAR: texto("estatus_tramo.POR_CONFIRMAR"),
         },
         { error: claveDesconocida },
       ),
-      moneda_deshabilitada: textoConMarcadores(MARCADORES),
+      nombre_esquema: z.strictObject(
+        {
+          mensual: texto("nombre_esquema.mensual"),
+          final_del_plazo: texto("nombre_esquema.final_del_plazo"),
+        },
+        { error: claveDesconocida },
+      ),
+      moneda_deshabilitada: texto("moneda_deshabilitada", MARCADORES_POR_CAMPO.moneda_deshabilitada),
     },
     { error: claveDesconocida },
   )
@@ -87,6 +104,7 @@ const esquemaTextos = z
       lineaPreparadoPor: t.linea_preparado_por,
       lineaVigencia: t.linea_vigencia,
       estatusTramo: t.estatus_tramo,
+      nombreEsquema: t.nombre_esquema,
       monedaDeshabilitada: t.moneda_deshabilitada,
     }),
   );

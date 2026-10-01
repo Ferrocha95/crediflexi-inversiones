@@ -2,7 +2,7 @@ import { Decimal } from "../domain/comun/decimal";
 import { formatearMonto, formatearPesos, formatearPorcentaje } from "../domain/comun/formato";
 import type { CodigoAviso } from "../domain/comun/resultado";
 import type { Cotizacion } from "../domain/interes/cotizar";
-import type { Esquema, Estatus, Moneda, Salida } from "../domain/tasas/semilla.esquema";
+import type { Estatus, Moneda, Salida } from "../domain/tasas/semilla.esquema";
 import { limpiarCampo } from "./campos";
 import { fechaDeTextoIso, fechaEnMexico } from "./fecha";
 import { rellenar } from "./rellenar";
@@ -10,12 +10,6 @@ import { error, ok, type ResultadoApp } from "./resultado";
 import type { TextosCotizacion } from "./textos";
 
 // Este módulo no calcula: solo da forma de texto a lo que ya devolvió cotizar.
-
-/** Nombre del esquema en la pantalla y en el PDF. */
-export const NOMBRE_ESQUEMA: Readonly<Record<Esquema, string>> = {
-  mensual: "Rendimientos mensuales",
-  final_del_plazo: "Al final del plazo",
-};
 
 /** Topes de caracteres de los campos que se escriben a mano en la pantalla. */
 export const TOPES = {
@@ -76,7 +70,7 @@ export function modeloVistaPrevia(c: Cotizacion, textos: TextosCotizacion): Mode
     solicitud: {
       entidad: c.solicitud.entidad,
       moneda,
-      esquema: NOMBRE_ESQUEMA[c.solicitud.esquema],
+      esquema: textos.nombreEsquema[c.solicitud.esquema],
       monto: monto(c.solicitud.monto, moneda),
       plazo: meses(c.solicitud.plazo),
     },
@@ -171,21 +165,15 @@ export function modeloPdf(
   const notaAdicional = limpiarCampo(entrada.notaAdicional ?? "", TOPES.notaAdicional);
 
   const tasas = tasasDeLaCotizacion(c);
-  const valores = {
-    razon_social: razonSocial,
-    version_tasas: tasas.version,
-    fecha_tasas: tasas.fecha,
-    ejecutivo,
-    vigencia,
-  };
   const { textos } = contexto;
 
+  // Cada plantilla recibe solo los marcadores que su campo permite (MARCADORES_POR_CAMPO).
   return ok({
     fecha: fechaEnMexico(ahora),
     encabezado: { razonSocial },
     solicitud: {
       moneda,
-      esquema: NOMBRE_ESQUEMA[c.solicitud.esquema],
+      esquema: textos.nombreEsquema[c.solicitud.esquema],
       monto: monto(c.solicitud.monto, moneda),
       plazo: meses(c.solicitud.plazo),
     },
@@ -194,9 +182,13 @@ export function modeloPdf(
     tasas,
     preparadoPara: oNulo(preparadoPara),
     pie: {
-      base: rellenar(textos.pieBase, valores),
-      preparadoPor: ejecutivo === "" ? null : rellenar(textos.lineaPreparadoPor, valores),
-      vigencia: vigencia === "" ? null : rellenar(textos.lineaVigencia, valores),
+      base: rellenar(textos.pieBase, {
+        razon_social: razonSocial,
+        version_tasas: tasas.version,
+        fecha_tasas: tasas.fecha,
+      }),
+      preparadoPor: ejecutivo === "" ? null : rellenar(textos.lineaPreparadoPor, { ejecutivo }),
+      vigencia: vigencia === "" ? null : rellenar(textos.lineaVigencia, { vigencia }),
       notaAdicional: oNulo(notaAdicional),
     },
   });

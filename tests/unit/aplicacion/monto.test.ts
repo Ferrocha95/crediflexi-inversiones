@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { MENSAJE_MONTO_ILEGIBLE, normalizarMonto } from "../../../src/aplicacion/monto";
+import {
+  MENSAJE_MONTO_CERO,
+  MENSAJE_MONTO_ILEGIBLE,
+  normalizarMonto,
+} from "../../../src/aplicacion/monto";
 
 function normalizado(texto: string): string {
   const r = normalizarMonto(texto);
@@ -7,20 +11,29 @@ function normalizado(texto: string): string {
   return r.valor;
 }
 
+function errorDe(texto: string): { codigo: string; mensaje: string } {
+  const r = normalizarMonto(texto);
+  if (r.ok) throw new Error(`No debía aceptarse: ${texto}`);
+  return r.error;
+}
+
+const NBSP = String.fromCharCode(0xa0);
+
 describe("normalizarMonto: formatos aceptados", () => {
   it.each([
-    ["150000.50", "150000.50"],
-    ["150000", "150000"],
-    ["150,000.50", "150000.50"],
-    ["1,500,000", "1500000"],
-    ["$1,500,000.00", "1500000.00"],
-    ["$ 2,000,000", "2000000"],
-    ["$150000.5", "150000.5"],
-    ["  30,000  ", "30000"],
-    ["\u00A01,000\u00A0", "1000"],
-    ["999", "999"],
-    ["0", "0"],
-  ])("%j -> %j", (entrada, esperado) => {
+    ["entero sin comas", "150000", "150000"],
+    ["con centavos", "150000.50", "150000.50"],
+    ["con comas de miles y centavos", "150,000.50", "150000.50"],
+    ["millones con comas", "1,500,000", "1500000"],
+    ["con signo de pesos, comas y centavos", "$1,500,000.00", "1500000.00"],
+    ["con signo de pesos y un espacio", "$ 2,000,000", "2000000"],
+    ["con signo de pesos y un decimal", "$150000.5", "150000.5"],
+    ["con espacios a los lados", "  30,000  ", "30000"],
+    ["con espacios duros a los lados", `${NBSP}1,000${NBSP}`, "1000"],
+    ["tres cifras", "999", "999"],
+    ["un centavo", "0.01", "0.01"],
+    ["ceros a la izquierda sin comas", "0150000", "0150000"],
+  ])("%s", (_, entrada, esperado) => {
     expect(normalizado(entrada)).toBe(esperado);
   });
 });
@@ -45,14 +58,33 @@ describe("normalizarMonto: formatos que no se entienden", () => {
     ["letras", "mil pesos"],
     ["moneda escrita", "150000 MXN"],
     ["cero inicial en grupo", "01,000"],
-  ])("%s (%j)", (_, entrada) => {
-    const r = normalizarMonto(entrada);
-    if (r.ok) throw new Error(`No debía aceptarse: ${entrada}`);
-    expect(r.error.codigo).toBe("MONTO_ILEGIBLE");
-    expect(r.error.mensaje).toBe(MENSAJE_MONTO_ILEGIBLE);
+  ])("%s", (_, entrada) => {
+    const e = errorDe(entrada);
+    expect(e.codigo).toBe("MONTO_ILEGIBLE");
+    expect(e.mensaje).toBe(MENSAJE_MONTO_ILEGIBLE);
   });
 
   it("el mensaje es el de la pantalla", () => {
     expect(MENSAJE_MONTO_ILEGIBLE).toBe("Escribe el monto como 150,000.50 o 150000.50");
+  });
+});
+
+describe("normalizarMonto: monto igual a cero", () => {
+  it.each([
+    ["cero", "0"],
+    ["cero con centavos", "0.00"],
+    ["cero con un decimal", "0.0"],
+    ["triple cero", "000"],
+    ["dobles ceros con centavos", "00.00"],
+    ["cero con signo de pesos", "$0"],
+    ["cero con signo de pesos y centavos", "$ 0.00"],
+  ])("%s", (_, entrada) => {
+    const e = errorDe(entrada);
+    expect(e.codigo).toBe("MONTO_CERO");
+    expect(e.mensaje).toBe(MENSAJE_MONTO_CERO);
+  });
+
+  it("el mensaje dice que debe ser mayor que cero", () => {
+    expect(MENSAJE_MONTO_CERO).toBe("El monto debe ser mayor que cero.");
   });
 });

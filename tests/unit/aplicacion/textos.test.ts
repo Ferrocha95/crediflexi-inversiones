@@ -13,18 +13,24 @@ function cargarBien(json: unknown): TextosCotizacion {
   return r.valor;
 }
 
-function errorDe(json: unknown): { mensaje: string; detalles: readonly string[] } {
+function errorDe(json: unknown): { mensaje: string; detalles: readonly string[]; todo: string } {
   const r = cargarTextos(json, ARCHIVO);
   if (r.ok) throw new Error("Se esperaba que la carga fallara");
   expect(r.error.codigo).toBe("TEXTOS_INVALIDOS");
-  return { mensaje: r.error.mensaje, detalles: r.error.detalles ?? [] };
+  const detalles = r.error.detalles ?? [];
+  return { mensaje: r.error.mensaje, detalles, todo: [r.error.mensaje, ...detalles].join("\n") };
 }
 
 describe("cargarTextos: el archivo real", () => {
-  it("carga seed/textos_cotizacion.json", () => {
+  it("carga seed/textos_cotizacion.json versión 0.2", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.1");
-    expect(t.pieBase).toContain("{razon_social}");
+    expect(t.version).toBe("0.2");
+    expect(t.pieBase).toBe(
+      "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada " +
+        "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +
+        "a 12 meses; la ganancia total corresponde al plazo elegido. Esta cotización no es un contrato: las " +
+        "condiciones aplicables son las del contrato que se firme.",
+    );
     expect(t.lineaPreparadoPor).toBe("Preparado por {ejecutivo}.");
     expect(t.lineaVigencia).toBe("Vigencia: {vigencia}.");
     expect(t.monedaDeshabilitada).toBe("Las tasas en {moneda} están por confirmar.");
@@ -37,50 +43,83 @@ describe("cargarTextos: el archivo real", () => {
       "Tasa según la tabla de rendimientos vigente; aún sin confirmación formal.",
     );
   });
+
+  it("trae el nombre de los dos esquemas", () => {
+    expect(cargarBien(textosJson).nombreEsquema).toEqual({
+      mensual: "Rendimientos mensuales",
+      final_del_plazo: "Al final del plazo",
+    });
+  });
 });
 
-describe("cargarTextos: marcadores", () => {
-  it("un marcador desconocido rompe la carga y el error dice el archivo y el marcador", () => {
+describe("cargarTextos: marcadores permitidos por campo", () => {
+  it.each([
+    ["pie_base", "{razon_social} {version_tasas} {fecha_tasas}"],
+    ["linea_preparado_por", "Preparado por {ejecutivo}."],
+    ["linea_vigencia", "Vigencia: {vigencia}."],
+    ["moneda_deshabilitada", "Sin tasas en {moneda}."],
+  ] as const)("%s acepta sus marcadores", (campo, texto) => {
+    const j = copia();
+    j[campo] = texto;
+    expect(cargarBien(j)).toBeDefined();
+  });
+
+  it.each([
+    ["pie_base", "{ejecutivo}", "{razon_social}, {version_tasas} y {fecha_tasas}"],
+    ["pie_base", "{vigencia}", "{razon_social}, {version_tasas} y {fecha_tasas}"],
+    ["pie_base", "{moneda}", "{razon_social}, {version_tasas} y {fecha_tasas}"],
+    ["linea_preparado_por", "{vigencia}", "{ejecutivo}"],
+    ["linea_preparado_por", "{razon_social}", "{ejecutivo}"],
+    ["linea_vigencia", "{ejecutivo}", "{vigencia}"],
+    ["moneda_deshabilitada", "{razon_social}", "{moneda}"],
+  ] as const)("%s rechaza %s y dice el campo y los permitidos", (campo, marcador, permitidos) => {
+    const j = copia();
+    j[campo] = `Texto con ${marcador}.`;
+    const e = errorDe(j);
+    expect(e.mensaje).toContain(ARCHIVO);
+    const detalle = e.detalles.find((d) => d.includes(marcador));
+    expect(detalle).toBeDefined();
+    expect(detalle).toContain(campo);
+    expect(detalle).toContain(permitidos);
+  });
+
+  it.each(["SEGUN_USUARIO_PPTX", "CONFIRMADA", "POR_CONFIRMAR"] as const)(
+    "estatus_tramo.%s no admite ningún marcador",
+    (estatus) => {
+      const j = copia();
+      j.estatus_tramo[estatus] = "Tasa de {razon_social}.";
+      const detalle = errorDe(j).detalles.find((d) => d.includes("{razon_social}"));
+      expect(detalle).toContain(`estatus_tramo.${estatus}`);
+      expect(detalle).toMatch(/ningún marcador/);
+    },
+  );
+
+  it.each(["mensual", "final_del_plazo"] as const)("nombre_esquema.%s no admite ningún marcador", (esquema) => {
+    const j = copia();
+    j.nombre_esquema[esquema] = "Esquema en {moneda}";
+    const detalle = errorDe(j).detalles.find((d) => d.includes("{moneda}"));
+    expect(detalle).toContain(`nombre_esquema.${esquema}`);
+    expect(detalle).toMatch(/ningún marcador/);
+  });
+
+  it("un marcador desconocido rompe la carga y el error dice el archivo, el campo y el marcador", () => {
     const j = copia();
     j.pie_base = "Cotización para {cliente}.";
     const e = errorDe(j);
     expect(e.mensaje).toContain(ARCHIVO);
-    const texto = [e.mensaje, ...e.detalles].join("\n");
-    expect(texto).toContain("{cliente}");
-    expect(texto).toContain("pie_base");
-  });
-
-  it("un marcador desconocido dentro de estatus_tramo también rompe la carga", () => {
-    const j = copia();
-    j.estatus_tramo.CONFIRMADA = "Tasa confirmada por {gerente}.";
-    const texto = (({ mensaje, detalles }) => [mensaje, ...detalles].join("\n"))(errorDe(j));
-    expect(texto).toContain("{gerente}");
-    expect(texto).toContain("estatus_tramo.CONFIRMADA");
-  });
-
-  it("{moneda} solo se permite en moneda_deshabilitada", () => {
-    const j = copia();
-    j.pie_base = `${j.pie_base} Moneda: {moneda}.`;
-    const texto = (({ mensaje, detalles }) => [mensaje, ...detalles].join("\n"))(errorDe(j));
-    expect(texto).toContain("{moneda}");
-    expect(texto).toContain("pie_base");
-  });
-
-  it("acepta todos los marcadores permitidos en pie_base", () => {
-    const j = copia();
-    j.pie_base = "{razon_social} {version_tasas} {fecha_tasas} {ejecutivo} {vigencia}";
-    expect(cargarBien(j).pieBase).toBe(j.pie_base);
+    expect(e.todo).toContain("{cliente}");
+    expect(e.todo).toContain("pie_base");
   });
 
   it("una llave sin cerrar rompe la carga", () => {
     const j = copia();
     j.linea_vigencia = "Vigencia: {vigencia.";
-    const texto = (({ mensaje, detalles }) => [mensaje, ...detalles].join("\n"))(errorDe(j));
-    expect(texto).toContain("linea_vigencia");
-    expect(texto).toMatch(/llave/i);
+    const e = errorDe(j);
+    expect(e.todo).toContain("linea_vigencia");
+    expect(e.todo).toMatch(/llave/i);
   });
 
-  it("reporta todos los marcadores desconocidos, no solo el primero", () => {
+  it("reporta todos los marcadores no permitidos, no solo el primero", () => {
     const j = copia();
     j.pie_base = "{uno} y {dos}";
     const { detalles } = errorDe(j);
@@ -102,6 +141,24 @@ describe("cargarTextos: textos vacíos y estructura", () => {
     const j = copia();
     j.estatus_tramo.POR_CONFIRMAR = "   ";
     expect(errorDe(j).detalles.join("\n")).toContain("estatus_tramo.POR_CONFIRMAR");
+  });
+
+  it("un nombre de esquema vacío rompe la carga", () => {
+    const j = copia();
+    j.nombre_esquema.final_del_plazo = "";
+    expect(errorDe(j).detalles.join("\n")).toContain("nombre_esquema.final_del_plazo");
+  });
+
+  it("falta el nombre de un esquema", () => {
+    const j: Record<string, unknown> = copia();
+    j.nombre_esquema = { mensual: "Rendimientos mensuales" };
+    expect(errorDe(j).detalles.join("\n")).toContain("final_del_plazo");
+  });
+
+  it("falta nombre_esquema completo", () => {
+    const j: Record<string, unknown> = copia();
+    delete j.nombre_esquema;
+    expect(errorDe(j).detalles.join("\n")).toContain("nombre_esquema");
   });
 
   it("falta la explicación de un estatus", () => {

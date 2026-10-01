@@ -31,7 +31,7 @@ describe.each(["CREDIFLEXI", "RAMI_SISE"])("plazosDisponibles (%s)", (entidad) =
     expect(plazos({ entidad, esquema, monto: "2000000.00" })).toEqual([6, 12, 18, 24, 36]);
   });
 
-  it("$30,000 (primer tramo) ofrece 6, 12, 18 y 24", () => {
+  it("30,000 pesos (primer tramo) ofrece 6, 12, 18 y 24", () => {
     expect(plazos({ entidad, monto: "30000" })).toEqual([6, 12, 18, 24]);
   });
 });

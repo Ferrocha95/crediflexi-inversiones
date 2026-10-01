@@ -10,7 +10,8 @@ export type CodigoErrorAplicacion =
   | "SEMILLA_INVALIDA"
   | "ENTIDADES_INVALIDAS"
   | "TEXTOS_INVALIDOS"
-  | "MONTO_ILEGIBLE";
+  | "MONTO_ILEGIBLE"
+  | "MONTO_CERO";
 
 export interface ErrorAplicacion {
   readonly codigo: CodigoErrorAplicacion;
