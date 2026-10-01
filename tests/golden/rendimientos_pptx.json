@@ -1,0 +1,1378 @@
+{
+  "_leeme": "Casos de referencia (version 0.3, 2026-10-01). Origen: TABLA_RENDIMIENTOS_EJEMPLOS.pptx leido por codigo (tasas identicas a la version anterior del archivo) MAS la decision del usuario de que en cualquier monto se ofrecen 6, 12, 18 y 24 meses. Por celda: valor del pptx, valor por formula y los tres rendimientos en pesos (mensual, anual equivalente a 12 meses y total del plazo; 2 decimales, mitad hacia arriba). 'pptx_con_error': el pptx NO coincide con la formula; el motor da la formula y la prueba debe MARCAR la diferencia. 'pptx_dice_na' (fuente decision_usuario): celdas de $2,000,000 en 6, 12 y 18 meses que la lamina marca N/A o no trae; segun el usuario SI se ofrecen, con las tasas del tramo de $1,000,000; el motor debe calcularlas. 36 meses solo existe para montos >= $2,000,000.",
+  "formulas": {
+    "pago_mensual": "monto * tasa / 12",
+    "rendimiento_mensual_pesos": "monto * tasa / 12",
+    "rendimiento_anual_pesos": "monto * tasa (equivalente a 12 meses)",
+    "ganancia_total_plazo": "monto * tasa * plazo / 12"
+  },
+  "casos": {
+    "30000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 3000,
+          "ganancia_formula": 3000,
+          "rendimiento_mensual_pesos": "500.00",
+          "rendimiento_anual_pesos": "6000.00",
+          "ganancia_total_plazo": "3000.00",
+          "pago_mensual_pptx": 500,
+          "pago_mensual_formula": 500,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.205",
+          "fuente": "pptx",
+          "ganancia_pptx": 6150,
+          "ganancia_formula": 6150,
+          "rendimiento_mensual_pesos": "512.50",
+          "rendimiento_anual_pesos": "6150.00",
+          "ganancia_total_plazo": "6150.00",
+          "pago_mensual_pptx": 513,
+          "pago_mensual_formula": 513,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.21",
+          "fuente": "pptx",
+          "ganancia_pptx": 9450,
+          "ganancia_formula": 9450,
+          "rendimiento_mensual_pesos": "525.00",
+          "rendimiento_anual_pesos": "6300.00",
+          "ganancia_total_plazo": "9450.00",
+          "pago_mensual_pptx": 525,
+          "pago_mensual_formula": 525,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.215",
+          "fuente": "pptx",
+          "ganancia_pptx": 12900,
+          "ganancia_formula": 12900,
+          "rendimiento_mensual_pesos": "537.50",
+          "rendimiento_anual_pesos": "6450.00",
+          "ganancia_total_plazo": "12900.00",
+          "pago_mensual_pptx": 538,
+          "pago_mensual_formula": 538,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.22",
+          "fuente": "pptx",
+          "ganancia_pptx": 3300,
+          "ganancia_formula": 3300,
+          "rendimiento_mensual_pesos": "550.00",
+          "rendimiento_anual_pesos": "6600.00",
+          "ganancia_total_plazo": "3300.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.225",
+          "fuente": "pptx",
+          "ganancia_pptx": 6750,
+          "ganancia_formula": 6750,
+          "rendimiento_mensual_pesos": "562.50",
+          "rendimiento_anual_pesos": "6750.00",
+          "ganancia_total_plazo": "6750.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.23",
+          "fuente": "pptx",
+          "ganancia_pptx": 10350,
+          "ganancia_formula": 10350,
+          "rendimiento_mensual_pesos": "575.00",
+          "rendimiento_anual_pesos": "6900.00",
+          "ganancia_total_plazo": "10350.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.235",
+          "fuente": "pptx",
+          "ganancia_pptx": 14100,
+          "ganancia_formula": 14100,
+          "rendimiento_mensual_pesos": "587.50",
+          "rendimiento_anual_pesos": "7050.00",
+          "ganancia_total_plazo": "14100.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "200000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.165",
+          "fuente": "pptx",
+          "ganancia_pptx": 16500,
+          "ganancia_formula": 16500,
+          "rendimiento_mensual_pesos": "2750.00",
+          "rendimiento_anual_pesos": "33000.00",
+          "ganancia_total_plazo": "16500.00",
+          "pago_mensual_pptx": 2750,
+          "pago_mensual_formula": 2750,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.17",
+          "fuente": "pptx",
+          "ganancia_pptx": 34000,
+          "ganancia_formula": 34000,
+          "rendimiento_mensual_pesos": "2833.33",
+          "rendimiento_anual_pesos": "34000.00",
+          "ganancia_total_plazo": "34000.00",
+          "pago_mensual_pptx": 2833,
+          "pago_mensual_formula": 2833,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.175",
+          "fuente": "pptx",
+          "ganancia_pptx": 52500,
+          "ganancia_formula": 52500,
+          "rendimiento_mensual_pesos": "2916.67",
+          "rendimiento_anual_pesos": "35000.00",
+          "ganancia_total_plazo": "52500.00",
+          "pago_mensual_pptx": 2917,
+          "pago_mensual_formula": 2917,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.18",
+          "fuente": "pptx",
+          "ganancia_pptx": 72000,
+          "ganancia_formula": 72000,
+          "rendimiento_mensual_pesos": "3000.00",
+          "rendimiento_anual_pesos": "36000.00",
+          "ganancia_total_plazo": "72000.00",
+          "pago_mensual_pptx": 3000,
+          "pago_mensual_formula": 3000,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.185",
+          "fuente": "pptx",
+          "ganancia_pptx": 18500,
+          "ganancia_formula": 18500,
+          "rendimiento_mensual_pesos": "3083.33",
+          "rendimiento_anual_pesos": "37000.00",
+          "ganancia_total_plazo": "18500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.19",
+          "fuente": "pptx",
+          "ganancia_pptx": 38000,
+          "ganancia_formula": 38000,
+          "rendimiento_mensual_pesos": "3166.67",
+          "rendimiento_anual_pesos": "38000.00",
+          "ganancia_total_plazo": "38000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.195",
+          "fuente": "pptx",
+          "ganancia_pptx": 58500,
+          "ganancia_formula": 58500,
+          "rendimiento_mensual_pesos": "3250.00",
+          "rendimiento_anual_pesos": "39000.00",
+          "ganancia_total_plazo": "58500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 80000,
+          "ganancia_formula": 80000,
+          "rendimiento_mensual_pesos": "3333.33",
+          "rendimiento_anual_pesos": "40000.00",
+          "ganancia_total_plazo": "80000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "300000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.165",
+          "fuente": "pptx",
+          "ganancia_pptx": 24750,
+          "ganancia_formula": 24750,
+          "rendimiento_mensual_pesos": "4125.00",
+          "rendimiento_anual_pesos": "49500.00",
+          "ganancia_total_plazo": "24750.00",
+          "pago_mensual_pptx": 4125,
+          "pago_mensual_formula": 4125,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.17",
+          "fuente": "pptx",
+          "ganancia_pptx": 51000,
+          "ganancia_formula": 51000,
+          "rendimiento_mensual_pesos": "4250.00",
+          "rendimiento_anual_pesos": "51000.00",
+          "ganancia_total_plazo": "51000.00",
+          "pago_mensual_pptx": 4250,
+          "pago_mensual_formula": 4250,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.175",
+          "fuente": "pptx",
+          "ganancia_pptx": 78750,
+          "ganancia_formula": 78750,
+          "rendimiento_mensual_pesos": "4375.00",
+          "rendimiento_anual_pesos": "52500.00",
+          "ganancia_total_plazo": "78750.00",
+          "pago_mensual_pptx": 4375,
+          "pago_mensual_formula": 4375,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.18",
+          "fuente": "pptx",
+          "ganancia_pptx": 108000,
+          "ganancia_formula": 108000,
+          "rendimiento_mensual_pesos": "4500.00",
+          "rendimiento_anual_pesos": "54000.00",
+          "ganancia_total_plazo": "108000.00",
+          "pago_mensual_pptx": 4500,
+          "pago_mensual_formula": 4500,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.185",
+          "fuente": "pptx",
+          "ganancia_pptx": 27750,
+          "ganancia_formula": 27750,
+          "rendimiento_mensual_pesos": "4625.00",
+          "rendimiento_anual_pesos": "55500.00",
+          "ganancia_total_plazo": "27750.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.19",
+          "fuente": "pptx",
+          "ganancia_pptx": 57000,
+          "ganancia_formula": 57000,
+          "rendimiento_mensual_pesos": "4750.00",
+          "rendimiento_anual_pesos": "57000.00",
+          "ganancia_total_plazo": "57000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.195",
+          "fuente": "pptx",
+          "ganancia_pptx": 87750,
+          "ganancia_formula": 87750,
+          "rendimiento_mensual_pesos": "4875.00",
+          "rendimiento_anual_pesos": "58500.00",
+          "ganancia_total_plazo": "87750.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 120000,
+          "ganancia_formula": 120000,
+          "rendimiento_mensual_pesos": "5000.00",
+          "rendimiento_anual_pesos": "60000.00",
+          "ganancia_total_plazo": "120000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "400000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.17",
+          "fuente": "pptx",
+          "ganancia_pptx": 34000,
+          "ganancia_formula": 34000,
+          "rendimiento_mensual_pesos": "5666.67",
+          "rendimiento_anual_pesos": "68000.00",
+          "ganancia_total_plazo": "34000.00",
+          "pago_mensual_pptx": 5667,
+          "pago_mensual_formula": 5667,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.175",
+          "fuente": "pptx",
+          "ganancia_pptx": 70000,
+          "ganancia_formula": 70000,
+          "rendimiento_mensual_pesos": "5833.33",
+          "rendimiento_anual_pesos": "70000.00",
+          "ganancia_total_plazo": "70000.00",
+          "pago_mensual_pptx": 5833,
+          "pago_mensual_formula": 5833,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.18",
+          "fuente": "pptx",
+          "ganancia_pptx": 108000,
+          "ganancia_formula": 108000,
+          "rendimiento_mensual_pesos": "6000.00",
+          "rendimiento_anual_pesos": "72000.00",
+          "ganancia_total_plazo": "108000.00",
+          "pago_mensual_pptx": 6000,
+          "pago_mensual_formula": 6000,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.185",
+          "fuente": "pptx",
+          "ganancia_pptx": 148000,
+          "ganancia_formula": 148000,
+          "rendimiento_mensual_pesos": "6166.67",
+          "rendimiento_anual_pesos": "74000.00",
+          "ganancia_total_plazo": "148000.00",
+          "pago_mensual_pptx": 6167,
+          "pago_mensual_formula": 6167,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.19",
+          "fuente": "pptx",
+          "ganancia_pptx": 38000,
+          "ganancia_formula": 38000,
+          "rendimiento_mensual_pesos": "6333.33",
+          "rendimiento_anual_pesos": "76000.00",
+          "ganancia_total_plazo": "38000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.195",
+          "fuente": "pptx",
+          "ganancia_pptx": 78000,
+          "ganancia_formula": 78000,
+          "rendimiento_mensual_pesos": "6500.00",
+          "rendimiento_anual_pesos": "78000.00",
+          "ganancia_total_plazo": "78000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 120000,
+          "ganancia_formula": 120000,
+          "rendimiento_mensual_pesos": "6666.67",
+          "rendimiento_anual_pesos": "80000.00",
+          "ganancia_total_plazo": "120000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.205",
+          "fuente": "pptx",
+          "ganancia_pptx": 164000,
+          "ganancia_formula": 164000,
+          "rendimiento_mensual_pesos": "6833.33",
+          "rendimiento_anual_pesos": "82000.00",
+          "ganancia_total_plazo": "164000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "500000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.17",
+          "fuente": "pptx",
+          "ganancia_pptx": 42500,
+          "ganancia_formula": 42500,
+          "rendimiento_mensual_pesos": "7083.33",
+          "rendimiento_anual_pesos": "85000.00",
+          "ganancia_total_plazo": "42500.00",
+          "pago_mensual_pptx": 7083,
+          "pago_mensual_formula": 7083,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.175",
+          "fuente": "pptx",
+          "ganancia_pptx": 87500,
+          "ganancia_formula": 87500,
+          "rendimiento_mensual_pesos": "7291.67",
+          "rendimiento_anual_pesos": "87500.00",
+          "ganancia_total_plazo": "87500.00",
+          "pago_mensual_pptx": 7292,
+          "pago_mensual_formula": 7292,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.18",
+          "fuente": "pptx",
+          "ganancia_pptx": 135000,
+          "ganancia_formula": 135000,
+          "rendimiento_mensual_pesos": "7500.00",
+          "rendimiento_anual_pesos": "90000.00",
+          "ganancia_total_plazo": "135000.00",
+          "pago_mensual_pptx": 7500,
+          "pago_mensual_formula": 7500,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.185",
+          "fuente": "pptx",
+          "ganancia_pptx": 185000,
+          "ganancia_formula": 185000,
+          "rendimiento_mensual_pesos": "7708.33",
+          "rendimiento_anual_pesos": "92500.00",
+          "ganancia_total_plazo": "185000.00",
+          "pago_mensual_pptx": 7708,
+          "pago_mensual_formula": 7708,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.19",
+          "fuente": "pptx",
+          "ganancia_pptx": 47500,
+          "ganancia_formula": 47500,
+          "rendimiento_mensual_pesos": "7916.67",
+          "rendimiento_anual_pesos": "95000.00",
+          "ganancia_total_plazo": "47500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.195",
+          "fuente": "pptx",
+          "ganancia_pptx": 97500,
+          "ganancia_formula": 97500,
+          "rendimiento_mensual_pesos": "8125.00",
+          "rendimiento_anual_pesos": "97500.00",
+          "ganancia_total_plazo": "97500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 150000,
+          "ganancia_formula": 150000,
+          "rendimiento_mensual_pesos": "8333.33",
+          "rendimiento_anual_pesos": "100000.00",
+          "ganancia_total_plazo": "150000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.205",
+          "fuente": "pptx",
+          "ganancia_pptx": 205000,
+          "ganancia_formula": 205000,
+          "rendimiento_mensual_pesos": "8541.67",
+          "rendimiento_anual_pesos": "102500.00",
+          "ganancia_total_plazo": "205000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "600000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.175",
+          "fuente": "pptx",
+          "ganancia_pptx": 52500,
+          "ganancia_formula": 52500,
+          "rendimiento_mensual_pesos": "8750.00",
+          "rendimiento_anual_pesos": "105000.00",
+          "ganancia_total_plazo": "52500.00",
+          "pago_mensual_pptx": 8750,
+          "pago_mensual_formula": 8750,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.18",
+          "fuente": "pptx",
+          "ganancia_pptx": 108000,
+          "ganancia_formula": 108000,
+          "rendimiento_mensual_pesos": "9000.00",
+          "rendimiento_anual_pesos": "108000.00",
+          "ganancia_total_plazo": "108000.00",
+          "pago_mensual_pptx": 9000,
+          "pago_mensual_formula": 9000,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.185",
+          "fuente": "pptx",
+          "ganancia_pptx": 166500,
+          "ganancia_formula": 166500,
+          "rendimiento_mensual_pesos": "9250.00",
+          "rendimiento_anual_pesos": "111000.00",
+          "ganancia_total_plazo": "166500.00",
+          "pago_mensual_pptx": 9250,
+          "pago_mensual_formula": 9250,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.19",
+          "fuente": "pptx",
+          "ganancia_pptx": 228000,
+          "ganancia_formula": 228000,
+          "rendimiento_mensual_pesos": "9500.00",
+          "rendimiento_anual_pesos": "114000.00",
+          "ganancia_total_plazo": "228000.00",
+          "pago_mensual_pptx": 9500,
+          "pago_mensual_formula": 9500,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.195",
+          "fuente": "pptx",
+          "ganancia_pptx": 58500,
+          "ganancia_formula": 58500,
+          "rendimiento_mensual_pesos": "9750.00",
+          "rendimiento_anual_pesos": "117000.00",
+          "ganancia_total_plazo": "58500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 120000,
+          "ganancia_formula": 120000,
+          "rendimiento_mensual_pesos": "10000.00",
+          "rendimiento_anual_pesos": "120000.00",
+          "ganancia_total_plazo": "120000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.205",
+          "fuente": "pptx",
+          "ganancia_pptx": 184500,
+          "ganancia_formula": 184500,
+          "rendimiento_mensual_pesos": "10250.00",
+          "rendimiento_anual_pesos": "123000.00",
+          "ganancia_total_plazo": "184500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.21",
+          "fuente": "pptx",
+          "ganancia_pptx": 252000,
+          "ganancia_formula": 252000,
+          "rendimiento_mensual_pesos": "10500.00",
+          "rendimiento_anual_pesos": "126000.00",
+          "ganancia_total_plazo": "252000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "700000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.175",
+          "fuente": "pptx",
+          "ganancia_pptx": 61250,
+          "ganancia_formula": 61250,
+          "rendimiento_mensual_pesos": "10208.33",
+          "rendimiento_anual_pesos": "122500.00",
+          "ganancia_total_plazo": "61250.00",
+          "pago_mensual_pptx": 10208,
+          "pago_mensual_formula": 10208,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.18",
+          "fuente": "pptx",
+          "ganancia_pptx": 126000,
+          "ganancia_formula": 126000,
+          "rendimiento_mensual_pesos": "10500.00",
+          "rendimiento_anual_pesos": "126000.00",
+          "ganancia_total_plazo": "126000.00",
+          "pago_mensual_pptx": 10500,
+          "pago_mensual_formula": 10500,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.185",
+          "fuente": "pptx",
+          "ganancia_pptx": 194250,
+          "ganancia_formula": 194250,
+          "rendimiento_mensual_pesos": "10791.67",
+          "rendimiento_anual_pesos": "129500.00",
+          "ganancia_total_plazo": "194250.00",
+          "pago_mensual_pptx": 10792,
+          "pago_mensual_formula": 10792,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.19",
+          "fuente": "pptx",
+          "ganancia_pptx": 266000,
+          "ganancia_formula": 266000,
+          "rendimiento_mensual_pesos": "11083.33",
+          "rendimiento_anual_pesos": "133000.00",
+          "ganancia_total_plazo": "266000.00",
+          "pago_mensual_pptx": 11083,
+          "pago_mensual_formula": 11083,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.195",
+          "fuente": "pptx",
+          "ganancia_pptx": 68250,
+          "ganancia_formula": 68250,
+          "rendimiento_mensual_pesos": "11375.00",
+          "rendimiento_anual_pesos": "136500.00",
+          "ganancia_total_plazo": "68250.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 140000,
+          "ganancia_formula": 140000,
+          "rendimiento_mensual_pesos": "11666.67",
+          "rendimiento_anual_pesos": "140000.00",
+          "ganancia_total_plazo": "140000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.205",
+          "fuente": "pptx",
+          "ganancia_pptx": 215250,
+          "ganancia_formula": 215250,
+          "rendimiento_mensual_pesos": "11958.33",
+          "rendimiento_anual_pesos": "143500.00",
+          "ganancia_total_plazo": "215250.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.21",
+          "fuente": "pptx",
+          "ganancia_pptx": 294000,
+          "ganancia_formula": 294000,
+          "rendimiento_mensual_pesos": "12250.00",
+          "rendimiento_anual_pesos": "147000.00",
+          "ganancia_total_plazo": "294000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "800000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.18",
+          "fuente": "pptx",
+          "ganancia_pptx": 72000,
+          "ganancia_formula": 72000,
+          "rendimiento_mensual_pesos": "12000.00",
+          "rendimiento_anual_pesos": "144000.00",
+          "ganancia_total_plazo": "72000.00",
+          "pago_mensual_pptx": 10208,
+          "pago_mensual_formula": 12000,
+          "pptx_con_error": [
+            "pago_mensual"
+          ],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.185",
+          "fuente": "pptx",
+          "ganancia_pptx": 126000,
+          "ganancia_formula": 148000,
+          "rendimiento_mensual_pesos": "12333.33",
+          "rendimiento_anual_pesos": "148000.00",
+          "ganancia_total_plazo": "148000.00",
+          "pago_mensual_pptx": 10500,
+          "pago_mensual_formula": 12333,
+          "pptx_con_error": [
+            "ganancia",
+            "pago_mensual"
+          ],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.19",
+          "fuente": "pptx",
+          "ganancia_pptx": 194250,
+          "ganancia_formula": 228000,
+          "rendimiento_mensual_pesos": "12666.67",
+          "rendimiento_anual_pesos": "152000.00",
+          "ganancia_total_plazo": "228000.00",
+          "pago_mensual_pptx": 10792,
+          "pago_mensual_formula": 12667,
+          "pptx_con_error": [
+            "ganancia",
+            "pago_mensual"
+          ],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.195",
+          "fuente": "pptx",
+          "ganancia_pptx": 266000,
+          "ganancia_formula": 312000,
+          "rendimiento_mensual_pesos": "13000.00",
+          "rendimiento_anual_pesos": "156000.00",
+          "ganancia_total_plazo": "312000.00",
+          "pago_mensual_pptx": 11083,
+          "pago_mensual_formula": 13000,
+          "pptx_con_error": [
+            "ganancia",
+            "pago_mensual"
+          ],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 80000,
+          "ganancia_formula": 80000,
+          "rendimiento_mensual_pesos": "13333.33",
+          "rendimiento_anual_pesos": "160000.00",
+          "ganancia_total_plazo": "80000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.205",
+          "fuente": "pptx",
+          "ganancia_pptx": 140000,
+          "ganancia_formula": 164000,
+          "rendimiento_mensual_pesos": "13666.67",
+          "rendimiento_anual_pesos": "164000.00",
+          "ganancia_total_plazo": "164000.00",
+          "pptx_con_error": [
+            "ganancia"
+          ],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.21",
+          "fuente": "pptx",
+          "ganancia_pptx": 215250,
+          "ganancia_formula": 252000,
+          "rendimiento_mensual_pesos": "14000.00",
+          "rendimiento_anual_pesos": "168000.00",
+          "ganancia_total_plazo": "252000.00",
+          "pptx_con_error": [
+            "ganancia"
+          ],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.215",
+          "fuente": "pptx",
+          "ganancia_pptx": 294000,
+          "ganancia_formula": 344000,
+          "rendimiento_mensual_pesos": "14333.33",
+          "rendimiento_anual_pesos": "172000.00",
+          "ganancia_total_plazo": "344000.00",
+          "pptx_con_error": [
+            "ganancia"
+          ],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "900000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.18",
+          "fuente": "pptx",
+          "ganancia_pptx": 81000,
+          "ganancia_formula": 81000,
+          "rendimiento_mensual_pesos": "13500.00",
+          "rendimiento_anual_pesos": "162000.00",
+          "ganancia_total_plazo": "81000.00",
+          "pago_mensual_pptx": 13500,
+          "pago_mensual_formula": 13500,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.185",
+          "fuente": "pptx",
+          "ganancia_pptx": 166500,
+          "ganancia_formula": 166500,
+          "rendimiento_mensual_pesos": "13875.00",
+          "rendimiento_anual_pesos": "166500.00",
+          "ganancia_total_plazo": "166500.00",
+          "pago_mensual_pptx": 13875,
+          "pago_mensual_formula": 13875,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.19",
+          "fuente": "pptx",
+          "ganancia_pptx": 256500,
+          "ganancia_formula": 256500,
+          "rendimiento_mensual_pesos": "14250.00",
+          "rendimiento_anual_pesos": "171000.00",
+          "ganancia_total_plazo": "256500.00",
+          "pago_mensual_pptx": 14250,
+          "pago_mensual_formula": 14250,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.195",
+          "fuente": "pptx",
+          "ganancia_pptx": 351000,
+          "ganancia_formula": 351000,
+          "rendimiento_mensual_pesos": "14625.00",
+          "rendimiento_anual_pesos": "175500.00",
+          "ganancia_total_plazo": "351000.00",
+          "pago_mensual_pptx": 14625,
+          "pago_mensual_formula": 14625,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 90000,
+          "ganancia_formula": 90000,
+          "rendimiento_mensual_pesos": "15000.00",
+          "rendimiento_anual_pesos": "180000.00",
+          "ganancia_total_plazo": "90000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.205",
+          "fuente": "pptx",
+          "ganancia_pptx": 184500,
+          "ganancia_formula": 184500,
+          "rendimiento_mensual_pesos": "15375.00",
+          "rendimiento_anual_pesos": "184500.00",
+          "ganancia_total_plazo": "184500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.21",
+          "fuente": "pptx",
+          "ganancia_pptx": 283500,
+          "ganancia_formula": 283500,
+          "rendimiento_mensual_pesos": "15750.00",
+          "rendimiento_anual_pesos": "189000.00",
+          "ganancia_total_plazo": "283500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.215",
+          "fuente": "pptx",
+          "ganancia_pptx": 387000,
+          "ganancia_formula": 387000,
+          "rendimiento_mensual_pesos": "16125.00",
+          "rendimiento_anual_pesos": "193500.00",
+          "ganancia_total_plazo": "387000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "1000000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.185",
+          "fuente": "pptx",
+          "ganancia_pptx": 92500,
+          "ganancia_formula": 92500,
+          "rendimiento_mensual_pesos": "15416.67",
+          "rendimiento_anual_pesos": "185000.00",
+          "ganancia_total_plazo": "92500.00",
+          "pago_mensual_pptx": 15417,
+          "pago_mensual_formula": 15417,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.19",
+          "fuente": "pptx",
+          "ganancia_pptx": 190000,
+          "ganancia_formula": 190000,
+          "rendimiento_mensual_pesos": "15833.33",
+          "rendimiento_anual_pesos": "190000.00",
+          "ganancia_total_plazo": "190000.00",
+          "pago_mensual_pptx": 15833,
+          "pago_mensual_formula": 15833,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.195",
+          "fuente": "pptx",
+          "ganancia_pptx": 292500,
+          "ganancia_formula": 292500,
+          "rendimiento_mensual_pesos": "16250.00",
+          "rendimiento_anual_pesos": "195000.00",
+          "ganancia_total_plazo": "292500.00",
+          "pago_mensual_pptx": 16250,
+          "pago_mensual_formula": 16250,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 400000,
+          "ganancia_formula": 400000,
+          "rendimiento_mensual_pesos": "16666.67",
+          "rendimiento_anual_pesos": "200000.00",
+          "ganancia_total_plazo": "400000.00",
+          "pago_mensual_pptx": 16667,
+          "pago_mensual_formula": 16667,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.205",
+          "fuente": "pptx",
+          "ganancia_pptx": 102500,
+          "ganancia_formula": 102500,
+          "rendimiento_mensual_pesos": "17083.33",
+          "rendimiento_anual_pesos": "205000.00",
+          "ganancia_total_plazo": "102500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.21",
+          "fuente": "pptx",
+          "ganancia_pptx": 210000,
+          "ganancia_formula": 210000,
+          "rendimiento_mensual_pesos": "17500.00",
+          "rendimiento_anual_pesos": "210000.00",
+          "ganancia_total_plazo": "210000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.215",
+          "fuente": "pptx",
+          "ganancia_pptx": 322500,
+          "ganancia_formula": 322500,
+          "rendimiento_mensual_pesos": "17916.67",
+          "rendimiento_anual_pesos": "215000.00",
+          "ganancia_total_plazo": "322500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.22",
+          "fuente": "pptx",
+          "ganancia_pptx": 440000,
+          "ganancia_formula": 440000,
+          "rendimiento_mensual_pesos": "18333.33",
+          "rendimiento_anual_pesos": "220000.00",
+          "ganancia_total_plazo": "440000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "1500000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.185",
+          "fuente": "pptx",
+          "ganancia_pptx": 138750,
+          "ganancia_formula": 138750,
+          "rendimiento_mensual_pesos": "23125.00",
+          "rendimiento_anual_pesos": "277500.00",
+          "ganancia_total_plazo": "138750.00",
+          "pago_mensual_pptx": 23125,
+          "pago_mensual_formula": 23125,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.19",
+          "fuente": "pptx",
+          "ganancia_pptx": 285000,
+          "ganancia_formula": 285000,
+          "rendimiento_mensual_pesos": "23750.00",
+          "rendimiento_anual_pesos": "285000.00",
+          "ganancia_total_plazo": "285000.00",
+          "pago_mensual_pptx": 23750,
+          "pago_mensual_formula": 23750,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.195",
+          "fuente": "pptx",
+          "ganancia_pptx": 438750,
+          "ganancia_formula": 438750,
+          "rendimiento_mensual_pesos": "24375.00",
+          "rendimiento_anual_pesos": "292500.00",
+          "ganancia_total_plazo": "438750.00",
+          "pago_mensual_pptx": 24375,
+          "pago_mensual_formula": 24375,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 600000,
+          "ganancia_formula": 600000,
+          "rendimiento_mensual_pesos": "25000.00",
+          "rendimiento_anual_pesos": "300000.00",
+          "ganancia_total_plazo": "600000.00",
+          "pago_mensual_pptx": 25000,
+          "pago_mensual_formula": 25000,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.205",
+          "fuente": "pptx",
+          "ganancia_pptx": 153750,
+          "ganancia_formula": 153750,
+          "rendimiento_mensual_pesos": "25625.00",
+          "rendimiento_anual_pesos": "307500.00",
+          "ganancia_total_plazo": "153750.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.21",
+          "fuente": "pptx",
+          "ganancia_pptx": 315000,
+          "ganancia_formula": 315000,
+          "rendimiento_mensual_pesos": "26250.00",
+          "rendimiento_anual_pesos": "315000.00",
+          "ganancia_total_plazo": "315000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.215",
+          "fuente": "pptx",
+          "ganancia_pptx": 483750,
+          "ganancia_formula": 483750,
+          "rendimiento_mensual_pesos": "26875.00",
+          "rendimiento_anual_pesos": "322500.00",
+          "ganancia_total_plazo": "483750.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.22",
+          "fuente": "pptx",
+          "ganancia_pptx": 660000,
+          "ganancia_formula": 660000,
+          "rendimiento_mensual_pesos": "27500.00",
+          "rendimiento_anual_pesos": "330000.00",
+          "ganancia_total_plazo": "660000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "2000000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.185",
+          "fuente": "decision_usuario_2026-10-01",
+          "ganancia_pptx": null,
+          "ganancia_formula": 185000,
+          "rendimiento_mensual_pesos": "30833.33",
+          "rendimiento_anual_pesos": "370000.00",
+          "ganancia_total_plazo": "185000.00",
+          "pago_mensual_pptx": null,
+          "pago_mensual_formula": 30833,
+          "pptx_con_error": [],
+          "pptx_dice_na": true
+        },
+        "12": {
+          "tasa": "0.19",
+          "fuente": "decision_usuario_2026-10-01",
+          "ganancia_pptx": null,
+          "ganancia_formula": 380000,
+          "rendimiento_mensual_pesos": "31666.67",
+          "rendimiento_anual_pesos": "380000.00",
+          "ganancia_total_plazo": "380000.00",
+          "pago_mensual_pptx": null,
+          "pago_mensual_formula": 31667,
+          "pptx_con_error": [],
+          "pptx_dice_na": true
+        },
+        "18": {
+          "tasa": "0.195",
+          "fuente": "decision_usuario_2026-10-01",
+          "ganancia_pptx": null,
+          "ganancia_formula": 585000,
+          "rendimiento_mensual_pesos": "32500.00",
+          "rendimiento_anual_pesos": "390000.00",
+          "ganancia_total_plazo": "585000.00",
+          "pago_mensual_pptx": null,
+          "pago_mensual_formula": 32500,
+          "pptx_con_error": [],
+          "pptx_dice_na": true
+        },
+        "24": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 800000,
+          "ganancia_formula": 800000,
+          "rendimiento_mensual_pesos": "33333.33",
+          "rendimiento_anual_pesos": "400000.00",
+          "ganancia_total_plazo": "800000.00",
+          "pago_mensual_pptx": 33333,
+          "pago_mensual_formula": 33333,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "36": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 1200000,
+          "ganancia_formula": 1200000,
+          "rendimiento_mensual_pesos": "33333.33",
+          "rendimiento_anual_pesos": "400000.00",
+          "ganancia_total_plazo": "1200000.00",
+          "pago_mensual_pptx": 33333,
+          "pago_mensual_formula": 33333,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.205",
+          "fuente": "decision_usuario_2026-10-01",
+          "ganancia_pptx": null,
+          "ganancia_formula": 205000,
+          "rendimiento_mensual_pesos": "34166.67",
+          "rendimiento_anual_pesos": "410000.00",
+          "ganancia_total_plazo": "205000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": true
+        },
+        "12": {
+          "tasa": "0.21",
+          "fuente": "decision_usuario_2026-10-01",
+          "ganancia_pptx": null,
+          "ganancia_formula": 420000,
+          "rendimiento_mensual_pesos": "35000.00",
+          "rendimiento_anual_pesos": "420000.00",
+          "ganancia_total_plazo": "420000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": true
+        },
+        "18": {
+          "tasa": "0.215",
+          "fuente": "decision_usuario_2026-10-01",
+          "ganancia_pptx": null,
+          "ganancia_formula": 645000,
+          "rendimiento_mensual_pesos": "35833.33",
+          "rendimiento_anual_pesos": "430000.00",
+          "ganancia_total_plazo": "645000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": true
+        },
+        "24": {
+          "tasa": "0.22",
+          "fuente": "pptx",
+          "ganancia_pptx": 880000,
+          "ganancia_formula": 880000,
+          "rendimiento_mensual_pesos": "36666.67",
+          "rendimiento_anual_pesos": "440000.00",
+          "ganancia_total_plazo": "880000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "36": {
+          "tasa": "0.22",
+          "fuente": "pptx",
+          "ganancia_pptx": 1320000,
+          "ganancia_formula": 1320000,
+          "rendimiento_mensual_pesos": "36666.67",
+          "rendimiento_anual_pesos": "440000.00",
+          "ganancia_total_plazo": "1320000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    },
+    "4200000": {
+      "mensual": {
+        "6": {
+          "tasa": "0.185",
+          "fuente": "pptx",
+          "ganancia_pptx": 388500,
+          "ganancia_formula": 388500,
+          "rendimiento_mensual_pesos": "64750.00",
+          "rendimiento_anual_pesos": "777000.00",
+          "ganancia_total_plazo": "388500.00",
+          "pago_mensual_pptx": 64750,
+          "pago_mensual_formula": 64750,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.19",
+          "fuente": "pptx",
+          "ganancia_pptx": 798000,
+          "ganancia_formula": 798000,
+          "rendimiento_mensual_pesos": "66500.00",
+          "rendimiento_anual_pesos": "798000.00",
+          "ganancia_total_plazo": "798000.00",
+          "pago_mensual_pptx": 66500,
+          "pago_mensual_formula": 66500,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.195",
+          "fuente": "pptx",
+          "ganancia_pptx": 1228500,
+          "ganancia_formula": 1228500,
+          "rendimiento_mensual_pesos": "68250.00",
+          "rendimiento_anual_pesos": "819000.00",
+          "ganancia_total_plazo": "1228500.00",
+          "pago_mensual_pptx": 68250,
+          "pago_mensual_formula": 68250,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.2",
+          "fuente": "pptx",
+          "ganancia_pptx": 1680000,
+          "ganancia_formula": 1680000,
+          "rendimiento_mensual_pesos": "70000.00",
+          "rendimiento_anual_pesos": "840000.00",
+          "ganancia_total_plazo": "1680000.00",
+          "pago_mensual_pptx": 70000,
+          "pago_mensual_formula": 70000,
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      },
+      "final": {
+        "6": {
+          "tasa": "0.205",
+          "fuente": "pptx",
+          "ganancia_pptx": 430500,
+          "ganancia_formula": 430500,
+          "rendimiento_mensual_pesos": "71750.00",
+          "rendimiento_anual_pesos": "861000.00",
+          "ganancia_total_plazo": "430500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "12": {
+          "tasa": "0.21",
+          "fuente": "pptx",
+          "ganancia_pptx": 882000,
+          "ganancia_formula": 882000,
+          "rendimiento_mensual_pesos": "73500.00",
+          "rendimiento_anual_pesos": "882000.00",
+          "ganancia_total_plazo": "882000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "18": {
+          "tasa": "0.215",
+          "fuente": "pptx",
+          "ganancia_pptx": 1354500,
+          "ganancia_formula": 1354500,
+          "rendimiento_mensual_pesos": "75250.00",
+          "rendimiento_anual_pesos": "903000.00",
+          "ganancia_total_plazo": "1354500.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        },
+        "24": {
+          "tasa": "0.22",
+          "fuente": "pptx",
+          "ganancia_pptx": 1848000,
+          "ganancia_formula": 1848000,
+          "rendimiento_mensual_pesos": "77000.00",
+          "rendimiento_anual_pesos": "924000.00",
+          "ganancia_total_plazo": "1848000.00",
+          "pptx_con_error": [],
+          "pptx_dice_na": false
+        }
+      }
+    }
+  }
+}

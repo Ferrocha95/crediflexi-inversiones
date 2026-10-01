@@ -1,6 +1,6 @@
 {
   "_leeme": "Semilla INICIAL. Todo es editable desde la app. Generado por codigo a partir de los archivos originales (sin transcripcion manual). Las tasas estan como texto decimal para evitar errores de punto flotante.",
-  "generado": "2026-09-30",
+  "generado": "2026-10-01",
   "entidades": [
     {
       "clave": "CREDIFLEXI",
@@ -17,10 +17,31 @@
     "pago_mensual": "capital * tasa_anual / 12",
     "ganancia_total": "capital * tasa_anual * meses / 12",
     "redondeo_pptx": "pesos enteros, mitad hacia arriba (512.5 -> 513)",
-    "redondeo_app_por_defecto": "2 decimales; el usuario confirma en la vista previa"
+    "redondeo_app_por_defecto": "2 decimales; el usuario confirma en la vista previa",
+    "rendimiento_mensual_pesos": "capital * tasa_anual / 12",
+    "rendimiento_anual_pesos": "capital * tasa_anual (equivalente a 12 meses, aunque el plazo sea menor)",
+    "ganancia_total_plazo": "capital * tasa_anual * meses / 12",
+    "salidas_de_cotizacion": [
+      "rendimiento_mensual_pesos",
+      "rendimiento_anual_pesos",
+      "ganancia_total_plazo"
+    ],
+    "etiquetas_cotizacion": {
+      "mensual": {
+        "rendimiento_mensual_pesos": "Pago mensual",
+        "rendimiento_anual_pesos": "Rendimiento anual equivalente (12 meses)",
+        "ganancia_total_plazo": "Ganancia total en el plazo"
+      },
+      "final": {
+        "rendimiento_mensual_pesos": "Rendimiento mensual equivalente (se paga al final del plazo)",
+        "rendimiento_anual_pesos": "Rendimiento anual equivalente (12 meses)",
+        "ganancia_total_plazo": "Ganancia total al final del plazo"
+      }
+    },
+    "nota_etiquetas": "En final del plazo no hay pagos mensuales: el rendimiento mensual es solo un equivalente. Si el plazo es menor a 12 meses, el anual es un equivalente y NO lo que recibira el cliente; siempre se muestra junto a la ganancia total del plazo."
   },
   "tasas_mxn": {
-    "fuente": "TABLA_RENDIMIENTOS_EJEMPLOS.pptx (subido 2026-09-30, 'la buena' segun el usuario)",
+    "fuente": "TABLA_RENDIMIENTOS_EJEMPLOS.pptx (version del 2026-10-01, 'tasas actualizadas tal cual' segun el usuario)",
     "limite_inferior_inclusivo": true,
     "aplica_a_entidades": [
       "CREDIFLEXI",
@@ -34,7 +55,7 @@
         "montos_de_referencia_pptx": [
           30000
         ],
-        "estatus": "POR_CONFIRMAR_BLOQUEA_COTIZACION",
+        "estatus": "SEGUN_USUARIO_PPTX",
         "mensual": {
           "6": "0.2",
           "12": "0.205",
@@ -47,7 +68,13 @@
           "18": "0.23",
           "24": "0.235"
         },
-        "notas": "El pptx trae 20%-21.5% (mensual) para $30,000; Excel y folleto traen 16%-17.5% para 30,000-200,000. Una tasa que BAJA al subir el monto contradice el manual ('a mayor monto, mayor tasa')."
+        "notas": "Tramo INFERIDO: el pptx solo trae un renglon por debajo de $200,000 ($30,000) y se aplica a $30,000-$199,999 (mismos limites del Excel). La tasa baja de 20.0% a 16.5% al llegar a $200,000; es lo que dice el pptx y el usuario lo confirmo. La app debe mostrar un aviso NO bloqueante cuando la tasa de un monto menor supere la del tramo siguiente.",
+        "plazos_disponibles": [
+          6,
+          12,
+          18,
+          24
+        ]
       },
       {
         "desde": 200000,
@@ -69,7 +96,13 @@
           "18": "0.195",
           "24": "0.2"
         },
-        "notas": null
+        "notas": null,
+        "plazos_disponibles": [
+          6,
+          12,
+          18,
+          24
+        ]
       },
       {
         "desde": 400000,
@@ -91,7 +124,13 @@
           "18": "0.2",
           "24": "0.205"
         },
-        "notas": null
+        "notas": null,
+        "plazos_disponibles": [
+          6,
+          12,
+          18,
+          24
+        ]
       },
       {
         "desde": 600000,
@@ -113,7 +152,13 @@
           "18": "0.205",
           "24": "0.21"
         },
-        "notas": null
+        "notas": null,
+        "plazos_disponibles": [
+          6,
+          12,
+          18,
+          24
+        ]
       },
       {
         "desde": 800000,
@@ -135,7 +180,13 @@
           "18": "0.21",
           "24": "0.215"
         },
-        "notas": null
+        "notas": null,
+        "plazos_disponibles": [
+          6,
+          12,
+          18,
+          24
+        ]
       },
       {
         "desde": 1000000,
@@ -158,24 +209,34 @@
           "18": "0.215",
           "24": "0.22"
         },
-        "notas": null
+        "notas": null,
+        "plazos_disponibles": [
+          6,
+          12,
+          18,
+          24
+        ]
       }
     ],
-    "caso_2M_mas": {
-      "monto_ref": 2000000,
-      "plazos_meses": [
-        24,
-        36
-      ],
-      "mensual": {
-        "24": "0.2",
-        "36": "0.2"
+    "decisiones_usuario": [
+      {
+        "fecha": "2026-10-01",
+        "tema": "limites_y_tramo_inferior",
+        "texto": "El pptx manda tal cual sobre el folleto y el Excel: limite inferior inclusivo ($200,000 paga la tasa del tramo siguiente) y renglon de $30,000 al 20%."
       },
-      "final_del_plazo": {
-        "24": "0.22",
-        "36": "0.22"
-      },
-      "notas": "El pptx muestra 6 y 12 meses como N/A para $2,000,000 pero el renglon de $4,200,000 si ofrece 6-24 meses. Plazo de 36 meses solo aparece aqui."
+      {
+        "fecha": "2026-10-01",
+        "tema": "plazos",
+        "texto": "En cualquier monto se ofrecen 6, 12, 18 y 24 meses. A partir de $2,000,000 se usan las tasas del tramo de $1,000,000 y se agrega 36 meses (20.0% mensual / 22.0% final del plazo), unico plazo adicional con tasa en el pptx."
+      }
+    ],
+    "plazo_adicional": {
+      "plazo_meses": 36,
+      "aplica_desde_monto": 2000000,
+      "mensual": "0.2",
+      "final_del_plazo": "0.22",
+      "fuente": "lamina de $2,000,000 del pptx",
+      "notas": "36 meses solo existe para montos >= $2,000,000 porque es el unico monto donde el pptx trae tasa para ese plazo. Para ofrecerlo en otros tramos habria que capturar su tasa en la app."
     }
   },
   "tasas_usd": {
@@ -663,12 +724,13 @@
     "comision_bloqueada_al_cierre_de_mes": "se_pierde (POR_CONFIRMAR, editable)"
   },
   "discrepancias_abiertas": [
-    "D1 Limite de tramos: pptx 'Desde' inclusivo (200,000 -> 16.5%); Excel y folleto 'hasta' inclusivo (200,000 -> 16.0%). Afecta justo los montos redondos.",
-    "D2 Tramo 30,000-199,999: pptx 20%-21.5% vs Excel/folleto 16%-17.5%.",
-    "D3 $2,000,000: 6 y 12 meses N/A pero $4,200,000 si los ofrece; 36 meses solo en $2M.",
-    "D4 Lamina 8 del pptx ($800,000): 10 cifras copiadas de la lamina de $700,000 (pagos mensuales y ganancias).",
+    "D1 RESUELTA por decision del usuario (2026-10-01): el pptx manda; limite inferior inclusivo. Sigue habiendo contradiccion documental con el folleto y el Excel ('200,001').",
+    "D2 RESUELTA por decision del usuario (2026-10-01): $30,000 al 20.0% mensual; tramo inferido hasta $199,999. La tasa baja al llegar a $200,000 (aviso no bloqueante en la app).",
+    "D3 RESUELTA por decision del usuario (2026-10-01): en cualquier monto se ofrecen 6, 12, 18 y 24 meses; 36 solo >= $2,000,000. La lamina de $2,000,000 del pptx (N/A en 6 y 12) queda desactualizada respecto a esa decision.",
+    "D4 ABIERTA: la lamina de $800,000 del pptx sigue con 10 cifras copiadas de la de $700,000 (7 celdas). El motor da el valor de la formula y la prueba lo marca.",
     "D5 Calculadora Excel: 24% escrito a mano en 'SIMULADOR'; no existe en ninguna tabla.",
     "D6 Contrato machote (ambas entidades): 20% a 24 meses con $30,000; ninguna tabla lo da.",
     "D7 Tabla N3 nuevos: celda 6 meses/primer tramo no sigue el 70% de N1."
-  ]
+  ],
+  "version": "0.3"
 }
