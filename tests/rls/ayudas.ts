@@ -18,8 +18,12 @@ export function ordenadas(claves: readonly string[]): string[] {
   return [...claves].sort();
 }
 
-// Código de Postgres para "permission denied" (insufficient_privilege).
-export const PERMISO_DENEGADO = "42501";
+// Códigos de Postgres usados en las pruebas.
+export const PERMISO_DENEGADO = "42501"; // insufficient_privilege
+export const CHECK_VIOLADO = "23514"; // check_violation (y los raise de los triggers)
+export const UNICO_VIOLADO = "23505"; // unique_violation
+export const LLAVE_FORANEA_VIOLADA = "23503"; // foreign_key_violation
+export const VALOR_INVALIDO = "22P02"; // invalid_text_representation (enum)
 
 // Para anon: o no devuelve filas, o devuelve un error de permisos denegados.
 // Cualquier otro error (o cualquier fila) hace fallar la prueba.

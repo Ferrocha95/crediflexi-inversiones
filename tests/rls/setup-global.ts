@@ -1,17 +1,21 @@
 // Preparación global del proyecto "rls" de Vitest.
 //
-// 1. Lee URL y llaves de `supabase status -o json` sin imprimirlas nunca.
-// 2. Aborta si la URL no apunta a Supabase local.
-// 3. Limpia restos de corridas anteriores, crea los datos sintéticos y, al
-//    terminar, vuelve a limpiar y verifica que no quedó nada.
+// 1. Lee URL y llaves de Supabase local con entorno.ts (sin imprimirlas y
+//    abortando si la URL no es local).
+// 2. Limpia restos de corridas anteriores, crea los datos sintéticos y toma
+//    una foto de ellos.
+// 3. Al terminar, comprueba que los datos base siguen idénticos a la foto,
+//    vuelve a limpiar y verifica que no quedó nada.
 //
-// La llave secreta (service_role) solo vive en este archivo: a las pruebas
-// únicamente se les pasa la URL, la llave publicable y la contraseña sintética.
+// La llave secreta nunca se pasa a las pruebas por provide/inject: a ellas
+// solo llegan la URL, la llave publicable, la contraseña sintética, los ids y
+// la foto. Las pruebas que necesitan administrador la leen con admin.ts.
 
-import { execSync } from "node:child_process";
+import { isDeepStrictEqual } from "node:util";
 import { randomBytes } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { TestProject } from "vitest/node";
+import { OPCIONES_CLIENTE, leerEntornoLocal } from "./entorno";
 import {
   DOMINIO_PRUEBAS,
   MARCA,
@@ -23,92 +27,19 @@ import {
   type ClaveSucursal,
   type ClaveUsuario,
 } from "./fixtures";
-
-export interface IdsDatos {
-  idsOrganizaciones: Record<ClaveOrganizacion, string>;
-  idsSucursales: Record<ClaveSucursal, string>;
-  idsUsuarios: Record<ClaveUsuario, string>;
-}
+import { tomarFotoBase, type FotoBase, type IdsDatos } from "./foto";
 
 export interface DatosRls extends IdsDatos {
   url: string;
   llavePublicable: string;
   contrasena: string;
+  fotoBase: FotoBase;
 }
 
 declare module "vitest" {
   export interface ProvidedContext {
     rls: DatosRls;
   }
-}
-
-const MENSAJE_NO_CORRE =
-  "Supabase local no está corriendo. Ejecuta: npm run db:start";
-
-const HOSTS_LOCALES = new Set(["localhost", "127.0.0.1"]);
-
-interface EntornoLocal {
-  url: string;
-  llavePublicable: string;
-  llaveSecreta: string;
-}
-
-function leerEntornoLocal(): EntornoLocal {
-  let salida: string;
-  try {
-    // stdio en "pipe": nada de la salida (que incluye llaves) llega a la consola.
-    salida = execSync("npx supabase status -o json", {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-  } catch {
-    // No se reenvía el error original: podría contener la salida del comando.
-    throw new Error(MENSAJE_NO_CORRE);
-  }
-
-  let estado: Record<string, unknown>;
-  try {
-    estado = JSON.parse(salida) as Record<string, unknown>;
-  } catch {
-    throw new Error(MENSAJE_NO_CORRE);
-  }
-
-  const texto = (clave: string): string | undefined => {
-    const valor = estado[clave];
-    return typeof valor === "string" && valor !== "" ? valor : undefined;
-  };
-
-  const url = texto("API_URL");
-  const llavePublicable = texto("PUBLISHABLE_KEY") ?? texto("ANON_KEY");
-  const llaveSecreta = texto("SECRET_KEY") ?? texto("SERVICE_ROLE_KEY");
-
-  if (!url) {
-    throw new Error(MENSAJE_NO_CORRE);
-  }
-  if (!llavePublicable || !llaveSecreta) {
-    throw new Error(
-      "No se encontraron las llaves de Supabase local en `supabase status`. " +
-        "Revisa que Supabase local esté completo con: npm run db:status",
-    );
-  }
-
-  let host: string;
-  try {
-    host = new URL(url).hostname;
-  } catch {
-    throw new Error(
-      "La URL de Supabase que reporta `supabase status` no es válida. " +
-        "Revisa la instalación local con: npm run db:status",
-    );
-  }
-  if (!HOSTS_LOCALES.has(host)) {
-    throw new Error(
-      "Las pruebas de RLS solo corren contra Supabase local (localhost o 127.0.0.1), " +
-        "pero la URL apunta a otro servidor. Se abortó para no tocar un proyecto en la nube.",
-    );
-  }
-
-  return { url, llavePublicable, llaveSecreta };
 }
 
 function falla(accion: string, mensaje: string): never {
@@ -267,9 +198,7 @@ async function crearDatos(
 export default async function setup(project: TestProject) {
   const entorno = leerEntornoLocal();
 
-  const admin = createClient(entorno.url, entorno.llaveSecreta, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  });
+  const admin = createClient(entorno.url, entorno.llaveSecreta, OPCIONES_CLIENTE);
 
   // Contraseña sintética distinta en cada corrida; nunca se imprime.
   const contrasena = randomBytes(24).toString("base64url");
@@ -278,8 +207,10 @@ export default async function setup(project: TestProject) {
   await verificarLimpio(admin);
 
   let ids: IdsDatos;
+  let fotoBase: FotoBase;
   try {
     ids = await crearDatos(admin, contrasena);
+    fotoBase = await tomarFotoBase(admin, ids);
   } catch (error) {
     await limpiar(admin);
     throw error;
@@ -289,11 +220,39 @@ export default async function setup(project: TestProject) {
     url: entorno.url,
     llavePublicable: entorno.llavePublicable,
     contrasena,
+    fotoBase,
     ...ids,
   });
 
   return async () => {
-    await limpiar(admin);
-    await verificarLimpio(admin);
+    try {
+      await comprobarDatosBaseIntactos(admin, ids, fotoBase);
+    } finally {
+      await limpiar(admin);
+      await verificarLimpio(admin);
+    }
   };
+}
+
+// Comprobación final: los datos base deben seguir exactamente como se crearon.
+async function comprobarDatosBaseIntactos(
+  admin: SupabaseClient,
+  ids: IdsDatos,
+  inicial: FotoBase,
+): Promise<void> {
+  const final = await tomarFotoBase(admin, ids);
+  const distintas = (Object.keys(inicial) as (keyof FotoBase)[]).filter(
+    (parte) => !isDeepStrictEqual(inicial[parte], final[parte]),
+  );
+  if (distintas.length > 0) {
+    throw new Error(
+      `Comprobación final fallida: los datos base cambiaron durante las pruebas (${distintas.join(", ")}). ` +
+        "Alguna prueba modificó a E1–E6, D1, D2, G1, G2, sus sucursales u organizaciones.",
+    );
+  }
+  console.log(
+    `Comprobación final: los datos base quedaron idénticos a como se crearon ` +
+      `(${final.organizaciones.length} organizaciones, ${final.sucursales.length} sucursales, ` +
+      `${final.usuarios.length} usuarios, ${final.cuentas.length} cuentas).`,
+  );
 }
