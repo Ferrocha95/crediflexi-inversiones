@@ -71,7 +71,10 @@ describe("RLS escritura: nadie sin privilegios de administrador puede modificar 
     for (const tabla of TABLAS) {
       it(`${actor} no puede insertar en ${tabla} (42501) y no aparece ninguna fila nueva`, async () => {
         const nombre = `Intrusa ${sufijo()} ${MARCA}`;
-        const { data, error } = await clientes[actor].from(tabla).insert(filaNueva(tabla, nombre)).select("id");
+        // Sin .select(): con RETURNING, un insert permitido también devolvería
+        // 42501 si la fila nueva no pasa la política de lectura, y la prueba no
+        // distinguiría ese caso de un insert rechazado.
+        const { data, error } = await clientes[actor].from(tabla).insert(filaNueva(tabla, nombre));
 
         expect(data).toBeNull();
         expect(error?.code).toBe(PERMISO_DENEGADO);
