@@ -22,3 +22,8 @@
 - (t) La vista previa de la cotización debe mostrar el estatus del tramo (`SEGUN_USUARIO_PPTX` o `CONFIRMADA`).
 - (u) Si el tramo siguiente está POR_CONFIRMAR, el mensaje del aviso de coherencia no debe decir "Así lo define la tabla vigente".
 - (v) Las tres cifras de rendimiento del golden se calcularon con las mismas fórmulas del motor: verifican la implementación, no la fórmula. Lo independiente son las 140 cifras del pptx.
+- (w) Función `plazosDisponibles` en el dominio. Hoy `src/aplicacion/plazos.ts` la obtiene preguntando a `cotizar` plazo por plazo.
+- (x) `razonSocial` dentro del tipo `Semilla` del dominio. Hoy se lee aparte, con su propio esquema Zod (`src/aplicacion/entidades.ts`).
+- (y) El mensaje `MONTO_INVALIDO` del dominio dice "sin comas", pero la pantalla acepta comas de miles bien agrupadas.
+- (z) Fechas de inicio, término y pago de la vista previa (BLUEPRINT §11.2).
+- (aa) Tasas propias por entidad si Crediflexi y Rami Sise llegan a tener tablas distintas (hoy las dos usan la misma, por `aplica_a_entidades`).
