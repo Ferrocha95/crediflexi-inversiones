@@ -2,6 +2,7 @@ import { Decimal, RE_MONTO } from "../comun/decimal";
 import { crearError } from "../comun/errores";
 import { formatearMonto, listaEnEspanol } from "../comun/formato";
 import { exito, fallo, type Resultado } from "../comun/resultado";
+import { avisoDeCoherencia } from "./coherencia";
 import type { Esquema, Estatus, Moneda, Semilla, TablaTasas, Tramo } from "./semilla.esquema";
 
 export interface SolicitudTasa {
@@ -204,7 +205,8 @@ export function resolverTasa(semilla: Semilla, solicitud: SolicitudTasa): Result
   if (tramo.plazosDisponibles.includes(plazo)) {
     // La semilla garantiza que cada plazo disponible tiene tasa en ambos esquemas.
     const tasa = tramo.tasas[esquema].get(plazo)!;
-    return exito({ ...base, tasa, origen: "tramo" });
+    const aviso = avisoDeCoherencia(tabla, indice, esquema, plazo, tasa);
+    return exito({ ...base, tasa, origen: "tramo" }, aviso === null ? [] : [aviso]);
   }
 
   if (adicional !== null && plazo === adicional.plazoMeses) {

@@ -20,6 +20,11 @@ export function formatearPesos(monto: Decimal): string {
   return `${signo(monto)}$${conMiles(monto)}`;
 }
 
+/** Tasa como fracción -> "16.50%": 2 decimales, mitad hacia arriba. */
+export function formatearPorcentaje(tasa: Decimal): string {
+  return `${tasa.times(100).toFixed(2, ROUND_HALF_UP)}%`;
+}
+
 /** "$1,500,000.00 MXN" */
 export function formatearMonto(monto: Decimal, moneda: string): string {
   return `${formatearPesos(monto)} ${moneda}`;
