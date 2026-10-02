@@ -1,26 +1,165 @@
 @import "tailwindcss";
 
+/*
+ * Sistema de diseño: tema oscuro azul marino de la marca.
+ * Los colores son los mismos de src/componentes/diseno/tokens.ts (una prueba lo revisa).
+ */
+@theme {
+  --color-marino: #012553;
+  --color-marino-logo: #002050;
+  --color-marino-alto: #0E396D;
+  --color-hielo: #DAE9F8;
+  --color-hielo-tenue: #9DB6D6;
+  --color-blanco: #FFFFFF;
+  --color-verde: #00A010;
+  --color-verde-texto: #3CCB4C;
+  --color-amarillo: #F8C818;
+  --color-rojo: #F80000;
+  --color-error-texto: #FF9A8F;
+  --color-estatus-interesado: #A8D08D;
+  --color-estatus-intermitente: #FFD965;
+  --color-estatus-no-interesado: #F4B083;
+
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+
+  /* Escala tipográfica: 14 / 16 / 18 / 24 / 36 / 48. */
+  --text-cifra: 3rem;
+  --text-cifra--line-height: 1.1;
+
+  --ease-suave: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --shadow-elevada: 0 10px 30px -12px rgb(0 8 30 / 0.7), 0 0 0 1px rgb(218 233 248 / 0.08);
+}
+
+@custom-variant poca-transparencia (@media (prefers-reduced-transparency: reduce));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+  --duracion-corta: 150ms;
+  --duracion-media: 250ms;
+  --duracion-numero: 600ms;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-marino);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-blanco);
+  font-family: var(--font-sans);
+  /* Degradado tenue para que el vidrio tenga algo detrás; fijo para que no "salte" al hacer scroll. */
+  background:
+    radial-gradient(60rem 40rem at 85% -10%, rgb(14 57 109 / 0.9), transparent 70%),
+    radial-gradient(50rem 36rem at -10% 110%, rgb(14 57 109 / 0.6), transparent 70%),
+    var(--color-marino);
+  background-attachment: fixed;
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--color-hielo);
+  color: var(--color-marino);
+}
+
+/* Foco visible en todo lo que se puede enfocar con el teclado. */
+:focus-visible {
+  outline: 2px solid var(--color-hielo);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+@layer components {
+  /* Vidrio: solo en las tarjetas importantes (máximo 3 o 4 capas por pantalla). */
+  .vidrio {
+    background: rgb(14 57 109 / 0.55);
+    border: 1px solid rgb(218 233 248 / 0.15);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+  }
+
+  /* La barra inferior flota sobre el contenido: más opaca para que el texto siempre se lea. */
+  .barra-vidrio {
+    background: rgb(0 32 80 / 0.85);
+    border-top: 1px solid rgb(218 233 248 / 0.15);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+  }
+
+  .superficie {
+    background: var(--color-marino-alto);
+    border: 1px solid rgb(218 233 248 / 0.12);
+  }
+
+  /* Elevación al pasar el cursor, solo en tarjetas interactivas. */
+  .elevable {
+    transition:
+      transform var(--duracion-media) var(--ease-suave),
+      box-shadow var(--duracion-media) var(--ease-suave);
+  }
+  .elevable:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevada);
+  }
+
+  /* Esqueleto de carga con brillo. */
+  .esqueleto {
+    background: linear-gradient(
+      100deg,
+      rgb(218 233 248 / 0.08) 30%,
+      rgb(218 233 248 / 0.18) 50%,
+      rgb(218 233 248 / 0.08) 70%
+    );
+    background-size: 300% 100%;
+    animation: brillo 1.4s linear infinite;
+  }
+
+  /* Columna de dígitos del número animado. */
+  .odometro-tira {
+    transition: transform var(--duracion-numero) var(--ease-suave);
+  }
+}
+
+@keyframes brillo {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* Sin desenfoque: fondo opaco. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .vidrio {
+    background: var(--color-marino-alto);
+  }
+  .barra-vidrio {
+    background: var(--color-marino-logo);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .vidrio {
+    background: var(--color-marino-alto);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .barra-vidrio {
+    background: var(--color-marino-logo);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+  .elevable:hover {
+    transform: none;
+  }
 }
