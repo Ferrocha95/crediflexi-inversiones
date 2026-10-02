@@ -34,7 +34,7 @@ function salida(c: Cotizacion, clave: Salida): SalidaCotizada {
 }
 
 describe("cotizar", () => {
-  it("$500,000 a 12 meses al 17.5% mensual: 7,291.67 y 87,500.00", () => {
+  it("500,000 pesos a 12 meses al 17.5% mensual: 7,291.67 y 87,500.00", () => {
     const c = cotizarBien();
     expect(c.tasa).toBe("0.175");
     expect(salida(c, "rendimiento_mensual_pesos").redondeado).toBe("7291.67");
@@ -58,8 +58,8 @@ describe("cotizar", () => {
       plazo: 12,
     });
     expect(c.origenTasa).toBe("tramo");
-    expect(c.tramo).toEqual({ indice: 2, desde: "400000.00", hasta: "599999.99", estatus: "SEGUN_USUARIO_PPTX" });
-    expect(c.semilla).toEqual({ version: "0.3", generado: "2026-10-01" });
+    expect(c.tramo).toEqual({ indice: 2, desde: "400000.01", hasta: "600000.00", estatus: "CONFIRMADA" });
+    expect(c.semilla).toEqual({ version: "0.5", generado: "2026-10-02" });
   });
 
   it("entrega las salidas en el orden de la semilla", () => {
@@ -92,10 +92,10 @@ describe("cotizar", () => {
     );
   });
 
-  it("un empate a medio peso del pptx (512.50) se guarda en centavos sin redondear a pesos", () => {
+  it("un empate a medio peso (412.50) se guarda en centavos sin redondear a pesos", () => {
     const c = cotizarBien({ monto: "30000", plazo: 12 });
-    expect(salida(c, "rendimiento_mensual_pesos").exacto).toBe("512.5");
-    expect(salida(c, "rendimiento_mensual_pesos").redondeado).toBe("512.50");
+    expect(salida(c, "rendimiento_mensual_pesos").exacto).toBe("412.5");
+    expect(salida(c, "rendimiento_mensual_pesos").redondeado).toBe("412.50");
   });
 
   it("el anual no sale del mensual redondeado", () => {
@@ -103,12 +103,6 @@ describe("cotizar", () => {
     // 500,000 × 0.18 = 90,000.00, no 7,500.00 × 12 redondeado de nuevo.
     expect(salida(c, "rendimiento_anual_pesos").redondeado).toBe("90000.00");
     expect(salida(c, "ganancia_total_plazo").redondeado).toBe("135000.00");
-  });
-
-  it("el plazo adicional de 36 meses indica su origen", () => {
-    const c = cotizarBien({ monto: "2000000", plazo: 36 });
-    expect(c.origenTasa).toBe("plazo_adicional");
-    expect(salida(c, "ganancia_total_plazo").redondeado).toBe("1200000.00");
   });
 
   it("es serializable tal cual (listo para guardarse como snapshot)", () => {

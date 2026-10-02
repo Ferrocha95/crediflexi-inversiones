@@ -2,8 +2,8 @@ import golden from "../../golden/rendimientos_pptx.json";
 import { Decimal } from "../../../src/domain/comun/decimal";
 import { formatearCantidad } from "../../../src/domain/comun/formato";
 import { cotizar, type Cotizacion } from "../../../src/domain/interes/cotizar";
-import type { Esquema, Salida } from "../../../src/domain/tasas/semilla.esquema";
-import { base, salida, semillaReal } from "./ayudas";
+import type { Esquema } from "../../../src/domain/tasas/semilla.esquema";
+import { base, semillaReal } from "./ayudas";
 
 // Lectura del golden (solo datos: no cotiza al importarse) y un intento de
 // cotización que nunca lanza, para que una celda que no cotiza falle en su
@@ -14,16 +14,14 @@ const ESQUEMA_DEL_GOLDEN: Readonly<Record<string, Esquema>> = { mensual: "mensua
 
 export interface CeldaGolden {
   readonly tasa: string;
-  readonly fuente: string;
-  readonly ganancia_pptx: number | null;
+  /** Tramo esperado (0 a 5), calculado fuera del motor con "hasta" inclusivo. */
+  readonly tramo_indice: number;
   readonly ganancia_formula: number;
   readonly rendimiento_mensual_pesos: string;
   readonly rendimiento_anual_pesos: string;
   readonly ganancia_total_plazo: string;
-  readonly pago_mensual_pptx?: number | null;
+  /** Solo en el esquema mensual. */
   readonly pago_mensual_formula?: number;
-  readonly pptx_con_error: readonly string[];
-  readonly pptx_dice_na: boolean;
 }
 
 export interface Caso {
@@ -41,7 +39,8 @@ export const casos: readonly Caso[] = Object.entries(golden.casos).flatMap(([mon
       const esquema = ESQUEMA_DEL_GOLDEN[esquemaGolden];
       if (esquema === undefined) throw new Error(`Esquema desconocido en el golden: ${esquemaGolden}`);
       return {
-        nombre: `$${formatearCantidad(new Decimal(monto))} ${esquemaGolden} ${plazo} meses`,
+        // Sin "$" delante de la cifra: en los títulos de Vitest "$" seguido de un dígito se interpola.
+        nombre: `${formatearCantidad(new Decimal(monto))} pesos ${esquemaGolden} ${plazo} meses`,
         monto,
         esquemaGolden,
         esquema,
@@ -71,44 +70,3 @@ export function cotizacionDe(c: Caso, intento: Intento): Cotizacion {
   if (!intento.ok) throw new Error(`La celda ${c.nombre} no cotiza: ${intento.motivo}`);
   return intento.cotizacion;
 }
-
-/** Cifras del pptx comparables con el motor: nombre del campo en pptx_con_error y salida del motor. */
-const CIFRAS_PPTX = [
-  { campo: "ganancia", pptx: "ganancia_pptx", salida: "ganancia_total_plazo" },
-  { campo: "pago_mensual", pptx: "pago_mensual_pptx", salida: "rendimiento_mensual_pesos" },
-] as const;
-
-export interface CifraPptx {
-  readonly caso: Caso;
-  readonly campo: (typeof CIFRAS_PPTX)[number]["campo"];
-  readonly salida: Salida;
-  readonly pptx: Decimal;
-  readonly marcadaConError: boolean;
-}
-
-/** Todas las cifras que trae el pptx, tomadas solo del golden (las celdas de decisión del usuario no traen). */
-export const cifrasPptx: readonly CifraPptx[] = casos
-  .filter((c) => c.celda.fuente === "pptx")
-  .flatMap((caso) =>
-    CIFRAS_PPTX.flatMap((f) => {
-      const valor = caso.celda[f.pptx];
-      if (valor === undefined || valor === null) return [];
-      return [
-        {
-          caso,
-          campo: f.campo,
-          salida: f.salida,
-          pptx: new Decimal(String(valor)),
-          marcadaConError: caso.celda.pptx_con_error.includes(f.campo),
-        },
-      ];
-    }),
-  );
-
-/** Valor exacto del motor para una cifra del pptx, o null si la celda no cotizó. */
-export function motorDe(cifra: CifraPptx, intento: Intento): Decimal | null {
-  return intento.ok ? new Decimal(salida(intento.cotizacion, cifra.salida).exacto) : null;
-}
-
-/** Tolerancia contra el pptx: sus cifras vienen en pesos enteros. */
-export const TOLERANCIA_PPTX = new Decimal("0.50");

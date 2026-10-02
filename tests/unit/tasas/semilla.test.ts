@@ -27,12 +27,12 @@ function detallesDelFallo(json: unknown): string[] {
   return [...(r.error.detalles ?? [])];
 }
 
-describe("cargarSemilla: semilla real 0.3", () => {
+describe("cargarSemilla: semilla real 0.5", () => {
   const semilla = cargarBien(semillaJson);
 
   it("conserva versión y fecha de la semilla", () => {
-    expect(semilla.version).toBe("0.3");
-    expect(semilla.generado).toBe("2026-10-01");
+    expect(semilla.version).toBe("0.5");
+    expect(semilla.generado).toBe("2026-10-02");
   });
 
   it("carga las entidades", () => {
@@ -51,21 +51,14 @@ describe("cargarSemilla: semilla real 0.3", () => {
   it("convierte montos y tasas a Decimal sin pérdida", () => {
     const t0 = semilla.tablas.MXN!.tramos[0];
     expect(t0.desde.toFixed(2)).toBe("30000.00");
-    expect(t0.hasta!.toFixed(2)).toBe("199999.99");
-    expect(t0.estatus).toBe("SEGUN_USUARIO_PPTX");
-    expect(t0.tasas.mensual.get(12)!.toString()).toBe("0.205");
-    expect(t0.tasas.final_del_plazo.get(24)!.toString()).toBe("0.235");
+    expect(t0.hasta!.toFixed(2)).toBe("200000.00");
+    expect(t0.estatus).toBe("CONFIRMADA");
+    expect(t0.tasas.mensual.get(12)!.toString()).toBe("0.165");
+    expect(t0.tasas.final_del_plazo.get(24)!.toString()).toBe("0.195");
     expect(t0.plazosDisponibles).toEqual([6, 12, 18, 24]);
+    expect(semilla.tablas.MXN!.tramos[1].desde.toFixed(2)).toBe("200000.01");
+    expect(semilla.tablas.MXN!.tramos[5].desde.toFixed(2)).toBe("1000000.01");
     expect(semilla.tablas.MXN!.tramos[5].hasta).toBeNull();
-  });
-
-  it("carga el plazo adicional de 36 meses", () => {
-    const pa = semilla.tablas.MXN!.plazoAdicional;
-    expect(pa).not.toBeNull();
-    expect(pa!.plazoMeses).toBe(36);
-    expect(pa!.aplicaDesdeMonto.toFixed(2)).toBe("2000000.00");
-    expect(pa!.tasas.mensual.toString()).toBe("0.2");
-    expect(pa!.tasas.final_del_plazo.toString()).toBe("0.22");
   });
 
   it("normaliza la tabla USD: POR_CONFIRMAR, sin límite definido, 6 tramos", () => {

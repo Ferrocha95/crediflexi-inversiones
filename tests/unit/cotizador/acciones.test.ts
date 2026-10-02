@@ -68,23 +68,8 @@ describe.each(["CREDIFLEXI", "RAMI_SISE"])("previsualizar (%s)", (entidad) => {
     ]);
   });
 
-  it("30,000 pesos a 6 meses trae el aviso de coherencia", async () => {
-    const v = await vista({ entidad, monto: "30000", plazo: 6 });
-    expect(v.avisos.map((a) => a.codigo)).toEqual(["TASA_MAYOR_QUE_TRAMO_SIGUIENTE"]);
-  });
-
   it("200,000 pesos a 6 meses no trae avisos", async () => {
     expect((await vista({ entidad, monto: "200000", plazo: 6 })).avisos).toEqual([]);
-  });
-
-  it("36 meses no aparece con 1,999,999.99 pesos y sí con 2,000,000.00", async () => {
-    expect(valores(await pedir({ entidad, monto: "1,999,999.99" }))).toEqual([6, 12, 18, 24]);
-    expect(valores(await pedir({ entidad, monto: "2,000,000.00" }))).toEqual([6, 12, 18, 24, 36]);
-  });
-
-  it("36 meses con 2,000,000.00 pesos cotiza con el plazo adicional", async () => {
-    const v = await vista({ entidad, monto: "2,000,000.00", plazo: 36 });
-    expect(v.origenTasa).toBe("plazo_adicional");
   });
 });
 

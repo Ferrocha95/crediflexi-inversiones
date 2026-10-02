@@ -1,6 +1,6 @@
 {
   "_leeme": "Semilla INICIAL. Todo es editable desde la app. Generado por codigo a partir de los archivos originales (sin transcripcion manual). Las tasas estan como texto decimal para evitar errores de punto flotante.",
-  "generado": "2026-10-01",
+  "generado": "2026-10-02",
   "entidades": [
     {
       "clave": "CREDIFLEXI",
@@ -41,7 +41,7 @@
     "nota_etiquetas": "En final del plazo no hay pagos mensuales: el rendimiento mensual es solo un equivalente. Si el plazo es menor a 12 meses, el anual es un equivalente y NO lo que recibira el cliente; siempre se muestra junto a la ganancia total del plazo."
   },
   "tasas_mxn": {
-    "fuente": "TABLA_RENDIMIENTOS_EJEMPLOS.pptx (version del 2026-10-01, 'tasas actualizadas tal cual' segun el usuario)",
+    "fuente": "Tabla de Diseño 'TASAS DE INTERES PARA INVERSIONISTAS' (imagen enviada por el usuario el 2026-10-02) = Tasas_Interes_Pesos_y_Dolares_2026.xlsx, hoja 'Esquema en Pesos' (comparadas celda por celda: coinciden).",
     "limite_inferior_inclusivo": true,
     "aplica_a_entidades": [
       "CREDIFLEXI",
@@ -51,39 +51,32 @@
     "tramos": [
       {
         "desde": 30000,
-        "hasta": 199999.99,
-        "montos_de_referencia_pptx": [
-          30000
-        ],
-        "estatus": "SEGUN_USUARIO_PPTX",
+        "hasta": 200000,
+        "estatus": "CONFIRMADA",
         "mensual": {
-          "6": "0.2",
-          "12": "0.205",
-          "18": "0.21",
-          "24": "0.215"
+          "6": "0.16",
+          "12": "0.165",
+          "18": "0.17",
+          "24": "0.175"
         },
         "final_del_plazo": {
-          "6": "0.22",
-          "12": "0.225",
-          "18": "0.23",
-          "24": "0.235"
+          "6": "0.18",
+          "12": "0.185",
+          "18": "0.19",
+          "24": "0.195"
         },
-        "notas": "Tramo INFERIDO: el pptx solo trae un renglon por debajo de $200,000 ($30,000) y se aplica a $30,000-$199,999 (mismos limites del Excel). La tasa baja de 20.0% a 16.5% al llegar a $200,000; es lo que dice el pptx y el usuario lo confirmo. La app debe mostrar un aviso NO bloqueante cuando la tasa de un monto menor supere la del tramo siguiente.",
         "plazos_disponibles": [
           6,
           12,
           18,
           24
-        ]
+        ],
+        "notas": "Tramo de la Tabla de Diseño: Desde 30,000 Hasta 200,000 (ambos incluidos)."
       },
       {
-        "desde": 200000,
-        "hasta": 399999.99,
-        "montos_de_referencia_pptx": [
-          200000,
-          300000
-        ],
-        "estatus": "SEGUN_USUARIO_PPTX",
+        "desde": 200000.01,
+        "hasta": 400000,
+        "estatus": "CONFIRMADA",
         "mensual": {
           "6": "0.165",
           "12": "0.17",
@@ -96,22 +89,18 @@
           "18": "0.195",
           "24": "0.2"
         },
-        "notas": null,
         "plazos_disponibles": [
           6,
           12,
           18,
           24
-        ]
+        ],
+        "notas": "Tabla de Diseño: 'Desde 200,001' en pesos enteros; aqui desde 200,000.01 para cubrir los centavos (el 'Hasta' anterior es inclusivo)."
       },
       {
-        "desde": 400000,
-        "hasta": 599999.99,
-        "montos_de_referencia_pptx": [
-          400000,
-          500000
-        ],
-        "estatus": "SEGUN_USUARIO_PPTX",
+        "desde": 400000.01,
+        "hasta": 600000,
+        "estatus": "CONFIRMADA",
         "mensual": {
           "6": "0.17",
           "12": "0.175",
@@ -124,22 +113,18 @@
           "18": "0.2",
           "24": "0.205"
         },
-        "notas": null,
         "plazos_disponibles": [
           6,
           12,
           18,
           24
-        ]
+        ],
+        "notas": "Tabla de Diseño: 'Desde 400,001' en pesos enteros; aqui desde 400,000.01 para cubrir los centavos (el 'Hasta' anterior es inclusivo)."
       },
       {
-        "desde": 600000,
-        "hasta": 799999.99,
-        "montos_de_referencia_pptx": [
-          600000,
-          700000
-        ],
-        "estatus": "SEGUN_USUARIO_PPTX",
+        "desde": 600000.01,
+        "hasta": 800000,
+        "estatus": "CONFIRMADA",
         "mensual": {
           "6": "0.175",
           "12": "0.18",
@@ -152,22 +137,18 @@
           "18": "0.205",
           "24": "0.21"
         },
-        "notas": null,
         "plazos_disponibles": [
           6,
           12,
           18,
           24
-        ]
+        ],
+        "notas": "Tabla de Diseño: 'Desde 600,001' en pesos enteros; aqui desde 600,000.01 para cubrir los centavos (el 'Hasta' anterior es inclusivo)."
       },
       {
-        "desde": 800000,
-        "hasta": 999999.99,
-        "montos_de_referencia_pptx": [
-          800000,
-          900000
-        ],
-        "estatus": "SEGUN_USUARIO_PPTX",
+        "desde": 800000.01,
+        "hasta": 1000000,
+        "estatus": "CONFIRMADA",
         "mensual": {
           "6": "0.18",
           "12": "0.185",
@@ -180,23 +161,18 @@
           "18": "0.21",
           "24": "0.215"
         },
-        "notas": null,
         "plazos_disponibles": [
           6,
           12,
           18,
           24
-        ]
+        ],
+        "notas": "Tabla de Diseño: 'Desde 800,001' en pesos enteros; aqui desde 800,000.01 para cubrir los centavos (el 'Hasta' anterior es inclusivo)."
       },
       {
-        "desde": 1000000,
+        "desde": 1000000.01,
         "hasta": null,
-        "montos_de_referencia_pptx": [
-          1000000,
-          1500000,
-          4200000
-        ],
-        "estatus": "SEGUN_USUARIO_PPTX",
+        "estatus": "CONFIRMADA",
         "mensual": {
           "6": "0.185",
           "12": "0.19",
@@ -209,35 +185,27 @@
           "18": "0.215",
           "24": "0.22"
         },
-        "notas": null,
         "plazos_disponibles": [
           6,
           12,
           18,
           24
-        ]
+        ],
+        "notas": "Tabla de Diseño: 'Desde 1,000,001' en pesos enteros; aqui desde 1,000,000.01 para cubrir los centavos (el 'Hasta' anterior es inclusivo)."
       }
     ],
     "decisiones_usuario": [
       {
-        "fecha": "2026-10-01",
-        "tema": "limites_y_tramo_inferior",
-        "texto": "El pptx manda tal cual sobre el folleto y el Excel: limite inferior inclusivo ($200,000 paga la tasa del tramo siguiente) y renglon de $30,000 al 20%."
+        "fecha": "2026-10-02",
+        "tema": "tabla_correcta",
+        "texto": "Las tasas correctas son las de la Tabla de Diseño (mensual y al final del plazo). Los numeros del pptx TABLA_RENDIMIENTOS_EJEMPLOS.pptx quedan descartados (tasas distintas en el tramo de $30,000 y limites de tramo distintos). Un monto exacto de $200,000 paga la tasa del tramo 30,000-200,000 ('Hasta' inclusivo)."
       },
       {
-        "fecha": "2026-10-01",
+        "fecha": "2026-10-02",
         "tema": "plazos",
-        "texto": "En cualquier monto se ofrecen 6, 12, 18 y 24 meses. A partir de $2,000,000 se usan las tasas del tramo de $1,000,000 y se agrega 36 meses (20.0% mensual / 22.0% final del plazo), unico plazo adicional con tasa en el pptx."
+        "texto": "Los plazos son 6, 12, 18 y 24 meses en cualquier monto. No existe el plazo de 36 meses (solo aparecia en el pptx descartado)."
       }
-    ],
-    "plazo_adicional": {
-      "plazo_meses": 36,
-      "aplica_desde_monto": 2000000,
-      "mensual": "0.2",
-      "final_del_plazo": "0.22",
-      "fuente": "lamina de $2,000,000 del pptx",
-      "notas": "36 meses solo existe para montos >= $2,000,000 porque es el unico monto donde el pptx trae tasa para ese plazo. Para ofrecerlo en otros tramos habria que capturar su tasa en la app."
-    }
+    ]
   },
   "tasas_usd": {
     "fuente": "Tasas_Interes_Pesos_y_Dolares_2026.xlsx (hoja 'Esquema en Dólares'); NO esta en el pptx",
@@ -654,7 +622,8 @@
       "Tabla N3 nuevos: todo es 70% de N1 excepto 6 meses/primer tramo (0.01 vs 0.0084).",
       "Tablas de renovaciones N2/N3 son explicitas y NO siguen los porcentajes de 'Supuestos': se cargan tal cual.",
       "Los limites de tramo de este Excel son 'hasta' inclusivo (300,000 cae en el primer tramo)."
-    ]
+    ],
+    "verificacion": "Tablas N1 de nuevos y renovaciones comparadas con la imagen enviada el 2026-10-02 (redondeadas a 2 decimales): coinciden."
   },
   "incentivos_propuesta": [
     {
@@ -724,13 +693,14 @@
     "comision_bloqueada_al_cierre_de_mes": "se_pierde (POR_CONFIRMAR, editable)"
   },
   "discrepancias_abiertas": [
-    "D1 RESUELTA por decision del usuario (2026-10-01): el pptx manda; limite inferior inclusivo. Sigue habiendo contradiccion documental con el folleto y el Excel ('200,001').",
-    "D2 RESUELTA por decision del usuario (2026-10-01): $30,000 al 20.0% mensual; tramo inferido hasta $199,999. La tasa baja al llegar a $200,000 (aviso no bloqueante en la app).",
-    "D3 RESUELTA por decision del usuario (2026-10-01): en cualquier monto se ofrecen 6, 12, 18 y 24 meses; 36 solo >= $2,000,000. La lamina de $2,000,000 del pptx (N/A en 6 y 12) queda desactualizada respecto a esa decision.",
-    "D4 ABIERTA: la lamina de $800,000 del pptx sigue con 10 cifras copiadas de la de $700,000 (7 celdas). El motor da el valor de la formula y la prueba lo marca.",
+    "D1 RESUELTA (2026-10-02): limites de tramo. Un monto exacto de $200,000 paga el tramo 30,000-200,000 (16.00% a 6 meses mensual). El pptx se equivocaba; coincide con el folleto y el Excel.",
+    "D2 RESUELTA (2026-10-02): el tramo de $30,000-$200,000 paga 16.00%-17.50% mensual (18.00%-19.50% final del plazo), no 20%. El pptx se equivocaba.",
+    "D3 RESUELTA (2026-10-02): no existe el plazo de 36 meses; solo 6, 12, 18 y 24.",
+    "D4 SIN EFECTO: las cifras erroneas de la lamina de $800,000 eran del pptx, que ya no es fuente de tasas.",
     "D5 Calculadora Excel: 24% escrito a mano en 'SIMULADOR'; no existe en ninguna tabla.",
-    "D6 Contrato machote (ambas entidades): 20% a 24 meses con $30,000; ninguna tabla lo da.",
-    "D7 Tabla N3 nuevos: celda 6 meses/primer tramo no sigue el 70% de N1."
+    "D6 Contrato machote (ambas entidades): 20% a 24 meses con $30,000; la tabla da 17.50% mensual o 19.50% al final del plazo.",
+    "D7 Tabla N3 nuevos: celda 6 meses/primer tramo no sigue el 70% de N1.",
+    "D8 RESUELTA (2026-10-02): Pitagoras es la marca comercial de los servicios financieros; no cambia nada en el calculo ni en el PDF (usa el logo de Crediflexi)."
   ],
-  "version": "0.3"
+  "version": "0.5"
 }

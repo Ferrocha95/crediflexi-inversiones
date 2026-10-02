@@ -44,16 +44,16 @@ function errorDe(s: Semilla, cambios: Partial<SolicitudTasa>, codigo: CodigoErro
 }
 
 describe("resolverTasa: caso base", () => {
-  it("$1,500,000 a 12 meses mensual usa la tasa del tramo desde $1,000,000", () => {
+  it("1,500,000 pesos a 12 meses mensual usa la tasa del tramo desde 1,000,000.01", () => {
     const t = resolverBien(semilla, {});
     expect(t.tasa.toString()).toBe("0.19");
     expect(t.origen).toBe("tramo");
     expect(t.tramo.indice).toBe(5);
-    expect(t.tramo.desde.toFixed(2)).toBe("1000000.00");
+    expect(t.tramo.desde.toFixed(2)).toBe("1000000.01");
     expect(t.tramo.hasta).toBeNull();
-    expect(t.tramo.estatus).toBe("SEGUN_USUARIO_PPTX");
+    expect(t.tramo.estatus).toBe("CONFIRMADA");
     expect(t.monto.toFixed(2)).toBe("1500000.00");
-    expect(t.semilla).toEqual({ version: "0.3", generado: "2026-10-01" });
+    expect(t.semilla).toEqual({ version: "0.5", generado: "2026-10-02" });
   });
 
   it("el esquema final del plazo toma su propia columna", () => {
@@ -76,34 +76,34 @@ describe("resolverTasa: caso base", () => {
 });
 
 describe("resolverTasa: límites de tramo", () => {
-  it("$199,999.99 cae en el primer tramo", () => {
+  it("199,999.99 pesos cae en el primer tramo", () => {
     const t = resolverBien(semilla, { monto: "199999.99" });
     expect(t.tramo.indice).toBe(0);
-    expect(t.tasa.toString()).toBe("0.205");
+    expect(t.tasa.toString()).toBe("0.165");
   });
 
-  it("$200,000.00 cae en el tramo siguiente (límite inferior inclusivo)", () => {
+  it("200,000.00 pesos cae en el primer tramo (su hasta incluye 200,000)", () => {
     const t = resolverBien(semilla, { monto: "200000.00" });
-    expect(t.tramo.indice).toBe(1);
-    expect(t.tasa.toString()).toBe("0.17");
+    expect(t.tramo.indice).toBe(0);
+    expect(t.tasa.toString()).toBe("0.165");
   });
 
-  it("$200,000.01 cae en el tramo desde $200,000", () => {
+  it("200,000.01 pesos cae en el tramo siguiente (límite inferior inclusivo)", () => {
     const t = resolverBien(semilla, { monto: "200000.01" });
     expect(t.tramo.indice).toBe(1);
     expect(t.tasa.toString()).toBe("0.17");
   });
 
-  it("$30,000.00 es el mínimo y cae en el primer tramo", () => {
+  it("30,000.00 pesos es el mínimo y cae en el primer tramo", () => {
     expect(resolverBien(semilla, { monto: "30000" }).tramo.indice).toBe(0);
   });
 
-  it("con límite inferior NO inclusivo, $200,000.00 cae en el tramo anterior", () => {
+  it("con límite inferior NO inclusivo, 200,000.01 pesos cae en el tramo anterior y 200,000.02 en el siguiente", () => {
     const c = copia();
     c.tasas_mxn.limite_inferior_inclusivo = false;
     const s = cargar(c);
-    expect(resolverBien(s, { monto: "200000.00" }).tramo.indice).toBe(0);
-    expect(resolverBien(s, { monto: "200000.01" }).tramo.indice).toBe(1);
+    expect(resolverBien(s, { monto: "200000.01" }).tramo.indice).toBe(0);
+    expect(resolverBien(s, { monto: "200000.02" }).tramo.indice).toBe(1);
   });
 
   it("con límite NO inclusivo, el mínimo exacto queda fuera de rango", () => {
@@ -150,30 +150,6 @@ describe("resolverTasa: plazos", () => {
   it.each([0, -6, 6.5, Number.NaN])("rechaza el plazo %s", (plazo) => {
     errorDe(semilla, { plazo }, "PLAZO_NO_DISPONIBLE");
   });
-
-  it("rechaza 36 meses con $1,000,000 e indica desde qué monto se ofrece", () => {
-    const m = errorDe(semilla, { monto: "1000000", plazo: 36 }, "PLAZO_NO_DISPONIBLE");
-    expect(m).toContain("$2,000,000.00");
-  });
-
-  it("rechaza 36 meses con $1,999,999.99", () => {
-    errorDe(semilla, { monto: "1999999.99", plazo: 36 }, "PLAZO_NO_DISPONIBLE");
-  });
-
-  it("acepta 36 meses con $2,000,000.00 en ambos esquemas", () => {
-    const m = resolverBien(semilla, { monto: "2000000.00", plazo: 36 });
-    expect(m.origen).toBe("plazo_adicional");
-    expect(m.tasa.toString()).toBe("0.2");
-    expect(m.tramo.indice).toBe(5);
-    const f = resolverBien(semilla, { monto: "2000000.00", plazo: 36, esquema: "final_del_plazo" });
-    expect(f.tasa.toString()).toBe("0.22");
-  });
-
-  it("con $2,000,000 los plazos normales salen del tramo, no del plazo adicional", () => {
-    const t = resolverBien(semilla, { monto: "2000000", plazo: 6 });
-    expect(t.origen).toBe("tramo");
-    expect(t.tasa.toString()).toBe("0.185");
-  });
 });
 
 describe("resolverTasa: estatus", () => {
@@ -182,7 +158,7 @@ describe("resolverTasa: estatus", () => {
     c.tasas_mxn.tramos[1].estatus = "POR_CONFIRMAR";
     const s = cargar(c);
     const m = errorDe(s, { monto: "250000" }, "TRAMO_POR_CONFIRMAR");
-    expect(m).toContain("$200,000.00");
+    expect(m).toContain("$200,000.01");
     expect(resolverBien(s, { monto: "150000" }).tramo.indice).toBe(0);
   });
 
@@ -190,12 +166,6 @@ describe("resolverTasa: estatus", () => {
     const c = copia();
     c.tasas_mxn.tramos[1].estatus = "CONFIRMADA";
     expect(resolverBien(cargar(c), { monto: "250000" }).tramo.estatus).toBe("CONFIRMADA");
-  });
-
-  it("el plazo adicional hereda el estatus del tramo", () => {
-    const c = copia();
-    c.tasas_mxn.tramos[5].estatus = "POR_CONFIRMAR";
-    errorDe(cargar(c), { monto: "2000000", plazo: 36 }, "TRAMO_POR_CONFIRMAR");
   });
 
   it("una tabla MXN POR_CONFIRMAR bloquea todo", () => {

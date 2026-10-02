@@ -27,10 +27,6 @@ describe.each(["CREDIFLEXI", "RAMI_SISE"])("plazosDisponibles (%s)", (entidad) =
     expect(plazos({ entidad, esquema, monto: "1999999.99" })).toEqual([6, 12, 18, 24]);
   });
 
-  it.each(["mensual", "final_del_plazo"] as const)("esquema %s: 2,000,000.00 pesos agrega 36", (esquema) => {
-    expect(plazos({ entidad, esquema, monto: "2000000.00" })).toEqual([6, 12, 18, 24, 36]);
-  });
-
   it("30,000 pesos (primer tramo) ofrece 6, 12, 18 y 24", () => {
     expect(plazos({ entidad, monto: "30000" })).toEqual([6, 12, 18, 24]);
   });
@@ -58,23 +54,5 @@ describe("plazosDisponibles: devuelve el error del dominio tal cual", () => {
     j.tasas_mxn.tramos[5].estatus = "POR_CONFIRMAR";
     const r = plazosDisponibles(cargar(j), consulta());
     expect(r.ok ? "OK" : r.error.codigo).toBe("TRAMO_POR_CONFIRMAR");
-  });
-});
-
-describe("plazosDisponibles: sale de la semilla, no del código", () => {
-  it("si la semilla quita el plazo adicional, 36 deja de ofrecerse", () => {
-    const j = copiaSemilla();
-    (j.tasas_mxn as { plazo_adicional: unknown }).plazo_adicional = null;
-    const r = plazosDisponibles(cargar(j), consulta({ monto: "2000000" }));
-    if (!r.ok) throw new Error(r.error.mensaje);
-    expect(r.valor).toEqual([6, 12, 18, 24]);
-  });
-
-  it("si la semilla baja el mínimo del plazo adicional, 36 se ofrece desde ahí", () => {
-    const j = copiaSemilla();
-    j.tasas_mxn.plazo_adicional.aplica_desde_monto = 1000000;
-    const r = plazosDisponibles(cargar(j), consulta({ monto: "1000000" }));
-    if (!r.ok) throw new Error(r.error.mensaje);
-    expect(r.valor).toEqual([6, 12, 18, 24, 36]);
   });
 });

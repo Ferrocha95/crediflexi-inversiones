@@ -5,7 +5,7 @@ import { calcularRendimientos } from "../../../src/domain/interes/calcular";
 const d = (s: string) => new Decimal(s);
 
 describe("calcularRendimientos", () => {
-  it("$500,000 a 12 meses al 17.5%: 7,291.67 mensual y 87,500.00 anual", () => {
+  it("500,000 pesos a 12 meses al 17.5%: 7,291.67 mensual y 87,500.00 anual", () => {
     const r = calcularRendimientos(d("500000"), d("0.175"), 12);
     expect(r.rendimiento_mensual_pesos.redondeado.toFixed(2)).toBe("7291.67");
     expect(r.rendimiento_anual_pesos.redondeado.toFixed(2)).toBe("87500.00");

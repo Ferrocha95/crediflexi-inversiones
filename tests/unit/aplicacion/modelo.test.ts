@@ -32,7 +32,7 @@ const ENTIDADES = [
 
 const pieEsperado = (razonSocial: string) =>
   `Cotización informativa para ${razonSocial}, calculada con interés simple sobre la tasa anual indicada ` +
-  "y con las tasas de la versión 0.3 del 01/10/2026. El rendimiento anual es un equivalente a 12 meses; " +
+  "y con las tasas de la versión 0.5 del 02/10/2026. El rendimiento anual es un equivalente a 12 meses; " +
   "la ganancia total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables " +
   "son las del contrato que se firme.";
 
@@ -90,7 +90,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
       monto: "$1,500,000.00 MXN",
       plazo: "12 meses",
     });
-    expect(m.tasas).toEqual({ version: "0.3", fecha: "01/10/2026" });
+    expect(m.tasas).toEqual({ version: "0.5", fecha: "02/10/2026" });
   });
 
   it("la fecha del PDF es la de la Ciudad de México", () => {
@@ -180,13 +180,13 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
   });
 
   it("el modelo del PDF jamás incluye el estatus del tramo", () => {
-    for (const cambios of [{}, { monto: "2000000", plazo: 36 }, { monto: "30000", plazo: 6 }]) {
-      const texto = JSON.stringify(pdf(clave, ENTRADA_COMPLETA, cambios));
-      expect(texto).not.toMatch(/estatus/i);
-      for (const e of ESTATUS) {
-        expect(texto).not.toContain(e);
-        expect(texto).not.toContain(textos.estatusTramo[e]);
-      }
+    const c = cotizarBien({ entidad: clave, monto: "1500000", plazo: 12 });
+    expect(c.tramo.estatus).not.toBeNull();
+    const texto = JSON.stringify(sinError(modeloPdf(c, contexto, ENTRADA_COMPLETA, AHORA)));
+    expect(texto).not.toMatch(/estatus/i);
+    for (const e of ESTATUS) {
+      expect(texto).not.toContain(e);
+      expect(texto).not.toContain(textos.estatusTramo[e]);
     }
   });
 
@@ -198,11 +198,6 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     const texto = JSON.stringify(sinError(modeloPdf(c, contexto, ENTRADA_COMPLETA, AHORA)));
     expect(texto).not.toContain("CONFIRMADA");
     expect(texto).not.toContain(textos.estatusTramo.CONFIRMADA);
-  });
-
-  it("el modelo del PDF no trae los avisos de la pantalla", () => {
-    const texto = JSON.stringify(pdf(clave, {}, { monto: "30000", plazo: 6 }));
-    expect(texto).not.toContain("TASA_MAYOR_QUE_TRAMO_SIGUIENTE");
   });
 });
 
@@ -254,30 +249,22 @@ describe.each(ENTIDADES)("modeloVistaPrevia ($clave)", ({ clave }) => {
       monto: "$1,500,000.00 MXN",
       plazo: "12 meses",
     });
-    expect(v.tasas).toEqual({ version: "0.3", fecha: "01/10/2026" });
+    expect(v.tasas).toEqual({ version: "0.5", fecha: "02/10/2026" });
   });
 
   it("muestra el tramo aplicado con su estatus y la explicación del archivo de textos (pendiente t)", () => {
     const v = modeloVistaPrevia(cotizarBien({ entidad: clave }), textos);
     expect(v.origenTasa).toBe("tramo");
     expect(v.tramo).toEqual({
-      rango: "Desde $1,000,000.00 MXN",
-      estatus: "SEGUN_USUARIO_PPTX",
-      explicacionEstatus: "Tasa según la tabla de rendimientos vigente; aún sin confirmación formal.",
+      rango: "Desde $1,000,000.01 MXN",
+      estatus: "CONFIRMADA",
+      explicacionEstatus: "Tasa confirmada.",
     });
   });
 
   it("tramo con límite superior", () => {
-    const v = modeloVistaPrevia(cotizarBien({ entidad: clave, monto: "250000" }), textos);
-    expect(v.tramo.rango).toBe("Desde $200,000.00 MXN hasta $399,999.99 MXN");
-  });
-
-  it("36 meses: la tasa sale del plazo adicional y el estatus es el del tramo del monto", () => {
-    const v = modeloVistaPrevia(cotizarBien({ entidad: clave, monto: "2000000", plazo: 36 }), textos);
-    expect(v.origenTasa).toBe("plazo_adicional");
-    expect(v.tasa).toBe("20.00%");
-    expect(v.tramo.estatus).toBe("SEGUN_USUARIO_PPTX");
-    expect(v.solicitud.plazo).toBe("36 meses");
+    const v = modeloVistaPrevia(cotizarBien({ entidad: clave, monto: "150000" }), textos);
+    expect(v.tramo.rango).toBe("Desde $30,000.00 MXN hasta $200,000.00 MXN");
   });
 
   it("un estatus CONFIRMADA muestra su explicación (semilla modificada en la prueba)", () => {
@@ -288,11 +275,17 @@ describe.each(ENTIDADES)("modeloVistaPrevia ($clave)", ({ clave }) => {
     expect(v.tramo.explicacionEstatus).toBe("Tasa confirmada.");
   });
 
-  it("trae los avisos no bloqueantes tal cual los da el dominio", () => {
-    const c = cotizarBien({ entidad: clave, monto: "30000", plazo: 6 });
+  it("trae los avisos no bloqueantes tal cual vienen en la cotización (aviso fabricado a mano)", () => {
+    // La Tabla de Diseño no produce avisos: se agrega uno sintético al objeto de cotización.
+    const aviso = {
+      codigo: "TASA_MAYOR_QUE_TRAMO_SIGUIENTE" as const,
+      severidad: "aviso" as const,
+      mensaje: "Aviso sintético de prueba.",
+      datos: { esquema: "mensual" },
+    };
+    const c = { ...cotizarBien({ entidad: clave }), avisos: [aviso] };
     const v = modeloVistaPrevia(c, textos);
-    expect(c.avisos).toHaveLength(1);
-    expect(v.avisos).toEqual([{ codigo: "TASA_MAYOR_QUE_TRAMO_SIGUIENTE", mensaje: c.avisos[0].mensaje }]);
+    expect(v.avisos).toEqual([{ codigo: "TASA_MAYOR_QUE_TRAMO_SIGUIENTE", mensaje: "Aviso sintético de prueba." }]);
   });
 
   it("sin avisos, la lista va vacía", () => {

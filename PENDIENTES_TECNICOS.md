@@ -27,3 +27,6 @@
 - (y) El mensaje `MONTO_INVALIDO` del dominio dice "sin comas", pero la pantalla acepta comas de miles bien agrupadas.
 - (z) Fechas de inicio, término y pago de la vista previa (BLUEPRINT §11.2).
 - (aa) Tasas propias por entidad si Crediflexi y Rami Sise llegan a tener tablas distintas (hoy las dos usan la misma, por `aplica_a_entidades`).
+- (cc) Se eliminaron las pruebas del aviso de coherencia con la semilla real y las del plazo adicional (36 meses) porque la Tabla de Diseño no las usa. Si algún día vuelven a usarse, hay que restituirlas con una semilla sintética.
+- (dd) Quitar `SEGUN_USUARIO_PPTX`, `plazo_adicional` y el texto `origenPlazoAdicional` si siguen sin uso.
+- (ee) Comentarios con la versión vieja de la semilla (por ejemplo, "En la semilla 0.3..." en `semilla.esquema.ts` y el ejemplo "2026-10-01" en `fecha.ts`).
