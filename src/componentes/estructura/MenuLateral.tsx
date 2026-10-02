@@ -41,8 +41,10 @@ export function MenuLateral() {
   return (
     <aside
       data-plegado={plegado}
-      className="group/menu vidrio sticky top-0 z-30 hidden h-dvh shrink-0 flex-col gap-6 rounded-none border-y-0 border-l-0 px-3 py-5 transition-[width] duration-250 ease-suave md:flex w-62 data-[plegado=si]:w-18 md:max-xl:data-[plegado=auto]:w-18"
+      className="group/menu vidrio relative z-30 hidden shrink-0 rounded-none border-y-0 border-l-0 transition-[width] duration-250 ease-suave md:block w-62 data-[plegado=si]:w-18 md:max-xl:data-[plegado=auto]:w-18"
     >
+      {/* El vidrio cubre toda la altura de la página; el contenido se queda fijo al hacer scroll. */}
+      <div className="sticky top-0 flex h-dvh flex-col gap-6 px-3 py-5">
       <Link
         href="/"
         aria-label={T.irAlInicio}
@@ -126,6 +128,7 @@ export function MenuLateral() {
         )}
         <span className={SOLO_ABIERTO}>{abierto ? T.plegarMenu : T.desplegarMenu}</span>
       </button>
+      </div>
     </aside>
   );
 }
