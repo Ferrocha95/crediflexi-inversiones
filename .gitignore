@@ -33,3 +33,9 @@ backups/
 
 # Sistema operativo
 .DS_Store
+
+# PDF generados (los ejemplos viven fuera del repositorio)
+*.pdf
+
+# Capturas y registros de Playwright MCP
+.playwright-mcp/
