@@ -1,8 +1,10 @@
+import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { opcionesCotizador } from "../../aplicacion/opciones";
 import { leerParametrosCotizacion } from "../../servidor/parametros";
+import { Aviso } from "../../componentes/ui/Aviso";
 import { Cotizador } from "./Cotizador";
 import { TEXTOS } from "./textosPantalla";
 
@@ -21,22 +23,25 @@ export default async function PaginaCotizador() {
   const parametros = await leerParametrosCotizacion();
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-      <header className="flex flex-col gap-1">
-        <Link href="/" className="text-sm underline">
+    <div className="flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">
+      <header className="flex flex-col gap-2">
+        <Link
+          href="/"
+          className="inline-flex min-h-11 items-center gap-1.5 self-start font-semibold text-hielo underline-offset-4 hover:text-blanco hover:underline"
+        >
+          <ChevronLeft aria-hidden="true" className="size-4" />
           {TEXTOS.volverInicio}
         </Link>
-        <h1 className="text-2xl font-bold">{TEXTOS.tituloPagina}</h1>
-        <p>{TEXTOS.introduccion}</p>
-        <p className="text-sm opacity-70">{TEXTOS.avisoLocal}</p>
+        <h1 className="text-4xl font-extrabold tracking-tight">{TEXTOS.tituloPagina}</h1>
+        <p className="max-w-prose text-lg text-hielo">{TEXTOS.introduccion}</p>
+        <p className="text-sm text-hielo-tenue">{TEXTOS.avisoLocal}</p>
       </header>
 
       {parametros.ok ? (
         <Cotizador opciones={opcionesCotizador(parametros.valor)} />
       ) : (
-        <div role="alert" className="rounded-md border-2 border-red-600 p-4">
-          <h2 className="font-semibold">{TEXTOS.tituloErrorParametros}</h2>
-          <p className="mt-1">{parametros.error.mensaje}</p>
+        <Aviso role="alert" tono="error" titulo={TEXTOS.tituloErrorParametros}>
+          <p>{parametros.error.mensaje}</p>
           {parametros.error.detalles !== undefined && parametros.error.detalles.length > 0 && (
             <ul className="mt-2 list-disc pl-5 text-sm">
               {parametros.error.detalles.map((d) => (
@@ -45,8 +50,8 @@ export default async function PaginaCotizador() {
             </ul>
           )}
           <p className="mt-2 text-sm">{TEXTOS.ayudaErrorParametros}</p>
-        </div>
+        </Aviso>
       )}
-    </main>
+    </div>
   );
 }

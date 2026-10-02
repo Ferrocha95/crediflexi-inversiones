@@ -25,7 +25,7 @@ export function Opciones<V extends string>({ nombre, leyenda, opciones, valor, a
         {opciones.map((o) => (
           <label
             key={o.valor}
-            className="relative flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-lg px-4 text-center font-semibold text-hielo transition-colors duration-150 hover:bg-hielo/10 has-checked:bg-hielo has-checked:text-marino has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-hielo"
+            className="relative flex min-h-11 flex-1 basis-0 cursor-pointer items-center justify-center rounded-lg px-4 text-center font-semibold text-hielo transition-colors duration-150 hover:bg-hielo/10 has-checked:bg-hielo has-checked:text-marino has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-hielo"
           >
             <input
               type="radio"

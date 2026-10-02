@@ -22,6 +22,14 @@ import {
   recortar,
   type OpcionalesPdf,
 } from "./peticionPdf";
+import { Aviso } from "../../componentes/ui/Aviso";
+import { Boton } from "../../componentes/ui/Boton";
+import { AreaTexto, Campo, Entrada } from "../../componentes/ui/Campo";
+import { Casilla } from "../../componentes/ui/Casilla";
+import { Esqueleto } from "../../componentes/ui/Esqueleto";
+import { Opciones } from "../../componentes/ui/Opciones";
+import { Selector } from "../../componentes/ui/Selector";
+import { TarjetaVidrio } from "../../componentes/ui/TarjetaVidrio";
 import { TEXTOS } from "./textosPantalla";
 import { VistaPrevia } from "./VistaPrevia";
 
@@ -52,9 +60,6 @@ const OPCIONALES_VACIOS: OpcionalesPdf = { preparadoPara: "", ejecutivo: "", vig
 const CAMPOS_OPCIONALES = ["preparadoPara", "ejecutivo", "vigencia", "notaAdicional"] as const;
 
 type MensajePdf = { readonly tipo: "estado" | "error"; readonly texto: string };
-
-const clasesCampo =
-  "w-full rounded-md border border-black/25 bg-transparent px-3 py-2 text-base dark:border-white/30 disabled:opacity-50";
 
 /**
  * Formulario del cotizador. Lo escrito vive solo en el estado de React: no se
@@ -160,111 +165,82 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
       <form
-        className="flex flex-col gap-4"
+        className="superficie flex flex-col gap-5 rounded-2xl p-5 sm:p-6"
         autoComplete="off"
         onSubmit={(e) => e.preventDefault()}
         aria-labelledby={`${id}-titulo-formulario`}
       >
-        <h2 id={`${id}-titulo-formulario`} className="text-lg font-semibold">
+        <h2 id={`${id}-titulo-formulario`} className="text-2xl font-bold">
           {TEXTOS.tituloFormulario}
         </h2>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor={`${id}-entidad`} className="font-medium">
-            {TEXTOS.entidad}
-          </label>
-          <select
-            id={`${id}-entidad`}
-            className={clasesCampo}
-            value={campos.entidad}
-            onChange={(e) => cambiar({ entidad: e.target.value })}
-          >
+        <Campo id={`${id}-entidad`} etiqueta={TEXTOS.entidad}>
+          <Selector id={`${id}-entidad`} value={campos.entidad} onChange={(e) => cambiar({ entidad: e.target.value })}>
             {opciones.entidades.map((e) => (
               <option key={e.clave} value={e.clave}>
                 {e.razonSocial}
               </option>
             ))}
-          </select>
-        </div>
+          </Selector>
+        </Campo>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor={`${id}-moneda`} className="font-medium">
-            {TEXTOS.moneda}
-          </label>
-          <select
-            id={`${id}-moneda`}
-            className={clasesCampo}
-            value={campos.moneda}
-            aria-describedby={motivosMoneda.length > 0 ? `${id}-motivo-moneda` : undefined}
-            onChange={(e) => {
-              const m = opciones.monedas.find((x) => x.moneda === e.target.value);
-              if (m?.habilitada) cambiar({ moneda: m.moneda });
-            }}
-          >
-            {opciones.monedas.map((m) => (
-              <option key={m.moneda} value={m.moneda} disabled={!m.habilitada}>
-                {m.moneda}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-col gap-1.5">
+          <Campo id={`${id}-moneda`} etiqueta={TEXTOS.moneda}>
+            <Selector
+              id={`${id}-moneda`}
+              value={campos.moneda}
+              aria-describedby={motivosMoneda.length > 0 ? `${id}-motivo-moneda` : undefined}
+              onChange={(e) => {
+                const m = opciones.monedas.find((x) => x.moneda === e.target.value);
+                if (m?.habilitada) cambiar({ moneda: m.moneda });
+              }}
+            >
+              {opciones.monedas.map((m) => (
+                <option key={m.moneda} value={m.moneda} disabled={!m.habilitada}>
+                  {m.moneda}
+                </option>
+              ))}
+            </Selector>
+          </Campo>
           {motivosMoneda.length > 0 && (
-            <ul id={`${id}-motivo-moneda`} className="text-sm opacity-80">
+            <ul id={`${id}-motivo-moneda`} className="text-sm text-hielo-tenue">
               {motivosMoneda.map((m) => (
                 <li key={m.moneda}>{m.motivo}</li>
               ))}
             </ul>
           )}
           {monedaElegida !== undefined && !monedaElegida.habilitada && monedaElegida.motivo !== null && (
-            <p className="text-sm">{monedaElegida.motivo}</p>
+            <p className="text-sm text-hielo">{monedaElegida.motivo}</p>
           )}
         </div>
 
-        <fieldset className="flex flex-col gap-1">
-          <legend className="font-medium">{TEXTOS.esquema}</legend>
-          {opciones.esquemas.map((e) => (
-            <label key={e.esquema} className="flex items-center gap-2 py-1">
-              <input
-                type="radio"
-                name={`${id}-esquema`}
-                value={e.esquema}
-                checked={campos.esquema === e.esquema}
-                onChange={() => cambiar({ esquema: e.esquema })}
-                className="size-4"
-              />
-              {e.nombre}
-            </label>
-          ))}
-        </fieldset>
+        <Opciones
+          nombre={`${id}-esquema`}
+          leyenda={TEXTOS.esquema}
+          valor={campos.esquema}
+          alCambiar={(esquema) => cambiar({ esquema })}
+          opciones={opciones.esquemas.map((e) => ({ valor: e.esquema, etiqueta: e.nombre }))}
+        />
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor={`${id}-monto`} className="font-medium">
-            {TEXTOS.monto}
-          </label>
-          <input
+        <Campo id={`${id}-monto`} etiqueta={TEXTOS.monto} ayuda={TEXTOS.ayudaMonto}>
+          <Entrada
             id={`${id}-monto`}
             type="text"
             inputMode="decimal"
             autoComplete="off"
             spellCheck={false}
-            className={`${clasesCampo} font-mono`}
+            className="text-lg font-bold tabular-nums"
             value={campos.monto}
-            aria-describedby={`${id}-ayuda-monto`}
+            aria-describedby={`${id}-monto-ayuda`}
             onChange={(e) => cambiar({ monto: e.target.value })}
           />
-          <p id={`${id}-ayuda-monto`} className="text-sm opacity-70">
-            {TEXTOS.ayudaMonto}
-          </p>
-        </div>
+        </Campo>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor={`${id}-plazo`} className="font-medium">
-            {TEXTOS.plazo}
-          </label>
-          <select
+        <Campo id={`${id}-plazo`} etiqueta={TEXTOS.plazo}>
+          <Selector
             id={`${id}-plazo`}
-            className={clasesCampo}
             value={campos.plazo === null ? "" : String(campos.plazo)}
             disabled={plazos.length === 0}
             onChange={(e) => cambiar({ plazo: e.target.value === "" ? null : Number(e.target.value) })}
@@ -275,18 +251,17 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
                 {p.etiqueta}
               </option>
             ))}
-          </select>
-        </div>
+          </Selector>
+        </Campo>
 
-        <fieldset className="mt-2 flex flex-col gap-3 border-t border-black/15 pt-4 dark:border-white/20">
-          <legend className="font-semibold">{TEXTOS.tituloOpcionales}</legend>
-          <p className="text-sm opacity-70">{TEXTOS.ayudaOpcionales}</p>
+        <fieldset className="mt-1 flex flex-col gap-4 border-t border-hielo/15 pt-5">
+          <legend className="float-left mb-1 w-full text-lg font-bold">{TEXTOS.tituloOpcionales}</legend>
+          <p className="text-sm text-hielo-tenue">{TEXTOS.ayudaOpcionales}</p>
           {CAMPOS_OPCIONALES.map((clave) => {
             const tope = opciones.topes[clave];
             const valor = opcionales[clave];
             const props = {
               id: `${id}-${clave}`,
-              className: clasesCampo,
               value: valor,
               autoComplete: "off",
               "aria-describedby": `${id}-${clave}-contador`,
@@ -294,33 +269,40 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
                 setOpcionales((o) => ({ ...o, [clave]: recortar(e.target.value, tope) })),
             };
             return (
-              <div key={clave} className="flex flex-col gap-1">
-                <label htmlFor={props.id} className="font-medium">
-                  {TEXTOS[clave]}
-                </label>
-                {clave === "notaAdicional" ? <textarea rows={3} {...props} /> : <input type="text" {...props} />}
-                <p id={props["aria-describedby"]} className="text-right text-xs opacity-70">
-                  {TEXTOS.contador(contarCaracteres(valor), tope)}
-                </p>
-              </div>
+              <Campo
+                key={clave}
+                id={props.id}
+                etiqueta={TEXTOS[clave]}
+                contador={TEXTOS.contador(contarCaracteres(valor), tope)}
+              >
+                {clave === "notaAdicional" ? <AreaTexto rows={3} {...props} /> : <Entrada type="text" {...props} />}
+              </Campo>
             );
           })}
         </fieldset>
       </form>
 
-      <section aria-labelledby={`${id}-titulo-vista`} className="flex flex-col gap-3">
-        <h2 id={`${id}-titulo-vista`} className="text-lg font-semibold">
+      <TarjetaVidrio
+        como="section"
+        aria-labelledby={`${id}-titulo-vista`}
+        className="flex flex-col gap-5 lg:sticky lg:top-6"
+      >
+        <h2 id={`${id}-titulo-vista`} className="text-2xl font-bold">
           {TEXTOS.tituloVistaPrevia}
         </h2>
         <div aria-live="polite" aria-busy={hayMonto && actual === null}>
           {!hayMonto ? (
-            <p>{TEXTOS.escribeMonto}</p>
+            <p className="text-hielo">{TEXTOS.escribeMonto}</p>
           ) : actual === null ? (
-            <p>{TEXTOS.calculando}</p>
+            <div className="flex flex-col gap-3">
+              <p className="text-hielo">{TEXTOS.calculando}</p>
+              <Esqueleto className="h-5 w-1/3" />
+              <Esqueleto className="h-14 w-2/3" />
+              <Esqueleto className="h-4 w-full" />
+            </div>
           ) : actual.resultado.tipo === "error" ? (
-            <div className="rounded-md border-2 border-red-600 p-4">
-              <p className="font-semibold">{TEXTOS.tituloError}</p>
-              <p className="mt-1">{actual.resultado.mensaje}</p>
+            <Aviso tono="error" titulo={TEXTOS.tituloError}>
+              <p>{actual.resultado.mensaje}</p>
               {actual.resultado.detalles.length > 0 && (
                 <ul className="mt-2 list-disc pl-5 text-sm">
                   {actual.resultado.detalles.map((d) => (
@@ -328,51 +310,46 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
                   ))}
                 </ul>
               )}
-            </div>
+            </Aviso>
           ) : actual.resultado.tipo === "elige_plazo" ? (
-            <p>{TEXTOS.eligePlazo}</p>
+            <p className="text-hielo">{TEXTOS.eligePlazo}</p>
           ) : (
             <VistaPrevia vista={actual.resultado.vistaPrevia} />
           )}
         </div>
 
-        <div className="mt-2 flex flex-col gap-3 border-t border-black/15 pt-4 dark:border-white/20">
-          <h3 className="font-semibold">{TEXTOS.tituloConfirmacion}</h3>
-          <label className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              className="mt-1 size-4"
-              checked={confirmacion.confirmado}
-              disabled={!vistaPreviaVigente(confirmacion)}
-              onChange={(e) => despachar({ tipo: e.target.checked ? "confirmar" : "desconfirmar" })}
-            />
-            <span>{TEXTOS.confirmo}</span>
-          </label>
-          <button
-            type="button"
-            className="w-full rounded-md bg-foreground px-4 py-2 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:self-start"
-            disabled={!puedePdf || generando}
+        <div className="flex flex-col gap-3 border-t border-hielo/15 pt-5">
+          <h3 className="text-lg font-bold">{TEXTOS.tituloConfirmacion}</h3>
+          <Casilla
+            etiqueta={TEXTOS.confirmo}
+            checked={confirmacion.confirmado}
+            disabled={!vistaPreviaVigente(confirmacion)}
+            onChange={(e) => despachar({ tipo: e.target.checked ? "confirmar" : "desconfirmar" })}
+          />
+          <Boton
+            className="w-full sm:w-auto sm:self-start"
+            disabled={!puedePdf}
+            cargando={generando}
             aria-describedby={motivoPdf === null ? undefined : `${id}-motivo-pdf`}
             onClick={generarPdf}
           >
             {TEXTOS.generarPdf}
-          </button>
+          </Boton>
           {motivoPdf !== null && (
-            <p id={`${id}-motivo-pdf`} className="text-sm opacity-80">
+            <p id={`${id}-motivo-pdf`} className="text-sm text-hielo">
               {motivoPdf}
             </p>
           )}
-          <p role="status" className="text-sm">
+          <p role="status" className="text-sm text-hielo">
             {mensajePdf?.tipo === "estado" ? mensajePdf.texto : null}
           </p>
           {mensajePdf?.tipo === "error" && (
-            <div role="alert" className="rounded-md border-2 border-red-600 p-3">
-              <p className="font-semibold">{TEXTOS.tituloErrorPdf}</p>
-              <p className="mt-1 text-sm">{mensajePdf.texto}</p>
-            </div>
+            <Aviso role="alert" tono="error" titulo={TEXTOS.tituloErrorPdf}>
+              <p className="text-sm">{mensajePdf.texto}</p>
+            </Aviso>
           )}
         </div>
-      </section>
+      </TarjetaVidrio>
     </div>
   );
 }

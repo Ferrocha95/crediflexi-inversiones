@@ -1,69 +1,76 @@
 "use client";
 
 import type { ModeloVistaPrevia } from "../../aplicacion/modelo";
+import { Aviso } from "../../componentes/ui/Aviso";
+import { TarjetaCifra } from "../../componentes/ui/TarjetaCifra";
 import { TEXTOS } from "./textosPantalla";
 
 /** Muestra la vista previa tal como llega del servidor: aquí no se calcula nada. */
 export function VistaPrevia({ vista }: { vista: ModeloVistaPrevia }) {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       {vista.avisos.length > 0 && (
-        <div className="rounded-md border-2 border-amber-500 bg-amber-50 p-4 text-amber-950 dark:bg-amber-950 dark:text-amber-50">
-          <p className="font-semibold">{TEXTOS.tituloAvisos}</p>
-          <ul className="mt-1 list-disc pl-5">
+        <Aviso tono="advertencia" titulo={TEXTOS.tituloAvisos}>
+          <ul className="list-disc pl-5">
             {vista.avisos.map((a) => (
               <li key={a.codigo}>{a.mensaje}</li>
             ))}
           </ul>
-        </div>
+        </Aviso>
       )}
 
-      <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <dt className="text-sm opacity-70">{TEXTOS.tasaAnual}</dt>
-          <dd className="font-mono text-2xl font-semibold">{vista.tasa}</dd>
+          <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.tasaAnual}</dt>
+          <dd className="text-2xl font-extrabold tabular-nums">{vista.tasa}</dd>
         </div>
         <div>
-          <dt className="text-sm opacity-70">{TEXTOS.tramoAplicado}</dt>
-          <dd className="font-mono">{vista.tramo.rango}</dd>
+          <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.tramoAplicado}</dt>
+          <dd className="font-semibold tabular-nums">{vista.tramo.rango}</dd>
         </div>
         <div className="sm:col-span-2">
-          <dt className="text-sm opacity-70">{TEXTOS.estatusTasa}</dt>
-          <dd>
-            <span className="rounded border border-current px-2 py-0.5 font-mono text-sm">
+          <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.estatusTasa}</dt>
+          <dd className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-hielo/40 px-3 py-0.5 text-sm font-semibold">
               {vista.tramo.estatus ?? TEXTOS.sinEstatus}
             </span>
-            {vista.tramo.explicacionEstatus !== null && <span className="ml-2">{vista.tramo.explicacionEstatus}</span>}
-            {vista.origenTasa === "plazo_adicional" && <p className="mt-1 text-sm">{TEXTOS.origenPlazoAdicional}</p>}
+            {vista.tramo.explicacionEstatus !== null && <span className="text-hielo">{vista.tramo.explicacionEstatus}</span>}
+            {vista.origenTasa === "plazo_adicional" && <p className="w-full text-sm text-hielo">{TEXTOS.origenPlazoAdicional}</p>}
           </dd>
         </div>
       </dl>
 
-      <section aria-labelledby="titulo-cifras">
-        <h3 id="titulo-cifras" className="mb-2 font-semibold">
+      <section aria-labelledby="titulo-cifras" className="flex flex-col gap-3">
+        <h3 id="titulo-cifras" className="text-lg font-bold">
           {TEXTOS.tituloCifras}
         </h3>
-        <ul className="flex flex-col gap-3">
-          {vista.salidas.map((s) => (
-            <li key={s.clave} className="rounded-md border border-black/15 p-3 dark:border-white/20">
-              <p className="text-sm">{s.etiqueta}</p>
-              <p className="font-mono text-xl font-semibold">{s.cifra}</p>
-              <dl className="mt-2 text-sm">
-                <div className="flex flex-wrap gap-x-2">
-                  <dt className="opacity-70">{TEXTOS.formula}:</dt>
-                  <dd className="font-mono">{s.formula}</dd>
-                </div>
-                <div className="flex flex-wrap gap-x-2">
-                  <dt className="opacity-70">{TEXTOS.operacion}:</dt>
-                  <dd className="font-mono break-all">{s.operacion}</dd>
-                </div>
-              </dl>
+        <ul className="flex flex-col gap-4">
+          {vista.salidas.map((s, i) => (
+            <li key={s.clave} className={i === 0 ? "pb-1" : "border-t border-hielo/15 pt-4"}>
+              <TarjetaCifra
+                etiqueta={s.etiqueta}
+                valor={s.cifra}
+                tono={i === 0 ? "positivo" : "neutro"}
+                tamano={i === 0 ? "grande" : "mediano"}
+                flecha={i === 0}
+              >
+                <dl className="flex flex-col gap-1">
+                  <div className="flex flex-wrap gap-x-2">
+                    <dt className="font-semibold text-hielo-tenue">{TEXTOS.formula}:</dt>
+                    <dd>{s.formula}</dd>
+                  </div>
+                  <div className="flex flex-wrap gap-x-2">
+                    <dt className="font-semibold text-hielo-tenue">{TEXTOS.operacion}:</dt>
+                    <dd className="break-all tabular-nums">{s.operacion}</dd>
+                  </div>
+                </dl>
+              </TarjetaCifra>
             </li>
           ))}
         </ul>
       </section>
 
-      <p className="text-sm opacity-70">{TEXTOS.versionTasas(vista.tasas.version, vista.tasas.fecha)}</p>
+      <p className="text-sm text-hielo-tenue">{TEXTOS.versionTasas(vista.tasas.version, vista.tasas.fecha)}</p>
     </div>
   );
 }
