@@ -22,6 +22,12 @@ test.describe("1. axe sin violaciones (WCAG 2.2 AA)", () => {
       await sinViolaciones(page);
     });
 
+    test(`/ (inicio) a ${ancho} px`, async ({ page }) => {
+      await page.setViewportSize({ width: ancho, height: 900 });
+      await page.goto("/");
+      await sinViolaciones(page);
+    });
+
     test(`/diseno a ${ancho} px`, async ({ page }) => {
       await page.setViewportSize({ width: ancho, height: 900 });
       await page.goto("/diseno");
@@ -122,6 +128,8 @@ test.describe("3. foco visible", () => {
 
 test.describe("4. objetivos táctiles de 44 px o más", () => {
   for (const [ruta, ancho] of [
+    ["/", 1280],
+    ["/", 390],
     ["/diseno", 1280],
     ["/diseno", 390],
     ["/cotizador", 390],
@@ -222,6 +230,8 @@ test.describe("8. sin saltos de diseño", () => {
 
 test("máximo 4 capas con desenfoque por pantalla", async ({ page }) => {
   for (const [ruta, ancho] of [
+    ["/", 1280],
+    ["/", 390],
     ["/cotizador", 1280],
     ["/cotizador", 390],
     ["/diseno", 1280],
@@ -239,4 +249,18 @@ test("máximo 4 capas con desenfoque por pantalla", async ({ page }) => {
     );
     expect(capas, `${ruta} a ${ancho} px`).toBeLessThanOrEqual(4);
   }
+});
+
+test.describe("inicio", () => {
+  test("seis tarjetas en Próximamente, sin cifras, y el acceso al cotizador funciona", async ({ page }) => {
+    await page.goto("/");
+    const resumen = page.getByRole("region", { name: "Resumen" });
+    const tarjetas = resumen.getByRole("region");
+    await expect(tarjetas).toHaveCount(6);
+    for (const t of await tarjetas.all()) await expect(t).toContainText("Próximamente");
+    await expect(resumen).not.toContainText("$");
+    await expect(page.getByRole("button", { name: "Nuevo prospecto, Próximamente" })).toHaveAttribute("aria-disabled", "true");
+    await page.getByRole("link", { name: /Nueva cotización/ }).click();
+    await expect(page).toHaveURL(/\/cotizador$/);
+  });
 });

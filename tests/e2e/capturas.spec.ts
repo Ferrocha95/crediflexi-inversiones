@@ -11,8 +11,11 @@ const archivo = (nombre: string) => path.join(DIR, `${nombre}.png`);
 
 test.describe("capturas @capturas", () => {
   for (const ancho of ANCHOS) {
-    test(`cotizador, menú y catálogo a ${ancho} px`, async ({ page }) => {
+    test(`inicio, cotizador, menú y catálogo a ${ancho} px`, async ({ page }) => {
       await page.setViewportSize({ width: ancho, height: ancho === 390 ? 844 : 900 });
+
+      await page.goto("/");
+      await page.screenshot({ path: archivo(`inicio-${ancho}`), fullPage: true });
 
       await page.goto("/cotizador");
       await page.screenshot({ path: archivo(`cotizador-vacio-${ancho}`), fullPage: true });

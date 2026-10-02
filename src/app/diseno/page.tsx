@@ -11,7 +11,26 @@ import { TarjetaVidrio } from "../../componentes/ui/TarjetaVidrio";
 import { CuadriculaSemanal } from "../../componentes/vistas/CuadriculaSemanal";
 import { TablaPipeline } from "../../componentes/vistas/TablaPipeline";
 import { TablaProyeccion } from "../../componentes/vistas/TablaProyeccion";
-import { PIPELINE_EJEMPLO, PROYECCION_EJEMPLO, SEMANA_EJEMPLO, TOTAL_PROYECCION_EJEMPLO } from "./datosEjemplo";
+import {
+  TarjetaEnvioViernes,
+  TarjetaMeta,
+  TarjetaPipelineEstatus,
+  TarjetaPlanHoy,
+  TarjetaProyeccionSemana,
+  TarjetaSeguimientos,
+} from "../../componentes/inicio/TarjetasResumen";
+import {
+  ENVIO_EJEMPLO,
+  META_EJEMPLO,
+  PIPELINE_EJEMPLO,
+  PIPELINE_ESTATUS_EJEMPLO,
+  PLAN_HOY_EJEMPLO,
+  PROYECCION_EJEMPLO,
+  PROYECCION_SEMANA_EJEMPLO,
+  SEGUIMIENTOS_EJEMPLO,
+  SEMANA_EJEMPLO,
+  TOTAL_PROYECCION_EJEMPLO,
+} from "./datosEjemplo";
 import { DemoBotones, DemoControles, DemoDialogoYNotificaciones, DemoNumero, DemoPestanas } from "./Demos";
 
 export const metadata: Metadata = {
@@ -68,6 +87,27 @@ export default function PaginaDiseno() {
               Cifra neutra, en blanco.
             </TarjetaCifra>
           </TarjetaVidrio>
+        </div>
+      </Seccion>
+
+      <Seccion
+        titulo="Inicio"
+        descripcion="Las tarjetas de resumen de la página de inicio, llenas. En / van todas en «Próximamente», sin datos, hasta que existan sus módulos."
+        ejemplo
+      >
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <TarjetaMeta datos={META_EJEMPLO} />
+          <TarjetaPipelineEstatus datos={PIPELINE_ESTATUS_EJEMPLO} />
+          <TarjetaSeguimientos datos={SEGUIMIENTOS_EJEMPLO} />
+          <TarjetaProyeccionSemana datos={PROYECCION_SEMANA_EJEMPLO} />
+          <TarjetaPlanHoy datos={PLAN_HOY_EJEMPLO} />
+          <TarjetaEnvioViernes datos={ENVIO_EJEMPLO} />
+        </div>
+        <p className="text-hielo">Así se ven en / mientras no hay datos:</p>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <TarjetaMeta />
+          <TarjetaPipelineEstatus />
+          <TarjetaSeguimientos />
         </div>
       </Seccion>
 

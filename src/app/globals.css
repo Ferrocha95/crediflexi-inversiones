@@ -113,6 +113,10 @@ body {
     animation: brillo 1.4s linear infinite;
   }
 
+  .esqueleto-quieto {
+    background: rgb(218 233 248 / 0.1);
+  }
+
   /* Columna de dígitos del número animado. */
   .odometro-tira {
     transition: transform var(--duracion-numero) var(--ease-suave);

@@ -1,3 +1,11 @@
+import type {
+  DatosEnvioViernes,
+  DatosMeta,
+  DatosPipelineEstatus,
+  DatosPlanHoy,
+  DatosProyeccionSemana,
+  DatosSeguimientos,
+} from "../../componentes/inicio/TarjetasResumen";
 import type { DiaPlan } from "../../componentes/vistas/CuadriculaSemanal";
 import type { FilaPipelineDatos } from "../../componentes/vistas/TablaPipeline";
 import type { FilaProyeccion } from "../../componentes/vistas/TablaProyeccion";
@@ -103,3 +111,46 @@ export const TOTAL_PROYECCION_EJEMPLO = "$925,000.00";
 
 /** Cifras para ver el número animado: se recorren al pulsar el botón. */
 export const CIFRAS_EJEMPLO = ["$12,480.50", "$13,915.25", "$9,302.00", "$128,760.75"] as const;
+
+// Tarjetas de resumen del inicio (solo aquí: la página / no recibe datos).
+
+/** 1,550,000 de 2,500,000 = 62 %: la fracción y los textos se escribieron a mano para que cuadren. */
+export const META_EJEMPLO: DatosMeta = {
+  fraccion: 0.62,
+  porcentaje: "62%",
+  logrado: "$1,550,000.00",
+  meta: "$2,500,000.00",
+};
+
+export const PIPELINE_ESTATUS_EJEMPLO: DatosPipelineEstatus = {
+  conteos: { INTERESADO: 7, INTERMITENTE: 6, "NO INTERESADO": 4 },
+};
+
+export const SEGUIMIENTOS_EJEMPLO: DatosSeguimientos = {
+  filas: [
+    { id: "s1", nombre: "Prospecto Ejemplo Uno", estatus: "INTERESADO", nota: "Llamar por la tarde para cerrar el plazo." },
+    { id: "s2", nombre: "Prospecta Ejemplo Dos", estatus: "INTERMITENTE", nota: "Mandar mensaje por la mañana." },
+  ],
+};
+
+export const PROYECCION_SEMANA_EJEMPLO: DatosProyeccionSemana = {
+  total: TOTAL_PROYECCION_EJEMPLO,
+  detalle: "4 inversionistas",
+  semana: "Del 5 al 9 de octubre",
+};
+
+export const PLAN_HOY_EJEMPLO: DatosPlanHoy = {
+  bloques: [
+    { hora: "9:00", donde: "Sucursal", que: "Gestión cartera" },
+    { hora: "12:00", donde: "Campo", que: "Carta invitación" },
+    { hora: "16:00", donde: "Sucursal", que: "Cita con Prospecto Ejemplo Uno" },
+  ],
+};
+
+export const ENVIO_EJEMPLO: DatosEnvioViernes = {
+  fecha: "Viernes 9 de octubre",
+  archivos: [
+    { nombre: "PIPELINE_OCTUBRE.xlsx", listo: true },
+    { nombre: "PLAN_Y_PROYECCION_SEMANAL_DEL_12_AL_16_DE_OCTUBRE_DEL_2026.xlsx", listo: false },
+  ],
+};
