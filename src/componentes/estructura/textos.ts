@@ -6,4 +6,6 @@ export const TEXTOS_ESTRUCTURA = {
   plegarMenu: "Plegar el menú",
   desplegarMenu: "Desplegar el menú",
   irAlInicio: "Crediflexi, ir al inicio",
+  mas: "Más",
+  masDestinos: "Más secciones",
 } as const;

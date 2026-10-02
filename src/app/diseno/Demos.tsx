@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import { LayoutGrid, List, RefreshCw } from "lucide-react";
 import { useId, useState } from "react";
 import { Boton } from "../../componentes/ui/Boton";
 import { AreaTexto, Campo, Entrada } from "../../componentes/ui/Campo";
@@ -10,8 +10,10 @@ import { useNotificar } from "../../componentes/ui/Notificaciones";
 import { Opciones } from "../../componentes/ui/Opciones";
 import { Pestanas } from "../../componentes/ui/Pestanas";
 import { Selector } from "../../componentes/ui/Selector";
+import { BibliotecaDocumentos, type VistaBiblioteca } from "../../componentes/vistas/BibliotecaDocumentos";
+import { TarjetaDocumento } from "../../componentes/vistas/TarjetaDocumento";
 import { TarjetaTotal } from "../../componentes/vistas/TarjetaTotal";
-import { CIFRAS_EJEMPLO } from "./datosEjemplo";
+import { CIFRAS_EJEMPLO, DOCUMENTOS_EJEMPLO } from "./datosEjemplo";
 
 /** Botón que recorre las cifras de ejemplo para ver rodar el número animado. */
 export function DemoNumero() {
@@ -143,6 +145,49 @@ export function DemoDialogoYNotificaciones() {
       >
         Diálogo de ejemplo. Se cierra con Esc, con el botón de cerrar o con un clic fuera de la caja, y el foco vuelve al botón que lo abrió.
       </Dialogo>
+    </div>
+  );
+}
+
+/** Biblioteca de ejemplo: cambia entre galería y lista. Ver y Descargar solo avisan que es un ejemplo. */
+export function DemoBiblioteca() {
+  const [vista, setVista] = useState<VistaBiblioteca>("galeria");
+  const notificar = useNotificar();
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="max-w-sm">
+        <Opciones
+          nombre="vista-biblioteca"
+          leyenda="Vista"
+          valor={vista}
+          alCambiar={setVista}
+          opciones={[
+            { valor: "galeria", etiqueta: <span className="inline-flex items-center gap-2"><LayoutGrid aria-hidden="true" className="size-4" />Galería</span> },
+            { valor: "lista", etiqueta: <span className="inline-flex items-center gap-2"><List aria-hidden="true" className="size-4" />Lista</span> },
+          ]}
+        />
+      </div>
+      <BibliotecaDocumentos
+        titulo="Biblioteca de ejemplo"
+        documentos={DOCUMENTOS_EJEMPLO}
+        vista={vista}
+        alVer={(d) => notificar({ tono: "info", titulo: `Ver: ${d.nombre}`, texto: "Es un ejemplo: aquí se abriría el documento." })}
+        alDescargar={(d) => notificar({ tono: "info", titulo: `Descargar: ${d.nombre}`, texto: "Es un ejemplo: aquí empezaría la descarga." })}
+      />
+    </div>
+  );
+}
+
+/** Una tarjeta de documento suelta, con sus botones. */
+export function DemoTarjetaDocumento() {
+  const notificar = useNotificar();
+  return (
+    <div className="max-w-md">
+      <TarjetaDocumento
+        documento={DOCUMENTOS_EJEMPLO[0]}
+        alVer={(d) => notificar({ tono: "info", titulo: `Ver: ${d.nombre}`, texto: "Es un ejemplo: aquí se abriría el documento." })}
+        alDescargar={(d) => notificar({ tono: "info", titulo: `Descargar: ${d.nombre}`, texto: "Es un ejemplo: aquí empezaría la descarga." })}
+      />
     </div>
   );
 }

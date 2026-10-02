@@ -1,8 +1,9 @@
-import { CalendarClock, CalendarDays, Kanban, Send, Target, TrendingUp, CircleCheck, Circle } from "lucide-react";
+import { CalendarClock, CalendarDays, Circle, CircleCheck, FileClock, Hourglass, Kanban, Send, Target, TrendingUp, Wallet } from "lucide-react";
 import { Esqueleto } from "../ui/Esqueleto";
 import { ESTATUS_PIPELINE, FONDO_ESTATUS, InsigniaEstatus, type EstatusPipeline } from "../ui/InsigniaEstatus";
 import { NumeroAnimado } from "../ui/NumeroAnimado";
 import type { Lugar } from "../vistas/CuadriculaSemanal";
+import { InsigniaVigencia, type Vigencia } from "../vistas/TarjetaDocumento";
 import { AnilloAvance, AnilloVacio } from "./AnilloAvance";
 import { TarjetaResumen } from "./TarjetaResumen";
 
@@ -244,6 +245,109 @@ export function TarjetaEnvioViernes({ datos }: { readonly datos?: DatosEnvioVier
           </ul>
         </div>
       )}
+    </TarjetaResumen>
+  );
+}
+
+// Cartera total --------------------------------------------------------------
+
+export interface DatosCarteraTotal {
+  /** Suma de la cartera, ya calculada y formateada. */
+  readonly total: string;
+  /** Por ejemplo "12 clientes con inversión vigente". */
+  readonly detalle: string;
+}
+
+export function TarjetaCarteraTotal({ datos }: { readonly datos?: DatosCarteraTotal }) {
+  return (
+    <TarjetaResumen
+      titulo="Cartera total"
+      Icono={Wallet}
+      modulo="Se activa con el módulo de Cartera."
+      proximamente={datos === undefined}
+      esqueleto={
+        <div className="flex flex-col gap-3">
+          <Esqueleto quieto className="h-10 w-3/4" />
+          <Lineas n={1} />
+        </div>
+      }
+    >
+      {datos !== undefined && (
+        <div className="flex flex-col gap-1">
+          <p className="text-3xl font-extrabold"><NumeroAnimado valor={datos.total} /></p>
+          <p className="text-sm text-hielo">{datos.detalle}</p>
+        </div>
+      )}
+    </TarjetaResumen>
+  );
+}
+
+// Vencimientos de los próximos 30 días ----------------------------------------
+
+export interface DatosVencimientos {
+  readonly filas: readonly { readonly id: string; readonly nombre: string; readonly monto: string; readonly fecha: string }[];
+}
+
+export function TarjetaVencimientos({ datos }: { readonly datos?: DatosVencimientos }) {
+  return (
+    <TarjetaResumen
+      titulo="Vencimientos de los próximos 30 días"
+      Icono={Hourglass}
+      modulo="Se activa con el módulo de Cartera."
+      proximamente={datos === undefined}
+      esqueleto={<Lineas n={3} />}
+    >
+      {datos !== undefined &&
+        (datos.filas.length === 0 ? (
+          <p className="text-hielo">No hay vencimientos en los próximos 30 días.</p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {datos.filas.map((f) => (
+              <li key={f.id} className="flex items-baseline justify-between gap-3 border-t border-hielo/10 pt-3 first:border-t-0 first:pt-0">
+                <span className="flex min-w-0 flex-col">
+                  <span className="font-bold">{f.nombre}</span>
+                  <span className="text-sm text-hielo">Vence el {f.fecha}</span>
+                </span>
+                <span className="font-extrabold whitespace-nowrap">{f.monto}</span>
+              </li>
+            ))}
+          </ul>
+        ))}
+    </TarjetaResumen>
+  );
+}
+
+// Documentos por vencer ------------------------------------------------------
+
+export interface DatosDocumentosPorVencer {
+  readonly filas: readonly { readonly id: string; readonly nombre: string; readonly vigencia: Vigencia; readonly fecha: string }[];
+}
+
+export function TarjetaDocumentosPorVencer({ datos }: { readonly datos?: DatosDocumentosPorVencer }) {
+  return (
+    <TarjetaResumen
+      titulo="Documentos por vencer"
+      Icono={FileClock}
+      modulo="Se activa con el módulo de Biblioteca."
+      proximamente={datos === undefined}
+      esqueleto={<Lineas n={3} />}
+    >
+      {datos !== undefined &&
+        (datos.filas.length === 0 ? (
+          <p className="text-hielo">No hay documentos por vencer.</p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {datos.filas.map((f) => (
+              <li key={f.id} className="flex flex-col gap-1 border-t border-hielo/10 pt-3 first:border-t-0 first:pt-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-bold">{f.nombre}</span>
+                  <InsigniaVigencia vigencia={f.vigencia} />
+                </div>
+                <span className="text-sm text-hielo">{f.fecha}</span>
+              </li>
+            ))}
+          </ul>
+        ))}
     </TarjetaResumen>
   );
 }

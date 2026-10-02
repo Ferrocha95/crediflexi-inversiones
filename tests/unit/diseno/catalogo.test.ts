@@ -5,6 +5,8 @@ import { NextRequest } from "next/server";
 import { proxy } from "../../../src/proxy";
 import * as proxyModulo from "../../../src/proxy";
 import {
+  CLIENTES_EJEMPLO,
+  DOCUMENTOS_EJEMPLO,
   PIPELINE_EJEMPLO,
   PROYECCION_EJEMPLO,
   SEMANA_EJEMPLO,
@@ -36,8 +38,8 @@ describe("catálogo /diseno: datos sintéticos y marcados", () => {
   it("cada sección con datos lleva el rótulo «Datos de ejemplo»", () => {
     const pagina = leer("src/app/diseno/page.tsx");
     expect(pagina).toContain("Datos de ejemplo");
-    for (const titulo of ["Pipeline", "Plan semanal", "Proyección", "Cifras y totales"]) {
-      expect(pagina).toMatch(new RegExp(`titulo="${titulo}"[^>]*ejemplo>`));
+    for (const titulo of ["Pipeline", "Plan semanal", "Proyección", "Cifras y totales", "Inicio", "Cartera", "Biblioteca"]) {
+      expect(pagina).toMatch(new RegExp(`titulo="${titulo}"[^>]*ejemplo\\s*>`));
     }
   });
 
@@ -58,12 +60,26 @@ describe("catálogo /diseno: datos sintéticos y marcados", () => {
     }
   });
 
+  it("clientes de ejemplo: nombre con «Ejemplo» y teléfono 55 0000 00XX; documentos marcados «(ejemplo)»", () => {
+    for (const c of CLIENTES_EJEMPLO) {
+      expect(c.nombre).toMatch(/Ejemplo/);
+      expect(c.telefono).toMatch(/^55 0000 00\d\d$/);
+    }
+    for (const d of DOCUMENTOS_EJEMPLO) expect(d.nombre).toMatch(/\(ejemplo\)$/);
+  });
+
+  it("la biblioteca de ejemplo no trae documentos de clientes ni de identidad", () => {
+    for (const d of DOCUMENTOS_EJEMPLO) {
+      expect(d.nombre).not.toMatch(/INE|CURP|RFC|CLABE|estado de cuenta|identificaci/i);
+    }
+  });
+
   it("el plan de ejemplo va de lunes a viernes", () => {
     expect(SEMANA_EJEMPLO.map((d) => d.nombre)).toEqual(["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]);
   });
 
   it("los componentes de vista no suman ni importan decimal.js ni el dominio", () => {
-    for (const f of ["TablaPipeline", "CuadriculaSemanal", "TablaProyeccion", "TarjetaTotal"]) {
+    for (const f of ["TablaPipeline", "CuadriculaSemanal", "TablaProyeccion", "TarjetaTotal", "TarjetaCliente", "TarjetaDocumento", "BibliotecaDocumentos"]) {
       const codigo = leer(`src/componentes/vistas/${f}.tsx`);
       expect(codigo).not.toMatch(/domain|aplicacion|servidor|decimal|seed|reduce\(/);
     }

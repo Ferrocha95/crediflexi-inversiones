@@ -12,14 +12,21 @@ import { CuadriculaSemanal } from "../../componentes/vistas/CuadriculaSemanal";
 import { TablaPipeline } from "../../componentes/vistas/TablaPipeline";
 import { TablaProyeccion } from "../../componentes/vistas/TablaProyeccion";
 import {
+  TarjetaCarteraTotal,
+  TarjetaDocumentosPorVencer,
   TarjetaEnvioViernes,
   TarjetaMeta,
   TarjetaPipelineEstatus,
   TarjetaPlanHoy,
   TarjetaProyeccionSemana,
   TarjetaSeguimientos,
+  TarjetaVencimientos,
 } from "../../componentes/inicio/TarjetasResumen";
+import { TarjetaCliente } from "../../componentes/vistas/TarjetaCliente";
 import {
+  CARTERA_TOTAL_EJEMPLO,
+  CLIENTES_EJEMPLO,
+  DOCUMENTOS_POR_VENCER_EJEMPLO,
   ENVIO_EJEMPLO,
   META_EJEMPLO,
   PIPELINE_EJEMPLO,
@@ -30,8 +37,17 @@ import {
   SEGUIMIENTOS_EJEMPLO,
   SEMANA_EJEMPLO,
   TOTAL_PROYECCION_EJEMPLO,
+  VENCIMIENTOS_EJEMPLO,
 } from "./datosEjemplo";
-import { DemoBotones, DemoControles, DemoDialogoYNotificaciones, DemoNumero, DemoPestanas } from "./Demos";
+import {
+  DemoBiblioteca,
+  DemoBotones,
+  DemoControles,
+  DemoDialogoYNotificaciones,
+  DemoNumero,
+  DemoPestanas,
+  DemoTarjetaDocumento,
+} from "./Demos";
 
 export const metadata: Metadata = {
   title: "Catálogo de diseño · Crediflexi Inversiones",
@@ -102,6 +118,9 @@ export default function PaginaDiseno() {
           <TarjetaProyeccionSemana datos={PROYECCION_SEMANA_EJEMPLO} />
           <TarjetaPlanHoy datos={PLAN_HOY_EJEMPLO} />
           <TarjetaEnvioViernes datos={ENVIO_EJEMPLO} />
+          <TarjetaCarteraTotal datos={CARTERA_TOTAL_EJEMPLO} />
+          <TarjetaVencimientos datos={VENCIMIENTOS_EJEMPLO} />
+          <TarjetaDocumentosPorVencer datos={DOCUMENTOS_POR_VENCER_EJEMPLO} />
         </div>
         <p className="text-hielo">Así se ven en / mientras no hay datos:</p>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -126,6 +145,27 @@ export default function PaginaDiseno() {
 
       <Seccion titulo="Proyección" descripcion="El total llega ya calculado: la tabla no suma nada." ejemplo>
         <TablaProyeccion titulo="Proyección de ejemplo" filas={PROYECCION_EJEMPLO} total={TOTAL_PROYECCION_EJEMPLO} />
+      </Seccion>
+
+      <Seccion
+        titulo="Cartera"
+        descripcion="Tarjeta de cliente con su inversión. El estado y la barra de días llegan ya decididos: la tarjeta no calcula nada."
+        ejemplo
+      >
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {CLIENTES_EJEMPLO.map((c) => (
+            <TarjetaCliente key={c.id} cliente={c} />
+          ))}
+        </div>
+      </Seccion>
+
+      <Seccion
+        titulo="Biblioteca"
+        descripcion="Tarjeta de documento y la biblioteca en galería o en lista. Solo materiales internos, nunca documentos de clientes."
+        ejemplo
+      >
+        <DemoTarjetaDocumento />
+        <DemoBiblioteca />
       </Seccion>
 
       <Seccion titulo="Campos y selectores" ejemplo>

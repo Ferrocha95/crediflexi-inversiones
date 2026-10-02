@@ -1,11 +1,16 @@
 import type {
+  DatosCarteraTotal,
+  DatosDocumentosPorVencer,
   DatosEnvioViernes,
   DatosMeta,
   DatosPipelineEstatus,
   DatosPlanHoy,
   DatosProyeccionSemana,
   DatosSeguimientos,
+  DatosVencimientos,
 } from "../../componentes/inicio/TarjetasResumen";
+import type { DatosCliente } from "../../componentes/vistas/TarjetaCliente";
+import type { DatosDocumento } from "../../componentes/vistas/TarjetaDocumento";
 import type { DiaPlan } from "../../componentes/vistas/CuadriculaSemanal";
 import type { FilaPipelineDatos } from "../../componentes/vistas/TablaPipeline";
 import type { FilaProyeccion } from "../../componentes/vistas/TablaProyeccion";
@@ -152,5 +157,61 @@ export const ENVIO_EJEMPLO: DatosEnvioViernes = {
   archivos: [
     { nombre: "PIPELINE_OCTUBRE.xlsx", listo: true },
     { nombre: "PLAN_Y_PROYECCION_SEMANAL_DEL_12_AL_16_DE_OCTUBRE_DEL_2026.xlsx", listo: false },
+  ],
+};
+
+// Cartera y Biblioteca. Las fechas y los días se escribieron a mano tomando
+// como "hoy" el 2/10/2026 y un plazo de 182 días; no se calculan.
+
+export const CLIENTES_EJEMPLO: readonly DatosCliente[] = [
+  {
+    id: "c1",
+    nombre: "Cliente Ejemplo Uno",
+    telefono: "55 0000 0011",
+    monto: "$500,000.00",
+    vencimiento: "15/12/2026",
+    estado: { etiqueta: "Activa", tono: "positivo" },
+    dias: { fraccion: 0.41, texto: "74 días para vencer" },
+  },
+  {
+    id: "c2",
+    nombre: "Clienta Ejemplo Dos",
+    telefono: "55 0000 0012",
+    monto: "$150,000.00",
+    vencimiento: "20/10/2026",
+    estado: { etiqueta: "Por vencer", tono: "atencion" },
+    dias: { fraccion: 0.1, texto: "18 días para vencer" },
+  },
+  {
+    id: "c3",
+    nombre: "Cliente Ejemplo Tres",
+    telefono: "55 0000 0013",
+    monto: "$1,000,000.00",
+    vencimiento: "30/9/2026",
+    estado: { etiqueta: "Vencida", tono: "alerta" },
+    dias: { fraccion: 0, texto: "Venció hace 2 días" },
+  },
+];
+
+/** Materiales internos de ejemplo. Nunca documentos de clientes (CLAUDE.md). */
+export const DOCUMENTOS_EJEMPLO: readonly DatosDocumento[] = [
+  { id: "d1", nombre: "Tabla de tasas vigente (ejemplo)", tipo: "pdf", categoria: "Tasas", nivel: "Interno", vigencia: "vigente", version: "v6" },
+  { id: "d2", nombre: "Presentación comercial (ejemplo)", tipo: "pptx", categoria: "Ventas", nivel: "Público", vigencia: "vigente", version: "v3" },
+  { id: "d3", nombre: "Formato de plan semanal (ejemplo)", tipo: "xlsx", categoria: "Formatos", nivel: "Interno", vigencia: "por vencer", version: "v2" },
+  { id: "d4", nombre: "Guía de seguimiento a prospectos (ejemplo)", tipo: "docx", categoria: "Procesos", nivel: "Interno", vigencia: "vencido", version: "v1" },
+  { id: "d5", nombre: "Folleto de inversión (ejemplo)", tipo: "imagen", categoria: "Ventas", nivel: "Público", vigencia: "por vencer", version: "v4" },
+];
+
+/** 500,000 + 150,000 + 1,000,000, escrito a mano. */
+export const CARTERA_TOTAL_EJEMPLO: DatosCarteraTotal = { total: "$1,650,000.00", detalle: "3 clientes" };
+
+export const VENCIMIENTOS_EJEMPLO: DatosVencimientos = {
+  filas: [{ id: "v1", nombre: "Clienta Ejemplo Dos", monto: "$150,000.00", fecha: "20/10/2026" }],
+};
+
+export const DOCUMENTOS_POR_VENCER_EJEMPLO: DatosDocumentosPorVencer = {
+  filas: [
+    { id: "x1", nombre: "Folleto de inversión (ejemplo)", vigencia: "por vencer", fecha: "Vence el 15/10/2026" },
+    { id: "x2", nombre: "Formato de plan semanal (ejemplo)", vigencia: "por vencer", fecha: "Vence el 31/10/2026" },
   ],
 };

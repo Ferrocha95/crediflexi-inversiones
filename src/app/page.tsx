@@ -4,12 +4,15 @@ import { connection } from "next/server";
 import { fechaDeHoy, horaEnMexico, saludoPara } from "../componentes/inicio/saludo";
 import { PROXIMAMENTE } from "../componentes/inicio/TarjetaResumen";
 import {
+  TarjetaCarteraTotal,
+  TarjetaDocumentosPorVencer,
   TarjetaEnvioViernes,
   TarjetaMeta,
   TarjetaPipelineEstatus,
   TarjetaPlanHoy,
   TarjetaProyeccionSemana,
   TarjetaSeguimientos,
+  TarjetaVencimientos,
 } from "../componentes/inicio/TarjetasResumen";
 import { LineaFlecha } from "../componentes/ui/LineaFlecha";
 
@@ -76,6 +79,9 @@ export default async function Home() {
           <TarjetaProyeccionSemana />
           <TarjetaPlanHoy />
           <TarjetaEnvioViernes />
+          <TarjetaCarteraTotal />
+          <TarjetaVencimientos />
+          <TarjetaDocumentosPorVencer />
         </div>
       </section>
     </div>

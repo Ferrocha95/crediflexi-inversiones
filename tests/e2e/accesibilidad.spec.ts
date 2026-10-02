@@ -52,7 +52,7 @@ test.describe("2. teclado en el menú", () => {
     await expect(page.locator(":focus")).toHaveAccessibleName("Crediflexi, ir al inicio");
 
     const menu = page.getByRole("navigation", { name: "Navegación principal" }).first();
-    const esperados = ["Cotizador", "Pipeline", "Plan semanal", "Proyección", "Metas"];
+    const esperados = ["Cotizador", "Pipeline", "Plan semanal", "Proyección", "Metas", "Cartera", "Biblioteca"];
     for (const nombre of esperados) {
       await page.keyboard.press("Tab");
       const enfocado = page.locator(":focus");
@@ -90,13 +90,26 @@ test.describe("2. teclado en el menú", () => {
     await expect(page.getByRole("button", { name: "Desplegar el menú" })).toHaveAttribute("aria-expanded", "false");
   });
 
-  test("barra inferior del celular: cinco destinos y Próximamente para el lector de pantalla", async ({ page }) => {
+  test("barra inferior del celular: cuatro destinos, Más y Próximamente para el lector de pantalla", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/cotizador");
     const barra = page.getByRole("navigation", { name: "Navegación principal" });
     await expect(barra).toHaveCount(1); // el menú lateral está oculto
     await expect(barra.getByRole("link", { name: "Cotizador" })).toHaveAttribute("aria-current", "page");
     await expect(barra.getByRole("button", { name: "Pipeline, Próximamente" })).toHaveAttribute("aria-disabled", "true");
+
+    const mas = barra.getByRole("button", { name: "Más" });
+    await mas.focus();
+    await page.keyboard.press("Enter");
+    const dialogo = page.getByRole("dialog", { name: "Más secciones" });
+    await expect(dialogo).toBeVisible();
+    for (const nombre of ["Metas", "Cartera", "Biblioteca"]) {
+      await expect(dialogo.getByRole("button", { name: `${nombre}, Próximamente` })).toHaveAttribute("aria-disabled", "true");
+    }
+    await sinViolaciones(page);
+    await page.keyboard.press("Escape");
+    await expect(dialogo).toBeHidden();
+    await expect(mas).toBeFocused();
   });
 });
 
@@ -252,11 +265,11 @@ test("máximo 4 capas con desenfoque por pantalla", async ({ page }) => {
 });
 
 test.describe("inicio", () => {
-  test("seis tarjetas en Próximamente, sin cifras, y el acceso al cotizador funciona", async ({ page }) => {
+  test("nueve tarjetas en Próximamente, sin cifras, y el acceso al cotizador funciona", async ({ page }) => {
     await page.goto("/");
     const resumen = page.getByRole("region", { name: "Resumen" });
     const tarjetas = resumen.getByRole("region");
-    await expect(tarjetas).toHaveCount(6);
+    await expect(tarjetas).toHaveCount(9);
     for (const t of await tarjetas.all()) await expect(t).toContainText("Próximamente");
     await expect(resumen).not.toContainText("$");
     await expect(page.getByRole("button", { name: "Nuevo prospecto, Próximamente" })).toHaveAttribute("aria-disabled", "true");

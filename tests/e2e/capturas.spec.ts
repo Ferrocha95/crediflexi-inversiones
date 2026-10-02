@@ -38,6 +38,18 @@ test.describe("capturas @capturas", () => {
 
       await page.goto("/diseno");
       await page.screenshot({ path: archivo(`diseno-${ancho}`), fullPage: true });
+
+      // La Biblioteca en lista (la galería ya sale en la captura completa).
+      await page.getByText("Lista", { exact: true }).click();
+      const biblioteca = page.locator("section", { has: page.getByRole("heading", { name: "Biblioteca", exact: true }) });
+      await biblioteca.screenshot({ path: archivo(`biblioteca-lista-${ancho}`) });
+
+      if (ancho === 390) {
+        await page.goto("/cotizador");
+        await page.getByRole("button", { name: "Más" }).click();
+        await page.waitForTimeout(400);
+        await page.screenshot({ path: archivo(`menu-mas-${ancho}`) });
+      }
     });
   }
 

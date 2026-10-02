@@ -1,4 +1,4 @@
-import { CalendarDays, Calculator, Kanban, Target, TrendingUp, type LucideIcon } from "lucide-react";
+import { CalendarDays, Calculator, Kanban, Library, Target, TrendingUp, Wallet, type LucideIcon } from "lucide-react";
 
 export interface Destino {
   readonly ruta: string;
@@ -17,7 +17,12 @@ export const DESTINOS: readonly Destino[] = [
   { ruta: "/plan-semanal", etiqueta: "Plan semanal", corta: "Plan", Icono: CalendarDays, disponible: false },
   { ruta: "/proyeccion", etiqueta: "Proyección", corta: "Proyección", Icono: TrendingUp, disponible: false },
   { ruta: "/metas", etiqueta: "Metas", corta: "Metas", Icono: Target, disponible: false },
+  { ruta: "/cartera", etiqueta: "Cartera", corta: "Cartera", Icono: Wallet, disponible: false },
+  { ruta: "/biblioteca", etiqueta: "Biblioteca", corta: "Biblioteca", Icono: Library, disponible: false },
 ];
+
+/** Cuántos destinos caben en la barra inferior del celular; el resto va en "Más". */
+export const EN_BARRA = 4;
 
 /** true si la ruta actual pertenece al destino (la ruta misma o una subruta). */
 export function esDestinoActual(ruta: string, actual: string): boolean {

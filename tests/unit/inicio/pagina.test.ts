@@ -5,12 +5,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import * as Tarjetas from "../../../src/componentes/inicio/TarjetasResumen";
 import {
+  CARTERA_TOTAL_EJEMPLO,
+  DOCUMENTOS_POR_VENCER_EJEMPLO,
   ENVIO_EJEMPLO,
   META_EJEMPLO,
   PIPELINE_ESTATUS_EJEMPLO,
   PLAN_HOY_EJEMPLO,
   PROYECCION_SEMANA_EJEMPLO,
   SEGUIMIENTOS_EJEMPLO,
+  VENCIMIENTOS_EJEMPLO,
 } from "../../../src/app/diseno/datosEjemplo";
 
 const leer = (f: string) => readFileSync(path.join(process.cwd(), f), "utf8");
@@ -22,6 +25,9 @@ const TARJETAS = {
   TarjetaProyeccionSemana: { titulo: "Proyección de la semana", ejemplo: PROYECCION_SEMANA_EJEMPLO },
   TarjetaPlanHoy: { titulo: "Plan de hoy", ejemplo: PLAN_HOY_EJEMPLO },
   TarjetaEnvioViernes: { titulo: "Envío del viernes", ejemplo: ENVIO_EJEMPLO },
+  TarjetaCarteraTotal: { titulo: "Cartera total", ejemplo: CARTERA_TOTAL_EJEMPLO },
+  TarjetaVencimientos: { titulo: "Vencimientos de los próximos 30 días", ejemplo: VENCIMIENTOS_EJEMPLO },
+  TarjetaDocumentosPorVencer: { titulo: "Documentos por vencer", ejemplo: DOCUMENTOS_POR_VENCER_EJEMPLO },
 } as const;
 
 const html = (nombre: keyof typeof TARJETAS, datos?: unknown) =>
@@ -39,6 +45,7 @@ describe("página de inicio (/): ningún dato inventado", () => {
   it("no le pasa datos a ninguna tarjeta", () => {
     expect(pagina).not.toMatch(/datos=/);
     for (const nombre of Object.keys(TARJETAS)) expect(pagina).toContain(`<${nombre} />`);
+    expect(pagina.match(/<Tarjeta\w+ \/>/g)).toHaveLength(9);
   });
 
   it("el acceso al cotizador está activo y el de nuevo prospecto es Próximamente", () => {
