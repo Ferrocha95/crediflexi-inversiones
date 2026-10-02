@@ -1,4 +1,5 @@
 import { ESQUEMAS, MONEDAS, type Esquema, type Moneda, type Semilla } from "../domain/tasas/semilla.esquema";
+import { TOPES } from "./modelo";
 import { rellenar } from "./rellenar";
 import type { TextosCotizacion } from "./textos";
 
@@ -8,6 +9,8 @@ export interface OpcionesCotizador {
   /** Solo las monedas con tabla en la semilla; las POR_CONFIRMAR van deshabilitadas con su motivo. */
   readonly monedas: readonly { readonly moneda: Moneda; readonly habilitada: boolean; readonly motivo: string | null }[];
   readonly esquemas: readonly { readonly esquema: Esquema; readonly nombre: string }[];
+  /** Topes en caracteres de los campos opcionales del PDF (los de modelo.ts). */
+  readonly topes: Readonly<Record<keyof typeof TOPES, number>>;
 }
 
 export interface ParametrosOpciones {
@@ -27,5 +30,6 @@ export function opcionesCotizador({ semilla, razonesSociales, textos }: Parametr
       return [{ moneda, habilitada, motivo: habilitada ? null : rellenar(textos.monedaDeshabilitada, { moneda }) }];
     }),
     esquemas: ESQUEMAS.map((esquema) => ({ esquema, nombre: textos.nombreEsquema[esquema] })),
+    topes: { ...TOPES },
   };
 }

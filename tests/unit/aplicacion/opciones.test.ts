@@ -3,6 +3,7 @@ import semillaJson from "../../../seed/parametros_iniciales.json";
 import textosJson from "../../../seed/textos_cotizacion.json";
 import { cargarRazonesSociales } from "../../../src/aplicacion/entidades";
 import { opcionesCotizador } from "../../../src/aplicacion/opciones";
+import { TOPES } from "../../../src/aplicacion/modelo";
 import { cargarTextos, type TextosCotizacion } from "../../../src/aplicacion/textos";
 import { cargar, copiaSemilla, semillaReal } from "../oro/ayudas";
 
@@ -49,6 +50,11 @@ describe("opcionesCotizador", () => {
       { esquema: "mensual", nombre: "Rendimientos mensuales" },
       { esquema: "final_del_plazo", nombre: "Al final del plazo" },
     ]);
+  });
+
+  it("trae los topes de los campos opcionales del PDF, los mismos de modelo.ts", () => {
+    expect(opcionesCotizador(parametros).topes).toEqual(TOPES);
+    expect(opcionesCotizador(parametros).topes).toEqual({ preparadoPara: 120, ejecutivo: 120, vigencia: 60, notaAdicional: 300 });
   });
 
   it("solo trae texto: sobrevive igual a JSON y no incluye tasas ni tablas", () => {

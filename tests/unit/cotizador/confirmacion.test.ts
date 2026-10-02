@@ -187,7 +187,7 @@ describe("textos de la confirmación", () => {
   it("son los de la pantalla", () => {
     expect(TEXTOS.confirmo).toBe("Confirmo que los números son correctos");
     expect(TEXTOS.generarPdf).toBe("Generar PDF");
-    expect(TEXTOS.pdfSiguienteEtapa).toBe("La descarga del PDF se agrega en la siguiente etapa.");
+    expect(TEXTOS).not.toHaveProperty("pdfSiguienteEtapa");
   });
 });
 

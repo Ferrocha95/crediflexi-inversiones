@@ -44,7 +44,20 @@ export const TEXTOS = {
   motivoSinVistaPrevia: "El PDF se habilita cuando haya una vista previa válida.",
   motivoVistaPreviaVieja: "La vista previa no corresponde a los datos actuales; espera a que se actualice.",
   motivoSinConfirmar: 'Marca la casilla "Confirmo que los números son correctos" para habilitar el PDF.',
-  pdfSiguienteEtapa: "La descarga del PDF se agrega en la siguiente etapa.",
+
+  tituloOpcionales: "Datos opcionales del PDF",
+  ayudaOpcionales: "No cambian los números: solo se imprimen en el PDF. No se guardan.",
+  preparadoPara: "Preparado para",
+  ejecutivo: "Ejecutivo (nombre y contacto)",
+  vigencia: "Vigencia",
+  notaAdicional: "Nota adicional",
+  contador: (n: number, tope: number) => `${n} de ${tope} caracteres`,
+  generandoPdf: "Generando el PDF…",
+  pdfListo: "Listo: el PDF se descargó.",
+  tituloErrorPdf: "No se pudo generar el PDF",
+  errorPdfGenerico: (estado: number) =>
+    `El servidor no pudo generar el PDF (código ${estado}). Vuelve a intentarlo; si sigue fallando, reinicia la app.`,
+  nombrePdfPorOmision: "cotizacion.pdf",
 
   tituloErrorParametros: "No se pudieron cargar los parámetros del cotizador",
   ayudaErrorParametros: "Corrige el archivo indicado y vuelve a cargar la página.",

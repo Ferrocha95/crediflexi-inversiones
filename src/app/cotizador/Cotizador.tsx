@@ -14,6 +14,14 @@ import {
   reducirConfirmacion,
   vistaPreviaVigente,
 } from "./confirmacion";
+import {
+  contarCaracteres,
+  cuerpoPeticionPdf,
+  mensajeDeErrorPdf,
+  nombreDeArchivo,
+  recortar,
+  type OpcionalesPdf,
+} from "./peticionPdf";
 import { TEXTOS } from "./textosPantalla";
 import { VistaPrevia } from "./VistaPrevia";
 
@@ -38,6 +46,13 @@ function camposIniciales(opciones: OpcionesCotizador): Campos {
   };
 }
 
+const OPCIONALES_VACIOS: OpcionalesPdf = { preparadoPara: "", ejecutivo: "", vigencia: "", notaAdicional: "" };
+
+/** Los campos opcionales del PDF, en el orden de la pantalla. */
+const CAMPOS_OPCIONALES = ["preparadoPara", "ejecutivo", "vigencia", "notaAdicional"] as const;
+
+type MensajePdf = { readonly tipo: "estado" | "error"; readonly texto: string };
+
 const clasesCampo =
   "w-full rounded-md border border-black/25 bg-transparent px-3 py-2 text-base dark:border-white/30 disabled:opacity-50";
 
@@ -54,7 +69,10 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
   const [confirmacion, despachar] = useReducer(reducirConfirmacion<ModeloVistaPrevia>, opciones, (o) =>
     estadoInicial<ModeloVistaPrevia>(huellaDeCampos(camposIniciales(o))),
   );
-  const [mensajePdf, setMensajePdf] = useState<string | null>(null);
+  /** Solo se imprimen en el PDF: cambiarlos no invalida la confirmación de los números. */
+  const [opcionales, setOpcionales] = useState<OpcionalesPdf>(OPCIONALES_VACIOS);
+  const [generando, setGenerando] = useState(false);
+  const [mensajePdf, setMensajePdf] = useState<MensajePdf | null>(null);
 
   function cambiar(cambio: Partial<Campos>) {
     const nuevos = { ...campos, ...cambio };
@@ -106,6 +124,40 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
   const puedePdf = puedeGenerarPdf(confirmacion);
   const motivoPdf = motivoPdfDeshabilitado(confirmacion);
   const motivosMoneda = opciones.monedas.filter((m) => !m.habilitada && m.motivo !== null);
+
+  /** POST a /cotizador/pdf; el servidor recalcula todo y responde el archivo o un error en español. */
+  async function generarPdf() {
+    const vista = confirmacion.vistaPrevia;
+    if (!puedePdf || generando || vista === null || campos.plazo === null) return;
+    setGenerando(true);
+    setMensajePdf({ tipo: "estado", texto: TEXTOS.generandoPdf });
+    try {
+      const r = await fetch("/cotizador/pdf", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify(cuerpoPeticionPdf({ ...campos, plazo: campos.plazo }, opcionales, vista.tasas.version)),
+      });
+      if (!r.ok) {
+        const cuerpo: unknown = await r.json().catch(() => undefined);
+        setMensajePdf({ tipo: "error", texto: mensajeDeErrorPdf(r.status, cuerpo) });
+        return;
+      }
+      const url = URL.createObjectURL(await r.blob());
+      const enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.download = nombreDeArchivo(r.headers.get("content-disposition"));
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setMensajePdf({ tipo: "estado", texto: TEXTOS.pdfListo });
+    } catch {
+      setMensajePdf({ tipo: "error", texto: TEXTOS.errorConexion });
+    } finally {
+      setGenerando(false);
+    }
+  }
 
   return (
     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -225,6 +277,35 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
             ))}
           </select>
         </div>
+
+        <fieldset className="mt-2 flex flex-col gap-3 border-t border-black/15 pt-4 dark:border-white/20">
+          <legend className="font-semibold">{TEXTOS.tituloOpcionales}</legend>
+          <p className="text-sm opacity-70">{TEXTOS.ayudaOpcionales}</p>
+          {CAMPOS_OPCIONALES.map((clave) => {
+            const tope = opciones.topes[clave];
+            const valor = opcionales[clave];
+            const props = {
+              id: `${id}-${clave}`,
+              className: clasesCampo,
+              value: valor,
+              autoComplete: "off",
+              "aria-describedby": `${id}-${clave}-contador`,
+              onChange: (e: { target: { value: string } }) =>
+                setOpcionales((o) => ({ ...o, [clave]: recortar(e.target.value, tope) })),
+            };
+            return (
+              <div key={clave} className="flex flex-col gap-1">
+                <label htmlFor={props.id} className="font-medium">
+                  {TEXTOS[clave]}
+                </label>
+                {clave === "notaAdicional" ? <textarea rows={3} {...props} /> : <input type="text" {...props} />}
+                <p id={props["aria-describedby"]} className="text-right text-xs opacity-70">
+                  {TEXTOS.contador(contarCaracteres(valor), tope)}
+                </p>
+              </div>
+            );
+          })}
+        </fieldset>
       </form>
 
       <section aria-labelledby={`${id}-titulo-vista`} className="flex flex-col gap-3">
@@ -270,9 +351,9 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
           <button
             type="button"
             className="w-full rounded-md bg-foreground px-4 py-2 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:self-start"
-            disabled={!puedePdf}
+            disabled={!puedePdf || generando}
             aria-describedby={motivoPdf === null ? undefined : `${id}-motivo-pdf`}
-            onClick={() => setMensajePdf(TEXTOS.pdfSiguienteEtapa)}
+            onClick={generarPdf}
           >
             {TEXTOS.generarPdf}
           </button>
@@ -282,8 +363,14 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
             </p>
           )}
           <p role="status" className="text-sm">
-            {mensajePdf}
+            {mensajePdf?.tipo === "estado" ? mensajePdf.texto : null}
           </p>
+          {mensajePdf?.tipo === "error" && (
+            <div role="alert" className="rounded-md border-2 border-red-600 p-3">
+              <p className="font-semibold">{TEXTOS.tituloErrorPdf}</p>
+              <p className="mt-1 text-sm">{mensajePdf.texto}</p>
+            </div>
+          )}
         </div>
       </section>
     </div>
