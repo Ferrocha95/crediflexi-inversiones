@@ -25,3 +25,9 @@ export function fechaEnMexico(instante: Date): string {
   const partes = Object.fromEntries(formatoMexico.formatToParts(instante).map((p) => [p.type, p.value]));
   return `${partes.day}/${partes.month}/${partes.year}`;
 }
+
+/** Fecha del instante en la Ciudad de México, en AAAA-MM-DD (para nombres de archivo). */
+export function fechaIsoEnMexico(instante: Date): string {
+  const partes = Object.fromEntries(formatoMexico.formatToParts(instante).map((p) => [p.type, p.value]));
+  return `${partes.year}-${partes.month}-${partes.day}`;
+}

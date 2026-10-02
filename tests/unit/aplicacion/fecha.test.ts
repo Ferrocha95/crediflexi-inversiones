@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fechaDeTextoIso, fechaEnMexico } from "../../../src/aplicacion/fecha";
+import { fechaDeTextoIso, fechaEnMexico, fechaIsoEnMexico } from "../../../src/aplicacion/fecha";
 
 describe("fechaDeTextoIso", () => {
   it("corta el texto AAAA-MM-DD a DD/MM/AAAA", () => {
@@ -24,5 +24,15 @@ describe("fechaEnMexico", () => {
 
   it("antes de las 06:00 UTC todavía es el día anterior en México", () => {
     expect(fechaEnMexico(new Date("2026-10-01T05:30:00Z"))).toBe("30/09/2026");
+  });
+});
+
+describe("fechaIsoEnMexico", () => {
+  it("da AAAA-MM-DD en la zona de la Ciudad de México", () => {
+    expect(fechaIsoEnMexico(new Date("2026-10-01T18:00:00Z"))).toBe("2026-10-01");
+  });
+
+  it("antes de las 06:00 UTC todavía es el día anterior en México", () => {
+    expect(fechaIsoEnMexico(new Date("2026-10-01T05:30:00Z"))).toBe("2026-09-30");
   });
 });
