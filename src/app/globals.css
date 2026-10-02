@@ -15,6 +15,7 @@
   --color-verde-texto: #3CCB4C;
   --color-amarillo: #F8C818;
   --color-rojo: #F80000;
+  --color-naranja: #FC6A0C;
   --color-error-texto: #FF9A8F;
   --color-estatus-interesado: #A8D08D;
   --color-estatus-intermitente: #FFD965;
@@ -115,6 +116,45 @@ body {
   /* Columna de dígitos del número animado. */
   .odometro-tira {
     transition: transform var(--duracion-numero) var(--ease-suave);
+  }
+}
+
+/* Diálogo y notificaciones: entrada suave (con @starting-style; sin soporte, aparecen sin animación). */
+.dialogo {
+  background: transparent;
+  color: inherit;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--duracion-media) var(--ease-suave),
+    transform var(--duracion-media) var(--ease-suave),
+    overlay var(--duracion-media) allow-discrete,
+    display var(--duracion-media) allow-discrete;
+}
+.dialogo:not([open]) {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+}
+@starting-style {
+  .dialogo[open] {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+/* El fondo del diálogo solo oscurece: el desenfoque lo pone la caja (una capa). */
+.dialogo::backdrop {
+  background: rgb(0 10 32 / 0.7);
+}
+
+.notificacion {
+  transition:
+    opacity var(--duracion-media) var(--ease-suave),
+    transform var(--duracion-media) var(--ease-suave);
+}
+@starting-style {
+  .notificacion {
+    opacity: 0;
+    transform: translateY(8px);
   }
 }
 

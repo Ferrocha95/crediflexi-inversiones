@@ -18,6 +18,7 @@ export const COLOR = {
   /** Amarillo y rojo de marca: solo detalles (la flecha del logo), nunca texto en rojo. */
   amarillo: "#F8C818",
   rojo: "#F80000",
+  naranja: "#FC6A0C",
   /** Texto de error legible sobre marino. */
   errorTexto: "#FF9A8F",
   estatusInteresado: "#A8D08D",
