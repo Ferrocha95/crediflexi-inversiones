@@ -52,6 +52,28 @@ npm run db:stop
 
 `npm test` corre las dos (unitarias y rls), así que también necesita Supabase local.
 
+## Pruebas en el navegador (Playwright)
+
+La primera vez hay que descargar Chromium (unos 150 MB):
+
+```sh
+npx playwright install chromium
+```
+
+```sh
+npm run test:e2e     # accesibilidad: axe (WCAG 2.2 AA), teclado, foco, 44 px, diálogo, movimiento y transparencia reducidos
+npm run capturas     # capturas a 390, 768 y 1280 px en C:\dev\informes\sprint-2a (fuera del repositorio)
+```
+
+Compilan la app y la levantan en `127.0.0.1:3200`. La carpeta de capturas se
+cambia con la variable `CAPTURAS_DIR`.
+
+## Catálogo de diseño
+
+`http://127.0.0.1:3000/diseno` muestra todos los componentes con datos de
+ejemplo (sintéticos). Como toda la app, solo responde en localhost y no
+aparece en el menú.
+
 ## Parámetros y textos
 
 - `seed/parametros_iniciales.json`: tasas, reglas y entidades (versionado).
@@ -62,4 +84,5 @@ Se leen en cada petición: un cambio en esos archivos se ve sin reconstruir la a
 ## Fuente del PDF
 
 Nunito, con la SIL Open Font License 1.1 (`src/servidor/pdf/LICENCIA-Nunito-OFL.txt`),
-instalada con `@fontsource/nunito`.
+instalada con `@fontsource/nunito`. La pantalla usa la misma fuente, empaquetada en
+`src/app/fuentes/` (con su licencia) y cargada con `next/font/local`: nada sale de un CDN.

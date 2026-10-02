@@ -30,6 +30,6 @@
 - (cc) Se eliminaron las pruebas del aviso de coherencia con la semilla real y las del plazo adicional (36 meses) porque la Tabla de Diseño no las usa. Si algún día vuelven a usarse, hay que restituirlas con una semilla sintética.
 - (dd) Quitar `SEGUN_USUARIO_PPTX`, `plazo_adicional` y el texto `origenPlazoAdicional` si siguen sin uso.
 - (ee) Comentarios con la versión vieja de la semilla (por ejemplo, "En la semilla 0.3..." en `semilla.esquema.ts` y el ejemplo "2026-10-01" en `fecha.ts`).
-- (ii) Prueba de extremo a extremo con Playwright: llenar el cotizador, confirmar, generar el PDF y revisar la descarga.
+- (ii) Prueba de extremo a extremo con Playwright: llenar el cotizador, confirmar, generar el PDF y revisar la descarga. Parcial: el sprint 2a agregó Playwright y `tests/e2e` (accesibilidad y capturas, que ya llenan el cotizador), pero falta confirmar, generar el PDF y revisar la descarga.
 - (jj) Etiqueta legible para el estatus del tramo en la vista previa (hoy se muestra la clave, por ejemplo `CONFIRMADA`).
 - (kk) Las pruebas de que el PDF no trae avisos se restituyeron con un aviso fabricado a mano (la Tabla de Diseño no produce avisos). Si vuelven los avisos reales, probarlos también con una semilla sintética.

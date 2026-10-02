@@ -22,7 +22,6 @@ export function BarraInferior() {
             <>
               <d.Icono aria-hidden="true" className="size-6" />
               <span className="max-w-full truncate">{d.corta}</span>
-              {!d.disponible && <span className="sr-only">{`, ${T.proximamente}`}</span>}
             </>
           );
           return (
@@ -42,7 +41,12 @@ export function BarraInferior() {
                   {contenido}
                 </Link>
               ) : (
-                <button type="button" aria-disabled="true" className={`${base} cursor-not-allowed text-hielo-tenue`}>
+                <button
+                  type="button"
+                  aria-disabled="true"
+                  aria-label={`${d.etiqueta}, ${T.proximamente}`}
+                  className={`${base} cursor-not-allowed text-hielo-tenue`}
+                >
                   {contenido}
                 </button>
               )}

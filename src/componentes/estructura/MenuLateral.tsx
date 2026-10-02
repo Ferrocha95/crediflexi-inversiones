@@ -103,6 +103,7 @@ export function MenuLateral() {
                   <button
                     type="button"
                     aria-disabled="true"
+                    aria-label={`${d.etiqueta}, ${T.proximamente}`}
                     title={`${d.etiqueta}: ${T.proximamente.toLowerCase()}`}
                     className={`${base} cursor-not-allowed text-hielo-tenue`}
                   >

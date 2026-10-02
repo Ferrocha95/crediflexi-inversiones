@@ -39,3 +39,7 @@ backups/
 
 # Capturas y registros de Playwright MCP
 .playwright-mcp/
+
+# Resultados de Playwright (pruebas en el navegador)
+playwright-report/
+test-results/
