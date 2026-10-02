@@ -7,6 +7,18 @@ const ARCHIVO = "seed/textos_cotizacion.json";
 type TextosJson = typeof textosJson;
 const copia = (): TextosJson => structuredClone(textosJson);
 
+const CLAVES_PDF_SIN_MARCADORES = [
+  "titulo",
+  "preparado_para",
+  "fecha",
+  "resumen_monto",
+  "resumen_plazo",
+  "resumen_tasa",
+  "resumen_esquema",
+  "seccion_resultados",
+  "seccion_calculo",
+] as const;
+
 function cargarBien(json: unknown): TextosCotizacion {
   const r = cargarTextos(json, ARCHIVO);
   if (!r.ok) throw new Error(`${r.error.mensaje}\n${(r.error.detalles ?? []).join("\n")}`);
@@ -22,9 +34,9 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 }
 
 describe("cargarTextos: el archivo real", () => {
-  it("carga seed/textos_cotizacion.json versión 0.2", () => {
+  it("carga seed/textos_cotizacion.json versión 0.3", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.2");
+    expect(t.version).toBe("0.3");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +
@@ -49,6 +61,65 @@ describe("cargarTextos: el archivo real", () => {
       mensual: "Rendimientos mensuales",
       final_del_plazo: "Al final del plazo",
     });
+  });
+});
+
+describe("cargarTextos: el bloque pdf", () => {
+  it("trae los textos del PDF con sus acentos", () => {
+    expect(cargarBien(textosJson).pdf).toEqual({
+      titulo: "Tu cotización de inversión",
+      preparadoPara: "Preparado para",
+      fecha: "Fecha",
+      resumenMonto: "Monto de inversión",
+      resumenPlazo: "Plazo",
+      resumenTasa: "Tasa anual",
+      resumenEsquema: "Esquema",
+      seccionResultados: "Tus resultados",
+      seccionCalculo: "Cómo se calculó",
+      lineaTasas: "Tasas versión {version_tasas} del {fecha_tasas}.",
+    });
+  });
+
+  it.each(CLAVES_PDF_SIN_MARCADORES)("pdf.%s no admite ningún marcador", (clave) => {
+    const j = copia();
+    j.pdf[clave] = "Texto con {razon_social}";
+    const detalle = errorDe(j).detalles.find((d) => d.includes("{razon_social}"));
+    expect(detalle).toContain(`pdf.${clave}`);
+    expect(detalle).toMatch(/ningún marcador/);
+  });
+
+  it.each(CLAVES_PDF_SIN_MARCADORES)("pdf.%s vacío rompe la carga", (clave) => {
+    const j = copia();
+    j.pdf[clave] = "  ";
+    expect(errorDe(j).detalles.join("\n")).toContain(`pdf.${clave}`);
+  });
+
+  it("pdf.linea_tasas acepta {version_tasas} y {fecha_tasas} y rechaza otros", () => {
+    const j = copia();
+    j.pdf.linea_tasas = "Versión {version_tasas} ({fecha_tasas})";
+    expect(cargarBien(j).pdf.lineaTasas).toBe("Versión {version_tasas} ({fecha_tasas})");
+    j.pdf.linea_tasas = "Tasas de {razon_social}";
+    const detalle = errorDe(j).detalles.find((d) => d.includes("{razon_social}"));
+    expect(detalle).toContain("pdf.linea_tasas");
+    expect(detalle).toContain("{version_tasas} y {fecha_tasas}");
+  });
+
+  it("falta una clave del bloque pdf", () => {
+    const j: { pdf: Record<string, unknown> } = copia();
+    delete j.pdf.seccion_calculo;
+    expect(errorDe(j).detalles.join("\n")).toContain("seccion_calculo");
+  });
+
+  it("falta el bloque pdf completo", () => {
+    const j: Record<string, unknown> = copia();
+    delete j.pdf;
+    expect(errorDe(j).detalles.join("\n")).toContain("pdf");
+  });
+
+  it("una clave desconocida en el bloque pdf rompe la carga", () => {
+    const j: { pdf: Record<string, unknown> } = copia();
+    j.pdf.titulo_grande = "Otro título";
+    expect(errorDe(j).detalles.join("\n")).toContain("titulo_grande");
   });
 });
 

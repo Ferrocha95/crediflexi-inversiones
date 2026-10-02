@@ -1,5 +1,5 @@
 {
-  "version": "0.2",
+  "version": "0.3",
   "pie_base": "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente a 12 meses; la ganancia total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables son las del contrato que se firme.",
   "linea_preparado_por": "Preparado por {ejecutivo}.",
   "linea_vigencia": "Vigencia: {vigencia}.",
@@ -12,5 +12,17 @@
     "mensual": "Rendimientos mensuales",
     "final_del_plazo": "Al final del plazo"
   },
-  "moneda_deshabilitada": "Las tasas en {moneda} están por confirmar."
+  "moneda_deshabilitada": "Las tasas en {moneda} están por confirmar.",
+  "pdf": {
+    "titulo": "Tu cotización de inversión",
+    "preparado_para": "Preparado para",
+    "fecha": "Fecha",
+    "resumen_monto": "Monto de inversión",
+    "resumen_plazo": "Plazo",
+    "resumen_tasa": "Tasa anual",
+    "resumen_esquema": "Esquema",
+    "seccion_resultados": "Tus resultados",
+    "seccion_calculo": "Cómo se calculó",
+    "linea_tasas": "Tasas versión {version_tasas} del {fecha_tasas}."
+  }
 }

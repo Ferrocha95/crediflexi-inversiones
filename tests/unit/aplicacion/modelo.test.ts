@@ -60,14 +60,114 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     const m = pdf(clave);
     expect(m.tasa).toBe("19.00%");
     expect(m.cifras).toEqual([
-      { clave: "rendimiento_mensual_pesos", etiqueta: "Pago mensual", cifra: "$23,750.00" },
+      {
+        clave: "rendimiento_mensual_pesos",
+        etiqueta: "Pago mensual",
+        cifra: "$23,750.00",
+        formula: "monto × tasa anual ÷ 12",
+        operacion: "1,500,000.00 × 0.19 ÷ 12 = 23,750.00",
+      },
       {
         clave: "rendimiento_anual_pesos",
         etiqueta: "Rendimiento anual equivalente (12 meses)",
         cifra: "$285,000.00",
+        formula: "monto × tasa anual",
+        operacion: "1,500,000.00 × 0.19 = 285,000.00",
       },
-      { clave: "ganancia_total_plazo", etiqueta: "Ganancia total en el plazo", cifra: "$285,000.00" },
+      {
+        clave: "ganancia_total_plazo",
+        etiqueta: "Ganancia total en el plazo",
+        cifra: "$285,000.00",
+        formula: "monto × tasa anual × plazo ÷ 12",
+        operacion: "1,500,000.00 × 0.19 × 12 ÷ 12 = 285,000.00",
+      },
     ]);
+  });
+
+  it("cada cifra trae la fórmula y la operación tal como vienen en la cotización", () => {
+    for (const esquema of ["mensual", "final_del_plazo"] as const) {
+      const c = cotizarBien({ entidad: clave, esquema, monto: "500000", plazo: 24 });
+      const m = sinError(modeloPdf(c, contexto, {}, AHORA));
+      expect(m.cifras.map((x) => [x.clave, x.formula, x.operacion])).toEqual(
+        c.salidas.map((s) => [s.clave, s.desglose.formula, s.desglose.operacion]),
+      );
+      for (const x of m.cifras) {
+        expect(x.formula).not.toBe("");
+        expect(x.operacion).toMatch(/=/);
+      }
+    }
+  });
+
+  it("cifra principal en esquema mensual: el pago mensual, con su etiqueta de la semilla", () => {
+    expect(pdf(clave).cifraPrincipal).toEqual({
+      clave: "rendimiento_mensual_pesos",
+      etiqueta: "Pago mensual",
+      cifra: "$23,750.00",
+    });
+  });
+
+  it("cifra principal al final del plazo: la ganancia total, con su etiqueta de la semilla", () => {
+    expect(pdf(clave, {}, { esquema: "final_del_plazo" }).cifraPrincipal).toEqual({
+      clave: "ganancia_total_plazo",
+      etiqueta: "Ganancia total al final del plazo",
+      cifra: "$315,000.00",
+    });
+  });
+
+  it("la cifra principal es una de las cifras del modelo (misma etiqueta y monto)", () => {
+    for (const esquema of ["mensual", "final_del_plazo"] as const) {
+      const m = pdf(clave, {}, { esquema, monto: "55000", plazo: 6 });
+      const misma = m.cifras.find((x) => x.clave === m.cifraPrincipal.clave);
+      expect(misma).toMatchObject(m.cifraPrincipal);
+    }
+  });
+
+  it("trae los textos del bloque pdf del archivo de textos", () => {
+    expect(pdf(clave).textos).toEqual({
+      titulo: "Tu cotización de inversión",
+      preparadoPara: "Preparado para",
+      fecha: "Fecha",
+      resumenMonto: "Monto de inversión",
+      resumenPlazo: "Plazo",
+      resumenTasa: "Tasa anual",
+      resumenEsquema: "Esquema",
+      seccionResultados: "Tus resultados",
+      seccionCalculo: "Cómo se calculó",
+    });
+  });
+
+  it("los textos del PDF salen del archivo, no del código", () => {
+    const otros: TextosCotizacion = {
+      ...textos,
+      pdf: {
+        ...textos.pdf,
+        titulo: "Título sintético",
+        seccionCalculo: "Cálculo sintético",
+        lineaTasas: "Versión sintética {version_tasas}, {fecha_tasas}",
+      },
+    };
+    const m = sinError(modeloPdf(cotizarBien({ entidad: clave }), { razonesSociales, textos: otros }, {}, AHORA));
+    expect(m.textos.titulo).toBe("Título sintético");
+    expect(m.textos.seccionCalculo).toBe("Cálculo sintético");
+    expect(m.lineaTasas).toBe("Versión sintética 0.5, 02/10/2026");
+  });
+
+  it("la línea de las tasas lleva la versión y la fecha de la semilla", () => {
+    expect(pdf(clave).lineaTasas).toBe("Tasas versión 0.5 del 02/10/2026.");
+  });
+
+  it("el modelo del PDF no trae avisos (aviso fabricado a mano en la cotización)", () => {
+    const aviso = {
+      codigo: "TASA_MAYOR_QUE_TRAMO_SIGUIENTE" as const,
+      severidad: "aviso" as const,
+      mensaje: "Aviso sintético que no debe llegar al PDF.",
+      datos: { esquema: "mensual" },
+    };
+    const c = { ...cotizarBien({ entidad: clave }), avisos: [aviso] };
+    const texto = JSON.stringify(sinError(modeloPdf(c, contexto, ENTRADA_COMPLETA, AHORA)));
+    expect(texto).not.toContain("Aviso sintético");
+    expect(texto).not.toContain("TASA_MAYOR_QUE_TRAMO_SIGUIENTE");
+    expect(texto).not.toMatch(/aviso/i);
   });
 
   it("final del plazo: etiquetas del esquema y 21% -> 26,250.00 y 315,000.00", () => {
@@ -208,6 +308,16 @@ describe("modeloPdf: errores", () => {
     expect(r.error.codigo).toBe("ENTIDADES_INVALIDAS");
     expect(r.error.mensaje).toContain("CREDIFLEXI");
     expect(r.error.mensaje).toContain("razon_social");
+  });
+
+  it("si la semilla no trae la salida que se destaca, falla con un mensaje en español", () => {
+    const c = cotizarBien({});
+    const sinMensual = { ...c, salidas: c.salidas.filter((x) => x.clave !== "rendimiento_mensual_pesos") };
+    const r = modeloPdf(sinMensual, contexto, {}, AHORA);
+    if (r.ok) throw new Error("Se esperaba un error");
+    expect(r.error.codigo).toBe("SEMILLA_INVALIDA");
+    expect(r.error.mensaje).toContain("rendimiento_mensual_pesos");
+    expect(r.error.mensaje).toContain("salidas_de_cotizacion");
   });
 });
 

@@ -2,12 +2,12 @@ import { Decimal } from "../domain/comun/decimal";
 import { formatearMonto, formatearPesos, formatearPorcentaje } from "../domain/comun/formato";
 import type { CodigoAviso } from "../domain/comun/resultado";
 import type { Cotizacion } from "../domain/interes/cotizar";
-import type { Estatus, Moneda, Salida } from "../domain/tasas/semilla.esquema";
+import type { Esquema, Estatus, Moneda, Salida } from "../domain/tasas/semilla.esquema";
 import { limpiarCampo } from "./campos";
 import { fechaDeTextoIso, fechaEnMexico } from "./fecha";
 import { rellenar } from "./rellenar";
 import { error, ok, type ResultadoApp } from "./resultado";
-import type { TextosCotizacion } from "./textos";
+import type { TextosCotizacion, TextosPdf } from "./textos";
 
 // Este módulo no calcula: solo da forma de texto a lo que ya devolvió cotizar.
 
@@ -112,6 +112,20 @@ export interface ContextoPdf {
   readonly textos: TextosCotizacion;
 }
 
+/** La cifra que el PDF destaca en grande, según el esquema. */
+export const CIFRA_PRINCIPAL: Readonly<Record<Esquema, Salida>> = {
+  mensual: "rendimiento_mensual_pesos",
+  final_del_plazo: "ganancia_total_plazo",
+};
+
+export interface CifraPdf {
+  readonly clave: Salida;
+  readonly etiqueta: string;
+  readonly cifra: string;
+  readonly formula: string;
+  readonly operacion: string;
+}
+
 /**
  * Lo que imprime el PDF. A propósito no trae el estatus del tramo, ni su
  * explicación, ni los avisos: eso solo se muestra en la pantalla.
@@ -126,8 +140,15 @@ export interface ModeloPdf {
     readonly plazo: string;
   };
   readonly tasa: string;
-  readonly cifras: readonly { readonly clave: Salida; readonly etiqueta: string; readonly cifra: string }[];
+  /** Textos fijos del documento, tal como vienen del archivo (sin la plantilla de la línea de tasas). */
+  readonly textos: Omit<TextosPdf, "lineaTasas">;
+  /** La cifra destacada (CIFRA_PRINCIPAL), con su etiqueta de la semilla. */
+  readonly cifraPrincipal: { readonly clave: Salida; readonly etiqueta: string; readonly cifra: string };
+  /** Todas las cifras, en el orden de la semilla, con su desglose. */
+  readonly cifras: readonly CifraPdf[];
   readonly tasas: { readonly version: string; readonly fecha: string };
+  /** pdf.linea_tasas ya rellenada. */
+  readonly lineaTasas: string;
   readonly preparadoPara: string | null;
   readonly pie: {
     readonly base: string;
@@ -166,6 +187,23 @@ export function modeloPdf(
 
   const tasas = tasasDeLaCotizacion(c);
   const { textos } = contexto;
+  const { lineaTasas, ...textosPdf } = textos.pdf;
+
+  const cifras: CifraPdf[] = c.salidas.map((s) => ({
+    clave: s.clave,
+    etiqueta: s.etiqueta,
+    cifra: pesos(s.redondeado),
+    formula: s.desglose.formula,
+    operacion: s.desglose.operacion,
+  }));
+  const principal = cifras.find((x) => x.clave === CIFRA_PRINCIPAL[c.solicitud.esquema]);
+  if (principal === undefined) {
+    return error(
+      "SEMILLA_INVALIDA",
+      `El PDF destaca la salida ${CIFRA_PRINCIPAL[c.solicitud.esquema]}, pero no está en ` +
+        "reglas_de_calculo.salidas_de_cotizacion de la semilla. Agrégala y vuelve a intentarlo.",
+    );
+  }
 
   // Cada plantilla recibe solo los marcadores que su campo permite (MARCADORES_POR_CAMPO).
   return ok({
@@ -178,8 +216,11 @@ export function modeloPdf(
       plazo: meses(c.solicitud.plazo),
     },
     tasa: formatearPorcentaje(new Decimal(c.tasa)),
-    cifras: c.salidas.map((s) => ({ clave: s.clave, etiqueta: s.etiqueta, cifra: pesos(s.redondeado) })),
+    textos: textosPdf,
+    cifraPrincipal: { clave: principal.clave, etiqueta: principal.etiqueta, cifra: principal.cifra },
+    cifras,
     tasas,
+    lineaTasas: rellenar(lineaTasas, { version_tasas: tasas.version, fecha_tasas: tasas.fecha }),
     preparadoPara: oNulo(preparadoPara),
     pie: {
       base: rellenar(textos.pieBase, {

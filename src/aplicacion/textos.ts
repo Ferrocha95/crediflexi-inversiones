@@ -14,12 +14,16 @@ export const MARCADORES = [
 ] as const;
 export type Marcador = (typeof MARCADORES)[number];
 
-/** Marcadores permitidos en cada campo; los de estatus_tramo y nombre_esquema no admiten ninguno. */
+/**
+ * Marcadores permitidos en cada campo; los de estatus_tramo, nombre_esquema y
+ * el resto del bloque pdf no admiten ninguno.
+ */
 export const MARCADORES_POR_CAMPO = {
   pie_base: ["razon_social", "version_tasas", "fecha_tasas"],
   linea_preparado_por: ["ejecutivo"],
   linea_vigencia: ["vigencia"],
   moneda_deshabilitada: ["moneda"],
+  "pdf.linea_tasas": ["version_tasas", "fecha_tasas"],
 } as const satisfies Readonly<Record<string, readonly Marcador[]>>;
 
 export interface TextosCotizacion {
@@ -32,6 +36,23 @@ export interface TextosCotizacion {
   /** Nombre del esquema en la pantalla y en el PDF. */
   readonly nombreEsquema: Readonly<Record<Esquema, string>>;
   readonly monedaDeshabilitada: string;
+  /** Textos fijos del PDF. */
+  readonly pdf: TextosPdf;
+}
+
+export interface TextosPdf {
+  readonly titulo: string;
+  /** Va antes del nombre: "Preparado para Persona Sintética Uno". */
+  readonly preparadoPara: string;
+  readonly fecha: string;
+  readonly resumenMonto: string;
+  readonly resumenPlazo: string;
+  readonly resumenTasa: string;
+  readonly resumenEsquema: string;
+  readonly seccionResultados: string;
+  readonly seccionCalculo: string;
+  /** Plantilla con {version_tasas} y {fecha_tasas}. */
+  readonly lineaTasas: string;
 }
 
 const RE_MARCADOR = /\{([^{}]*)\}/g;
@@ -94,6 +115,21 @@ const esquemaTextos = z
         { error: claveDesconocida },
       ),
       moneda_deshabilitada: texto("moneda_deshabilitada", MARCADORES_POR_CAMPO.moneda_deshabilitada),
+      pdf: z.strictObject(
+        {
+          titulo: texto("pdf.titulo"),
+          preparado_para: texto("pdf.preparado_para"),
+          fecha: texto("pdf.fecha"),
+          resumen_monto: texto("pdf.resumen_monto"),
+          resumen_plazo: texto("pdf.resumen_plazo"),
+          resumen_tasa: texto("pdf.resumen_tasa"),
+          resumen_esquema: texto("pdf.resumen_esquema"),
+          seccion_resultados: texto("pdf.seccion_resultados"),
+          seccion_calculo: texto("pdf.seccion_calculo"),
+          linea_tasas: texto("pdf.linea_tasas", MARCADORES_POR_CAMPO["pdf.linea_tasas"]),
+        },
+        { error: claveDesconocida },
+      ),
     },
     { error: claveDesconocida },
   )
@@ -106,6 +142,18 @@ const esquemaTextos = z
       estatusTramo: t.estatus_tramo,
       nombreEsquema: t.nombre_esquema,
       monedaDeshabilitada: t.moneda_deshabilitada,
+      pdf: {
+        titulo: t.pdf.titulo,
+        preparadoPara: t.pdf.preparado_para,
+        fecha: t.pdf.fecha,
+        resumenMonto: t.pdf.resumen_monto,
+        resumenPlazo: t.pdf.resumen_plazo,
+        resumenTasa: t.pdf.resumen_tasa,
+        resumenEsquema: t.pdf.resumen_esquema,
+        seccionResultados: t.pdf.seccion_resultados,
+        seccionCalculo: t.pdf.seccion_calculo,
+        lineaTasas: t.pdf.linea_tasas,
+      },
     }),
   );
 

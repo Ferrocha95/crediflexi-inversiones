@@ -39,7 +39,7 @@ describe("leerParametrosCotizacion", () => {
     expect(r.valor.semilla.entidades).toEqual(["CREDIFLEXI", "RAMI_SISE"]);
     expect(r.valor.razonesSociales.get("CREDIFLEXI")).toBe("CREDIFLEXI, S.A.P.I. DE C.V.");
     expect(r.valor.razonesSociales.get("RAMI_SISE")).toBe("RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R.");
-    expect(r.valor.textos.version).toBe("0.2");
+    expect(r.valor.textos.version).toBe("0.3");
   });
 
   it("si falta el archivo de la semilla, lo dice en español", async () => {
