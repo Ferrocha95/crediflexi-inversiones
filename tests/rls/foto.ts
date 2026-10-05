@@ -1,28 +1,31 @@
-// "Foto" de los datos base (organizaciones A y B, sucursales A1, A2 y B1, y los
-// 10 usuarios de fixtures.ts con sus cuentas de auth). Sirve para comprobar que
-// ningún intento de escritura ni ninguna prueba de integridad los alteró.
+// "Foto" de los datos base (organizaciones A y B, sucursales A1, A2 y B1, los
+// 10 usuarios de fixtures.ts con sus cuentas de auth y los 8 prospectos base).
+// Sirve para comprobar que ningún intento de escritura ni ninguna prueba de
+// integridad los alteró.
 //
 // Sin dependencias de Vitest y sin llaves: recibe el cliente administrador.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ClaveOrganizacion, ClaveSucursal, ClaveUsuario } from "./fixtures";
+import type { ClaveOrganizacion, ClaveProspecto, ClaveSucursal, ClaveUsuario } from "./fixtures";
 
 export interface IdsDatos {
   idsOrganizaciones: Record<ClaveOrganizacion, string>;
   idsSucursales: Record<ClaveSucursal, string>;
   idsUsuarios: Record<ClaveUsuario, string>;
+  idsProspectos: Record<ClaveProspecto, string>;
 }
 
 export interface FotoBase {
   organizaciones: Record<string, unknown>[];
   sucursales: Record<string, unknown>[];
   usuarios: Record<string, unknown>[];
+  prospectos: Record<string, unknown>[];
   cuentas: { id: string; email: string | null }[];
 }
 
 async function filas(
   admin: SupabaseClient,
-  tabla: "organizaciones" | "sucursales" | "usuarios",
+  tabla: "organizaciones" | "sucursales" | "usuarios" | "prospectos",
   ids: string[],
 ): Promise<Record<string, unknown>[]> {
   const { data, error } = await admin.from(tabla).select("*").in("id", ids).order("id");
@@ -51,6 +54,7 @@ export async function tomarFotoBase(
     organizaciones: await filas(admin, "organizaciones", Object.values(ids.idsOrganizaciones)),
     sucursales: await filas(admin, "sucursales", Object.values(ids.idsSucursales)),
     usuarios,
+    prospectos: await filas(admin, "prospectos", Object.values(ids.idsProspectos)),
     cuentas,
   };
 }

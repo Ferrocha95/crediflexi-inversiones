@@ -64,9 +64,23 @@ describe("RLS privado: las funciones de trigger de public no se pueden llamar po
     "fijar_actualizado_en",
     "validar_cadena_de_mando",
     "impedir_cambio_organizacion_sucursal",
+    "impedir_reasignar_prospecto",
+    "fijar_archivado_en",
   ]) {
     it(`authenticated no puede llamar por RPC a public.${funcion}`, async () => {
       esperarFalloSinDatos(await e1.rpc(funcion));
+    });
+  }
+});
+
+describe("RLS privado: las funciones auxiliares de prospectos no se exponen por la API", () => {
+  for (const funcion of ["usuario_actual_id", "usuarios_de_mi_organizacion", "parece_dato_sensible"]) {
+    it(`authenticated no puede llamar por RPC a ${funcion} (no está en public)`, async () => {
+      esperarFalloSinDatos(await e1.rpc(funcion));
+    });
+
+    it(`authenticated no puede llamar por RPC a ${funcion} apuntando al esquema privado`, async () => {
+      esperarEsquemaNoExpuesto(await e1.schema("privado").rpc(funcion));
     });
   }
 });

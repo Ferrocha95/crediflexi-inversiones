@@ -20,10 +20,12 @@ import {
   DOMINIO_PRUEBAS,
   MARCA,
   ORGANIZACIONES,
+  PROSPECTOS,
   SUCURSALES,
   USUARIOS,
   correoDe,
   type ClaveOrganizacion,
+  type ClaveProspecto,
   type ClaveSucursal,
   type ClaveUsuario,
 } from "./fixtures";
@@ -73,8 +75,9 @@ async function listarIdsOrganizacionesDePrueba(
   return data.map((o) => o.id as string);
 }
 
-// Borra solo lo sintético: cuentas con correo @rls.test, sus filas en usuarios,
-// y las organizaciones y sucursales marcadas con MARCA.
+// Borra solo lo sintético: cuentas con correo @rls.test, sus filas en usuarios
+// y sus prospectos, y las organizaciones, sucursales y prospectos marcados con
+// MARCA.
 async function limpiar(admin: SupabaseClient): Promise<void> {
   const idsAuth = await listarIdsAuthDePrueba(admin);
   const idsOrganizaciones = await listarIdsOrganizacionesDePrueba(admin);
@@ -87,6 +90,27 @@ async function limpiar(admin: SupabaseClient): Promise<void> {
       .in("organizacion_id", idsOrganizaciones);
     if (error) falla("listar las sucursales de prueba", error.message);
     idsSucursales = data.map((s) => s.id as string);
+  }
+
+  // prospectos.ejecutivo_id es "on delete restrict": los prospectos de los
+  // usuarios de prueba se borran antes que ellos.
+  const idsUsuariosDePrueba = new Set<string>();
+  for (const [columna, ids] of [
+    ["auth_id", idsAuth],
+    ["sucursal_id", idsSucursales],
+  ] as const) {
+    if (ids.length === 0) continue;
+    const { data, error } = await admin.from("usuarios").select("id").in(columna, ids);
+    if (error) falla("listar los usuarios de prueba", error.message);
+    for (const u of data) idsUsuariosDePrueba.add(u.id as string);
+  }
+  if (idsUsuariosDePrueba.size > 0) {
+    const { error } = await admin.from("prospectos").delete().in("ejecutivo_id", [...idsUsuariosDePrueba]);
+    if (error) falla("borrar los prospectos de prueba", error.message);
+  }
+  {
+    const { error } = await admin.from("prospectos").delete().like("nombre", `%${MARCA}`);
+    if (error) falla("borrar los prospectos marcados", error.message);
   }
 
   // usuarios.jefe_id es "on delete restrict": primero se sueltan los jefes.
@@ -131,11 +155,22 @@ async function verificarLimpio(admin: SupabaseClient): Promise<void> {
     .select("id", { count: "exact", head: true })
     .like("nombre", `%${MARCA}`);
   if (sucursales.error) falla("revisar las sucursales de prueba", sucursales.error.message);
+  const prospectos = await admin
+    .from("prospectos")
+    .select("id", { count: "exact", head: true })
+    .like("nombre", `%${MARCA}`);
+  if (prospectos.error) falla("revisar los prospectos de prueba", prospectos.error.message);
 
-  if (cuentas.length > 0 || organizaciones.length > 0 || (sucursales.count ?? 0) > 0) {
+  if (
+    cuentas.length > 0 ||
+    organizaciones.length > 0 ||
+    (sucursales.count ?? 0) > 0 ||
+    (prospectos.count ?? 0) > 0
+  ) {
     throw new Error(
       `La limpieza de datos de prueba quedó incompleta: ${cuentas.length} cuentas ${DOMINIO_PRUEBAS}, ` +
-        `${organizaciones.length} organizaciones y ${sucursales.count ?? 0} sucursales ${MARCA}. ` +
+        `${organizaciones.length} organizaciones, ${sucursales.count ?? 0} sucursales y ` +
+        `${prospectos.count ?? 0} prospectos ${MARCA}. ` +
         "Vuelve a correr npm run test:rls o reinicia la base con npm run db:reset.",
     );
   }
@@ -192,7 +227,27 @@ async function crearDatos(
     idsUsuarios[u.clave] = data.id as string;
   }
 
-  return { idsOrganizaciones, idsSucursales, idsUsuarios };
+  // Con ejecutivo_id explícito: el valor por omisión (el usuario actual) no
+  // existe para el administrador.
+  const idsProspectos = {} as Record<ClaveProspecto, string>;
+  for (const p of PROSPECTOS) {
+    const { data, error } = await admin
+      .from("prospectos")
+      .insert({
+        ejecutivo_id: idsUsuarios[p.ejecutivo],
+        nombre: p.nombre,
+        contacto: p.contacto,
+        estatus: p.estatus,
+        seguimiento: p.seguimiento,
+        archivado_en: p.archivado ? new Date().toISOString() : null,
+      })
+      .select("id")
+      .single();
+    if (error) falla(`crear el prospecto ${p.clave}`, error.message);
+    idsProspectos[p.clave] = data.id as string;
+  }
+
+  return { idsOrganizaciones, idsSucursales, idsUsuarios, idsProspectos };
 }
 
 export default async function setup(project: TestProject) {
@@ -247,12 +302,12 @@ async function comprobarDatosBaseIntactos(
   if (distintas.length > 0) {
     throw new Error(
       `Comprobación final fallida: los datos base cambiaron durante las pruebas (${distintas.join(", ")}). ` +
-        "Alguna prueba modificó a E1–E6, D1, D2, G1, G2, sus sucursales u organizaciones.",
+        "Alguna prueba modificó a E1–E6, D1, D2, G1, G2, sus sucursales, organizaciones o prospectos base.",
     );
   }
   console.log(
     `Comprobación final: los datos base quedaron idénticos a como se crearon ` +
       `(${final.organizaciones.length} organizaciones, ${final.sucursales.length} sucursales, ` +
-      `${final.usuarios.length} usuarios, ${final.cuentas.length} cuentas).`,
+      `${final.usuarios.length} usuarios, ${final.prospectos.length} prospectos, ${final.cuentas.length} cuentas).`,
   );
 }

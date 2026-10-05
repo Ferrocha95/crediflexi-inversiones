@@ -13,7 +13,8 @@
 // Uso: node scripts/mutacion.mjs [--solo 1,2,4,4b]
 //
 // Código de salida: 0 si todas fueron MATADAS y el estado final es normal;
-// 1 si hubo errores (aunque además alguna sobreviviera); 2 si alguna SOBREVIVIÓ.
+// 1 si hubo errores o alguna quedó INCONCLUSA (aunque además alguna
+// sobreviviera); 2 si alguna SOBREVIVIÓ.
 
 import { spawn } from "node:child_process";
 import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -42,6 +43,28 @@ alter policy ${POLITICA_USUARIOS} on public.usuarios
 }
 
 const definicion = (firma) => `pg_get_functiondef('${firma}'::regprocedure)`;
+
+const PROSPECTOS_LEER = '"prospectos: leer según rol y cadena de mando"';
+const PROSPECTOS_CREAR = '"prospectos: crear los propios"';
+const PROSPECTOS_EDITAR = '"prospectos: editar los propios"';
+
+// Ramas de la política de lectura de prospectos tal como está en la migración
+// (dueño, gerente por la cadena, director de la organización).
+const RAMA_DUENO = "ejecutivo_id = (select privado.usuario_actual_id())";
+const RAMA_GERENTE = `ejecutivo_id in (
+      select privado.subordinados(yo.id) from privado.usuario_actual() yo where yo.rol = 'GERENTE'
+    )`;
+const RAMA_DIRECTOR = `(
+      exists (select 1 from privado.usuario_actual() yo where yo.rol = 'DIRECTOR_REGIONAL')
+      and ejecutivo_id in (select privado.usuarios_de_mi_organizacion())
+    )`;
+function politicaProspectos(ramas) {
+  return `alter policy ${PROSPECTOS_LEER} on public.prospectos using (${ramas.join(" or ")});`;
+}
+
+// Filtro de pg_policies para una política de prospectos (nombre sin comillas).
+const politicaDeProspectos = (nombre) =>
+  `from pg_policies where schemaname = 'public' and tablename = 'prospectos' and policyname = '${nombre}'`;
 
 const MUTACIONES = [
   {
@@ -188,19 +211,103 @@ $$;`,
     comprobar: `select position('GERENTE' in qual) = 0 as ok from pg_policies
                 where schemaname = 'public' and tablename = 'usuarios' and policyname = 'usuarios: leer según rol y cadena de mando'`,
   },
+  {
+    id: "10",
+    nombre: "10. Lectura de prospectos con using (true)",
+    sql: `alter policy ${PROSPECTOS_LEER} on public.prospectos using (true);`,
+    comprobar: `select qual = 'true' as ok ${politicaDeProspectos("prospectos: leer según rol y cadena de mando")}`,
+  },
+  {
+    id: "11",
+    nombre: "11. Lectura de prospectos sin la rama de subordinados (gerentes)",
+    sql: politicaProspectos([RAMA_DUENO, RAMA_DIRECTOR]),
+    comprobar: `select position('subordinados' in qual) = 0 as ok ${politicaDeProspectos("prospectos: leer según rol y cadena de mando")}`,
+  },
+  {
+    id: "12",
+    nombre: "12. Lectura de prospectos: rama de director sin el filtro de rol",
+    sql: politicaProspectos([RAMA_DUENO, RAMA_GERENTE, "ejecutivo_id in (select privado.usuarios_de_mi_organizacion())"]),
+    comprobar: `select position('DIRECTOR_REGIONAL' in qual) = 0 as ok ${politicaDeProspectos("prospectos: leer según rol y cadena de mando")}`,
+  },
+  {
+    id: "13",
+    nombre: "13. usuarios_de_mi_organizacion() sin el corte por organización",
+    sql: `
+create or replace function privado.usuarios_de_mi_organizacion()
+returns setof uuid
+language sql stable security definer set search_path = ''
+as $$
+  select u.id
+  from privado.usuario_actual() yo
+  cross join public.usuarios u;
+$$;`,
+    comprobar: `select position('mia.organizacion_id' in ${definicion("privado.usuarios_de_mi_organizacion()")}) = 0 as ok`,
+  },
+  {
+    id: "14",
+    nombre: "14. Insertar prospectos a nombre de otro (grant insert (ejecutivo_id) + with check (true))",
+    sql: [
+      `grant insert (ejecutivo_id) on public.prospectos to authenticated`,
+      `alter policy ${PROSPECTOS_CREAR} on public.prospectos with check (true)`,
+    ],
+    comprobar: `select has_column_privilege('authenticated', 'public.prospectos', 'ejecutivo_id', 'INSERT')
+                   and (select with_check = 'true' ${politicaDeProspectos("prospectos: crear los propios")}) as ok`,
+  },
+  {
+    id: "15",
+    nombre: "15. Editar prospectos con using (true) with check (true)",
+    sql: `alter policy ${PROSPECTOS_EDITAR} on public.prospectos using (true) with check (true);`,
+    comprobar: `select qual = 'true' and with_check = 'true' as ok ${politicaDeProspectos("prospectos: editar los propios")}`,
+  },
+  {
+    id: "16",
+    nombre: "16. Reasignar prospectos (sin trigger prospectos_impedir_reasignar + grant update (ejecutivo_id))",
+    sql: [
+      `drop trigger prospectos_impedir_reasignar on public.prospectos`,
+      `grant update (ejecutivo_id) on public.prospectos to authenticated`,
+    ],
+    comprobar: `select not exists (select 1 from pg_trigger where tgname = 'prospectos_impedir_reasignar')
+                   and has_column_privilege('authenticated', 'public.prospectos', 'ejecutivo_id', 'UPDATE') as ok`,
+  },
+  {
+    id: "17",
+    nombre: "17. Borrar prospectos (grant delete + política for delete using (true))",
+    sql: [
+      `grant delete on public.prospectos to authenticated`,
+      `create policy "mutacion: borrar prospectos" on public.prospectos
+         for delete to authenticated using (true)`,
+    ],
+    comprobar: `select has_table_privilege('authenticated', 'public.prospectos', 'DELETE')
+                   and exists (select 1 ${politicaDeProspectos("mutacion: borrar prospectos")}) as ok`,
+  },
+  {
+    id: "18",
+    nombre: "18. parece_dato_sensible() devuelve siempre null",
+    sql: `
+create or replace function privado.parece_dato_sensible(p_texto text)
+returns text
+language sql immutable set search_path = ''
+as $$
+  select null::text;
+$$;`,
+    comprobar: `select position('CLABE' in ${definicion("privado.parece_dato_sensible(text)")}) = 0 as ok`,
+  },
 ];
 
 // Estado normal esperado después de db:reset.
 const COMPROBACIONES_FINALES = [
   {
-    nombre: "1 política de lectura por tabla y ninguna de escritura",
-    sql: `select count(*) = 3
-                 and count(*) filter (where cmd = 'SELECT') = 3
-                 and count(distinct tablename) = 3 as ok
+    nombre: "1 política de lectura en cada tabla de organización y 3 en prospectos (leer, crear, editar)",
+    sql: `select count(*) = 6
+                 and count(*) filter (where tablename <> 'prospectos' and cmd = 'SELECT') = 3
+                 and count(distinct tablename) filter (where tablename <> 'prospectos') = 3
+                 and array_agg(cmd::text order by cmd::text) filter (where tablename = 'prospectos')
+                     = array['INSERT', 'SELECT', 'UPDATE']
+                 and bool_and(permissive = 'PERMISSIVE') as ok
           from pg_policies where schemaname = 'public'`,
   },
   {
-    nombre: "authenticated solo tiene SELECT y anon nada en las tres tablas",
+    nombre: "authenticated solo tiene SELECT y anon nada en las tres tablas de organización",
     sql: `select bool_and(has_table_privilege('authenticated', t, 'SELECT'))
                  and not bool_or(has_table_privilege('authenticated', t, 'INSERT')
                               or has_table_privilege('authenticated', t, 'UPDATE')
@@ -209,29 +316,70 @@ const COMPROBACIONES_FINALES = [
           from unnest(array['public.organizaciones', 'public.sucursales', 'public.usuarios']) t`,
   },
   {
-    nombre: "las tres funciones de privado",
+    nombre: "prospectos: authenticated lee e inserta y edita solo las columnas permitidas, sin borrar; anon nada",
+    sql: `select has_table_privilege('authenticated', 'public.prospectos', 'SELECT')
+                 and not has_table_privilege('authenticated', 'public.prospectos', 'INSERT')
+                 and not has_table_privilege('authenticated', 'public.prospectos', 'UPDATE')
+                 and not has_table_privilege('authenticated', 'public.prospectos', 'DELETE')
+                 and array_agg(a.attname::text order by a.attname)
+                       filter (where has_column_privilege('authenticated', 'public.prospectos', a.attname, 'INSERT'))
+                     = array['comentarios', 'contacto', 'estatus', 'nombre', 'seguimiento']
+                 and array_agg(a.attname::text order by a.attname)
+                       filter (where has_column_privilege('authenticated', 'public.prospectos', a.attname, 'UPDATE'))
+                     = array['archivado_en', 'comentarios', 'contacto', 'estatus', 'nombre', 'seguimiento']
+                 and not has_any_column_privilege('anon', 'public.prospectos', 'SELECT, INSERT, UPDATE')
+                 and not has_table_privilege('anon', 'public.prospectos', 'DELETE') as ok
+          from pg_attribute a
+          where a.attrelid = 'public.prospectos'::regclass and a.attnum > 0 and not a.attisdropped`,
+  },
+  {
+    nombre: "las seis funciones de privado",
     sql: `select array_agg(p.proname::text order by p.proname)
-                 = array['subordinados', 'sucursal_visible', 'usuario_actual'] as ok
+                 = array['parece_dato_sensible', 'subordinados', 'sucursal_visible', 'usuario_actual',
+                         'usuario_actual_id', 'usuarios_de_mi_organizacion'] as ok
           from pg_proc p join pg_namespace n on n.oid = p.pronamespace
           where n.nspname = 'privado'`,
   },
   {
-    nombre: "las definiciones de privado son las originales",
+    nombre: "las definiciones de privado y las políticas de prospectos son las originales",
     sql: `select position('u.activo' in ${definicion("privado.usuario_actual()")}) > 0
                  and position('s.organizacion_id = mia.organizacion_id' in ${definicion("privado.sucursal_visible(uuid)")}) > 0
-                 and position('join abajo' in ${definicion("privado.subordinados(uuid)")}) > 0 as ok`,
+                 and position('join abajo' in ${definicion("privado.subordinados(uuid)")}) > 0
+                 and position('mia.organizacion_id' in ${definicion("privado.usuarios_de_mi_organizacion()")}) > 0
+                 and position('CLABE' in ${definicion("privado.parece_dato_sensible(text)")}) > 0
+                 and (select position('subordinados' in qual) > 0 and position('DIRECTOR_REGIONAL' in qual) > 0
+                      ${politicaDeProspectos("prospectos: leer según rol y cadena de mando")})
+                 and (select position('usuario_actual_id' in with_check) > 0
+                      ${politicaDeProspectos("prospectos: crear los propios")})
+                 and (select position('usuario_actual_id' in qual) > 0 and position('usuario_actual_id' in with_check) > 0
+                      ${politicaDeProspectos("prospectos: editar los propios")}) as ok`,
   },
   {
     nombre: "los triggers",
     sql: `select array_agg(tgname::text order by tgname) = array[
                    'organizaciones_fijar_actualizado_en',
+                   'prospectos_fijar_actualizado_en',
+                   'prospectos_fijar_archivado_en',
+                   'prospectos_impedir_reasignar',
                    'sucursales_fijar_actualizado_en',
                    'sucursales_impedir_cambio_organizacion',
                    'usuarios_fijar_actualizado_en',
                    'usuarios_validar_cadena_de_mando'] as ok
           from pg_trigger
           where not tgisinternal
-            and tgrelid in ('public.organizaciones'::regclass, 'public.sucursales'::regclass, 'public.usuarios'::regclass)`,
+            and tgrelid in ('public.organizaciones'::regclass, 'public.sucursales'::regclass,
+                            'public.usuarios'::regclass, 'public.prospectos'::regclass)`,
+  },
+  {
+    nombre: "las restricciones de prospectos",
+    sql: `select array_agg(conname::text order by conname) = array[
+                   'prospectos_comentarios_largo_maximo',
+                   'prospectos_contacto_10_digitos',
+                   'prospectos_nombre_largo_maximo',
+                   'prospectos_nombre_no_vacio',
+                   'prospectos_sin_datos_sensibles'] as ok
+          from pg_constraint
+          where conrelid = 'public.prospectos'::regclass and contype = 'c'`,
   },
 ];
 
@@ -342,27 +490,49 @@ async function comprobarEstadoNormal(etapa) {
   return resultados;
 }
 
+// Una mutación cuenta como MATADA solo si fallaron pruebas con nombre. En
+// Windows, un worker de Vitest a veces se cae al arrancar un archivo (código
+// 3221226505, 0xC0000409); esa caída no es una prueba que falló. Si la corrida
+// sale con error y sin pruebas con nombre fallidas, se repite hasta 2 veces; si
+// persiste, la mutación queda INCONCLUSA.
+const REPETICIONES_MAXIMAS = 2;
+
 async function correrPruebas() {
+  for (let repeticiones = 0; ; repeticiones++) {
+    const { conNombre, otras, codigo } = await correrPruebasUnaVez();
+    if (conNombre.length > 0) return { estado: "MATADA", fallidas: conNombre, repeticiones };
+    if (codigo === 0) return { estado: "SOBREVIVIÓ", fallidas: [], repeticiones };
+    if (repeticiones === REPETICIONES_MAXIMAS) return { estado: "INCONCLUSA", fallidas: otras, repeticiones };
+    console.log(
+      `  npm run test:rls salió con código ${codigo} sin pruebas con nombre fallidas ` +
+        `(${otras.join("; ")}); repetición ${repeticiones + 1} de ${REPETICIONES_MAXIMAS}…`,
+    );
+  }
+}
+
+async function correrPruebasUnaVez() {
   const reporte = join(temporal, "reporte.json");
   rmSync(reporte, { force: true });
   const { codigo, salida } = await correr(`npm run test:rls -- --reporter=json --outputFile="${reporte}"`);
-  let fallidas = [];
+  let conNombre = [];
+  const otras = [];
   try {
     const json = JSON.parse(readFileSync(reporte, "utf8"));
-    fallidas = json.testResults.flatMap((archivo) =>
+    conNombre = json.testResults.flatMap((archivo) =>
       archivo.assertionResults.filter((p) => p.status === "failed").map((p) => p.fullName),
     );
     // Archivos que fallaron sin pruebas individuales (p. ej. en un beforeAll).
     for (const archivo of json.testResults) {
       if (archivo.status === "failed" && !archivo.assertionResults.some((p) => p.status === "failed")) {
-        fallidas.push(`(archivo ${archivo.name.split(/[\\/]/).pop()}: ${archivo.message || "falló"})`);
+        otras.push(`(archivo ${archivo.name.split(/[\\/]/).pop()}: ${archivo.message || "falló"})`);
       }
     }
   } catch {
-    fallidas = [`(sin reporte; código ${codigo}: ${salida.trim().split("\n").slice(-3).join(" ")})`];
+    otras.push(`(sin reporte; código ${codigo}: ${salida.trim().split("\n").slice(-3).join(" ")})`);
   }
-  if (codigo !== 0 && fallidas.length === 0) fallidas = [`(npm run test:rls salió con código ${codigo})`];
-  return fallidas;
+  if (/Worker exited unexpectedly/.test(salida)) otras.push("(se cayó un worker de Vitest)");
+  if (codigo !== 0 && otras.length === 0 && conNombre.length === 0) otras.push(`(código ${codigo})`);
+  return { conNombre, otras, codigo };
 }
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -416,7 +586,7 @@ console.log("Estado inicial normal; empiezan las mutaciones.");
 const resultados = [];
 for (const m of elegidas) {
   console.log(`\n▶ ${m.nombre}`);
-  const resultado = { nombre: m.nombre, estado: "ERROR", fallidas: [] };
+  const resultado = { nombre: m.nombre, estado: "ERROR", fallidas: [], repeticiones: 0 };
   try {
     // La CLI no acepta varias sentencias en una consulta: van una por una.
     for (const [j, sentencia] of [m.sql].flat().entries()) await consultar(sentencia, `mutacion-${m.id}-${j + 1}`);
@@ -424,17 +594,19 @@ for (const m of elegidas) {
       throw new Error("la consulta de comprobación dice que la mutación no quedó aplicada");
     }
     console.log("  aplicada y comprobada; corriendo npm run test:rls…");
-    resultado.fallidas = await correrPruebas();
-    resultado.estado = resultado.fallidas.length > 0 ? "MATADA" : "SOBREVIVIÓ";
+    Object.assign(resultado, await correrPruebas());
   } catch (e) {
     resultado.fallidas = [`(error: ${e.message})`];
   }
 
   // De inmediato: a la consola y al log.
-  console.log(`  ${resultado.estado} (${resultado.fallidas.length} pruebas fallaron)`);
+  console.log(
+    `  ${resultado.estado} (${resultado.fallidas.length} pruebas fallaron; ${resultado.repeticiones} repeticiones)`,
+  );
   for (const f of resultado.fallidas) console.log(`    - ${f}`);
   anotar(
-    `\n### ${m.nombre}\n\n**${resultado.estado}** — ${resultado.fallidas.length} pruebas fallaron\n\n` +
+    `\n### ${m.nombre}\n\n**${resultado.estado}** — ${resultado.fallidas.length} pruebas fallaron` +
+      ` (${resultado.repeticiones} repeticiones por caída de Vitest)\n\n` +
       resultado.fallidas.map((f) => `- ${f}`).join("\n") +
       (resultado.fallidas.length > 0 ? "\n" : ""),
   );
@@ -457,11 +629,11 @@ try {
 const finales = await comprobarEstadoNormal("final");
 rmSync(temporal, { recursive: true, force: true });
 
-console.log("\n| Mutación | Resultado | Pruebas que fallaron |");
-console.log("|---|---|---|");
+console.log("\n| Mutación | Resultado | Repeticiones | Pruebas que fallaron |");
+console.log("|---|---|---|---|");
 for (const r of resultados) {
   const lista = r.fallidas.length > 0 ? `${r.fallidas.length}: ${r.fallidas.join("<br>")}` : "ninguna";
-  console.log(`| ${r.nombre} | ${r.estado} | ${lista} |`);
+  console.log(`| ${r.nombre} | ${r.estado} | ${r.repeticiones} | ${lista} |`);
 }
 
 console.log("\n| Estado final | Resultado |");
@@ -473,6 +645,7 @@ anotar(
     `(${finales.map((f) => `${f.nombre}: ${f.ok ? "OK" : "FALLA"}`).join("; ")})\n`,
 );
 
-const hayErrores = resultados.some((r) => r.estado === "ERROR") || !finales.every((f) => f.ok);
+const hayErrores =
+  resultados.some((r) => r.estado === "ERROR" || r.estado === "INCONCLUSA") || !finales.every((f) => f.ok);
 const sobrevivio = resultados.some((r) => r.estado === "SOBREVIVIÓ");
 process.exit(hayErrores ? 1 : sobrevivio ? 2 : 0);

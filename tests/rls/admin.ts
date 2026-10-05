@@ -14,7 +14,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { OPCIONES_CLIENTE, leerEntornoLocal } from "./entorno";
-import { DOMINIO_PRUEBAS, MARCA, type Rol } from "./fixtures";
+import { DOMINIO_PRUEBAS, MARCA, type EstatusProspecto, type Rol } from "./fixtures";
 
 let clienteAdmin: SupabaseClient | undefined;
 
@@ -49,6 +49,7 @@ export class Registro {
   readonly organizaciones: string[] = [];
   readonly sucursales: string[] = [];
   readonly usuarios: string[] = [];
+  readonly prospectos: string[] = [];
   readonly cuentas: string[] = [];
 
   constructor(private readonly admin: SupabaseClient = comoAdmin()) {}
@@ -112,9 +113,36 @@ export class Registro {
     return { id: data.id, ...cuenta };
   }
 
+  // Prospecto con ejecutivo explícito (el valor por omisión, el usuario
+  // actual, no existe para el administrador). Datos sintéticos.
+  async crearProspecto(opciones: {
+    ejecutivoId: string;
+    estatus?: EstatusProspecto;
+    contacto?: string;
+    archivado?: boolean;
+  }): Promise<string> {
+    const { data, error } = await this.admin
+      .from("prospectos")
+      .insert({
+        ejecutivo_id: opciones.ejecutivoId,
+        nombre: `Prospecto Sintético ${sufijo()} ${MARCA}`,
+        contacto: opciones.contacto ?? "5500000099",
+        estatus: opciones.estatus ?? "INTERESADO",
+        archivado_en: opciones.archivado ? new Date().toISOString() : null,
+      })
+      .select("id")
+      .single();
+    if (error) falla("crear un prospecto de prueba", error.message);
+    this.prospectos.push(data.id);
+    return data.id;
+  }
+
   // Registra filas que una prueba insertó por su cuenta (por ejemplo, un
   // insert que debía fallar y no falló), para que también se borren.
-  anotar(tabla: "organizaciones" | "sucursales" | "usuarios", filas: { id: string }[] | null): void {
+  anotar(
+    tabla: "organizaciones" | "sucursales" | "usuarios" | "prospectos",
+    filas: { id: string }[] | null,
+  ): void {
     for (const f of filas ?? []) this[tabla].push(f.id);
   }
 
@@ -124,6 +152,11 @@ export class Registro {
       if (e) errores.push(`${accion}: ${e.message}`);
     };
 
+    // prospectos.ejecutivo_id es "on delete restrict": van antes que usuarios.
+    if (this.prospectos.length > 0) {
+      const { error } = await this.admin.from("prospectos").delete().in("id", this.prospectos);
+      anotarError("borrar prospectos", error);
+    }
     if (this.usuarios.length > 0) {
       const soltar = await this.admin.from("usuarios").update({ jefe_id: null }).in("id", this.usuarios);
       anotarError("soltar jefes", soltar.error);
@@ -146,6 +179,7 @@ export class Registro {
     this.organizaciones.length = 0;
     this.sucursales.length = 0;
     this.usuarios.length = 0;
+    this.prospectos.length = 0;
     this.cuentas.length = 0;
 
     if (errores.length > 0) {
