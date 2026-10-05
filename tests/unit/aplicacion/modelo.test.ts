@@ -21,6 +21,7 @@ function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: 
 const textos: TextosCotizacion = sinError(cargarTextos(textosJson, "seed/textos_cotizacion.json"));
 const razonesSociales = sinError(cargarRazonesSociales(semillaJson, "seed/parametros_iniciales.json"));
 const contexto = { razonesSociales, textos };
+const VERSION = semillaJson.version;
 
 /** 1 de octubre de 2026, 12:00 en la Ciudad de México. */
 const AHORA = new Date("2026-10-01T18:00:00Z");
@@ -32,7 +33,7 @@ const ENTIDADES = [
 
 const pieEsperado = (razonSocial: string) =>
   `Cotización informativa para ${razonSocial}, calculada con interés simple sobre la tasa anual indicada ` +
-  "y con las tasas de la versión 0.5 del 02/10/2026. El rendimiento anual es un equivalente a 12 meses; " +
+  `y con las tasas de la versión ${VERSION} del 02/10/2026. El rendimiento anual es un equivalente a 12 meses; ` +
   "la ganancia total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables " +
   "son las del contrato que se firme.";
 
@@ -149,11 +150,11 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     const m = sinError(modeloPdf(cotizarBien({ entidad: clave }), { razonesSociales, textos: otros }, {}, AHORA));
     expect(m.textos.titulo).toBe("Título sintético");
     expect(m.textos.seccionCalculo).toBe("Cálculo sintético");
-    expect(m.lineaTasas).toBe("Versión sintética 0.5, 02/10/2026");
+    expect(m.lineaTasas).toBe(`Versión sintética ${VERSION}, 02/10/2026`);
   });
 
   it("la línea de las tasas lleva la versión y la fecha de la semilla", () => {
-    expect(pdf(clave).lineaTasas).toBe("Tasas versión 0.5 del 02/10/2026.");
+    expect(pdf(clave).lineaTasas).toBe(`Tasas versión ${VERSION} del 02/10/2026.`);
   });
 
   it("el modelo del PDF no trae avisos (aviso fabricado a mano en la cotización)", () => {
@@ -190,7 +191,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
       monto: "$1,500,000.00 MXN",
       plazo: "12 meses",
     });
-    expect(m.tasas).toEqual({ version: "0.5", fecha: "02/10/2026" });
+    expect(m.tasas).toEqual({ version: VERSION, fecha: "02/10/2026" });
   });
 
   it("la fecha del PDF es la de la Ciudad de México", () => {
@@ -359,14 +360,14 @@ describe.each(ENTIDADES)("modeloVistaPrevia ($clave)", ({ clave }) => {
       monto: "$1,500,000.00 MXN",
       plazo: "12 meses",
     });
-    expect(v.tasas).toEqual({ version: "0.5", fecha: "02/10/2026" });
+    expect(v.tasas).toEqual({ version: VERSION, fecha: "02/10/2026" });
   });
 
   it("muestra el tramo aplicado con su estatus y la explicación del archivo de textos (pendiente t)", () => {
     const v = modeloVistaPrevia(cotizarBien({ entidad: clave }), textos);
     expect(v.origenTasa).toBe("tramo");
     expect(v.tramo).toEqual({
-      rango: "Desde $1,000,000.01 MXN",
+      rango: "Desde $1,000,001.00 MXN",
       estatus: "CONFIRMADA",
       explicacionEstatus: "Tasa confirmada.",
     });

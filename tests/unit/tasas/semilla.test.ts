@@ -27,11 +27,11 @@ function detallesDelFallo(json: unknown): string[] {
   return [...(r.error.detalles ?? [])];
 }
 
-describe("cargarSemilla: semilla real 0.5", () => {
+describe("cargarSemilla: semilla real 0.6", () => {
   const semilla = cargarBien(semillaJson);
 
   it("conserva versión y fecha de la semilla", () => {
-    expect(semilla.version).toBe("0.5");
+    expect(semilla.version).toBe("0.6");
     expect(semilla.generado).toBe("2026-10-02");
   });
 
@@ -56,8 +56,8 @@ describe("cargarSemilla: semilla real 0.5", () => {
     expect(t0.tasas.mensual.get(12)!.toString()).toBe("0.165");
     expect(t0.tasas.final_del_plazo.get(24)!.toString()).toBe("0.195");
     expect(t0.plazosDisponibles).toEqual([6, 12, 18, 24]);
-    expect(semilla.tablas.MXN!.tramos[1].desde.toFixed(2)).toBe("200000.01");
-    expect(semilla.tablas.MXN!.tramos[5].desde.toFixed(2)).toBe("1000000.01");
+    expect(semilla.tablas.MXN!.tramos[1].desde.toFixed(2)).toBe("200001.00");
+    expect(semilla.tablas.MXN!.tramos[5].desde.toFixed(2)).toBe("1000001.00");
     expect(semilla.tablas.MXN!.tramos[5].hasta).toBeNull();
   });
 

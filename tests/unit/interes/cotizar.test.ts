@@ -58,8 +58,8 @@ describe("cotizar", () => {
       plazo: 12,
     });
     expect(c.origenTasa).toBe("tramo");
-    expect(c.tramo).toEqual({ indice: 2, desde: "400000.01", hasta: "600000.00", estatus: "CONFIRMADA" });
-    expect(c.semilla).toEqual({ version: "0.5", generado: "2026-10-02" });
+    expect(c.tramo).toEqual({ indice: 2, desde: "400001.00", hasta: "600000.00", estatus: "CONFIRMADA" });
+    expect(c.semilla).toEqual({ version: semillaJson.version, generado: "2026-10-02" });
   });
 
   it("entrega las salidas en el orden de la semilla", () => {

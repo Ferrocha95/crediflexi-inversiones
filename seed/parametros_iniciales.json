@@ -71,10 +71,10 @@
           18,
           24
         ],
-        "notas": "Tramo de la Tabla de Diseño: Desde 30,000 Hasta 200,000 (ambos incluidos)."
+        "notas": "Tabla de Diseño: Desde 30,000 Hasta 200,000 (ambos incluidos)."
       },
       {
-        "desde": 200000.01,
+        "desde": 200001,
         "hasta": 400000,
         "estatus": "CONFIRMADA",
         "mensual": {
@@ -95,10 +95,10 @@
           18,
           24
         ],
-        "notas": "Tabla de Diseño: 'Desde 200,001' en pesos enteros; aqui desde 200,000.01 para cubrir los centavos (el 'Hasta' anterior es inclusivo)."
+        "notas": "Tabla de Diseño: 'Desde 200,001' (pesos enteros). Un monto con centavos entre 200,000.00 y 200,000.99 cae en el tramo anterior."
       },
       {
-        "desde": 400000.01,
+        "desde": 400001,
         "hasta": 600000,
         "estatus": "CONFIRMADA",
         "mensual": {
@@ -119,10 +119,10 @@
           18,
           24
         ],
-        "notas": "Tabla de Diseño: 'Desde 400,001' en pesos enteros; aqui desde 400,000.01 para cubrir los centavos (el 'Hasta' anterior es inclusivo)."
+        "notas": "Tabla de Diseño: 'Desde 400,001' (pesos enteros). Un monto con centavos entre 400,000.00 y 400,000.99 cae en el tramo anterior."
       },
       {
-        "desde": 600000.01,
+        "desde": 600001,
         "hasta": 800000,
         "estatus": "CONFIRMADA",
         "mensual": {
@@ -143,10 +143,10 @@
           18,
           24
         ],
-        "notas": "Tabla de Diseño: 'Desde 600,001' en pesos enteros; aqui desde 600,000.01 para cubrir los centavos (el 'Hasta' anterior es inclusivo)."
+        "notas": "Tabla de Diseño: 'Desde 600,001' (pesos enteros). Un monto con centavos entre 600,000.00 y 600,000.99 cae en el tramo anterior."
       },
       {
-        "desde": 800000.01,
+        "desde": 800001,
         "hasta": 1000000,
         "estatus": "CONFIRMADA",
         "mensual": {
@@ -167,10 +167,10 @@
           18,
           24
         ],
-        "notas": "Tabla de Diseño: 'Desde 800,001' en pesos enteros; aqui desde 800,000.01 para cubrir los centavos (el 'Hasta' anterior es inclusivo)."
+        "notas": "Tabla de Diseño: 'Desde 800,001' (pesos enteros). Un monto con centavos entre 800,000.00 y 800,000.99 cae en el tramo anterior."
       },
       {
-        "desde": 1000000.01,
+        "desde": 1000001,
         "hasta": null,
         "estatus": "CONFIRMADA",
         "mensual": {
@@ -191,7 +191,7 @@
           18,
           24
         ],
-        "notas": "Tabla de Diseño: 'Desde 1,000,001' en pesos enteros; aqui desde 1,000,000.01 para cubrir los centavos (el 'Hasta' anterior es inclusivo)."
+        "notas": "Tabla de Diseño: 'Desde 1,000,001' (pesos enteros). Un monto con centavos entre 1,000,000.00 y 1,000,000.99 cae en el tramo anterior."
       }
     ],
     "decisiones_usuario": [
@@ -204,6 +204,11 @@
         "fecha": "2026-10-02",
         "tema": "plazos",
         "texto": "Los plazos son 6, 12, 18 y 24 meses en cualquier monto. No existe el plazo de 36 meses (solo aparecia en el pptx descartado)."
+      },
+      {
+        "fecha": "2026-10-02",
+        "tema": "desde_en_pesos_enteros",
+        "texto": "Cada tramo empieza en el peso entero de la tabla (200,001; 400,001; 600,001; 800,001; 1,000,001), no un centavo despues del 'Hasta' anterior."
       }
     ]
   },
@@ -693,7 +698,7 @@
     "comision_bloqueada_al_cierre_de_mes": "se_pierde (POR_CONFIRMAR, editable)"
   },
   "discrepancias_abiertas": [
-    "D1 RESUELTA (2026-10-02): limites de tramo. Un monto exacto de $200,000 paga el tramo 30,000-200,000 (16.00% a 6 meses mensual). El pptx se equivocaba; coincide con el folleto y el Excel.",
+    "D1 RESUELTA (2026-10-02): limites de tramo. Un monto exacto de $200,000 paga el tramo 30,000-200,000; el tramo siguiente empieza en $200,001 (pesos enteros, como la tabla). El pptx se equivocaba; coincide con el folleto y el Excel.",
     "D2 RESUELTA (2026-10-02): el tramo de $30,000-$200,000 paga 16.00%-17.50% mensual (18.00%-19.50% final del plazo), no 20%. El pptx se equivocaba.",
     "D3 RESUELTA (2026-10-02): no existe el plazo de 36 meses; solo 6, 12, 18 y 24.",
     "D4 SIN EFECTO: las cifras erroneas de la lamina de $800,000 eran del pptx, que ya no es fuente de tasas.",
@@ -702,5 +707,5 @@
     "D7 Tabla N3 nuevos: celda 6 meses/primer tramo no sigue el 70% de N1.",
     "D8 RESUELTA (2026-10-02): Pitagoras es la marca comercial de los servicios financieros; no cambia nada en el calculo ni en el PDF (usa el logo de Crediflexi)."
   ],
-  "version": "0.5"
+  "version": "0.6"
 }

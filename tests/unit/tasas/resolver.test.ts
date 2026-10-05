@@ -44,16 +44,16 @@ function errorDe(s: Semilla, cambios: Partial<SolicitudTasa>, codigo: CodigoErro
 }
 
 describe("resolverTasa: caso base", () => {
-  it("1,500,000 pesos a 12 meses mensual usa la tasa del tramo desde 1,000,000.01", () => {
+  it("1,500,000 pesos a 12 meses mensual usa la tasa del tramo desde 1,000,001.00", () => {
     const t = resolverBien(semilla, {});
     expect(t.tasa.toString()).toBe("0.19");
     expect(t.origen).toBe("tramo");
     expect(t.tramo.indice).toBe(5);
-    expect(t.tramo.desde.toFixed(2)).toBe("1000000.01");
+    expect(t.tramo.desde.toFixed(2)).toBe("1000001.00");
     expect(t.tramo.hasta).toBeNull();
     expect(t.tramo.estatus).toBe("CONFIRMADA");
     expect(t.monto.toFixed(2)).toBe("1500000.00");
-    expect(t.semilla).toEqual({ version: "0.5", generado: "2026-10-02" });
+    expect(t.semilla).toEqual({ version: semillaJson.version, generado: "2026-10-02" });
   });
 
   it("el esquema final del plazo toma su propia columna", () => {
@@ -88,8 +88,10 @@ describe("resolverTasa: límites de tramo", () => {
     expect(t.tasa.toString()).toBe("0.165");
   });
 
-  it("200,000.01 pesos cae en el tramo siguiente (límite inferior inclusivo)", () => {
-    const t = resolverBien(semilla, { monto: "200000.01" });
+  it("200,000.01 y 200,000.99 pesos caen en el primer tramo; 200,001.00 en el siguiente (límite inferior inclusivo)", () => {
+    expect(resolverBien(semilla, { monto: "200000.01" }).tramo.indice).toBe(0);
+    expect(resolverBien(semilla, { monto: "200000.99" }).tramo.indice).toBe(0);
+    const t = resolverBien(semilla, { monto: "200001.00" });
     expect(t.tramo.indice).toBe(1);
     expect(t.tasa.toString()).toBe("0.17");
   });
@@ -98,12 +100,12 @@ describe("resolverTasa: límites de tramo", () => {
     expect(resolverBien(semilla, { monto: "30000" }).tramo.indice).toBe(0);
   });
 
-  it("con límite inferior NO inclusivo, 200,000.01 pesos cae en el tramo anterior y 200,000.02 en el siguiente", () => {
+  it("con límite inferior NO inclusivo, 200,001.00 pesos cae en el tramo anterior y 200,001.01 en el siguiente", () => {
     const c = copia();
     c.tasas_mxn.limite_inferior_inclusivo = false;
     const s = cargar(c);
-    expect(resolverBien(s, { monto: "200000.01" }).tramo.indice).toBe(0);
-    expect(resolverBien(s, { monto: "200000.02" }).tramo.indice).toBe(1);
+    expect(resolverBien(s, { monto: "200001.00" }).tramo.indice).toBe(0);
+    expect(resolverBien(s, { monto: "200001.01" }).tramo.indice).toBe(1);
   });
 
   it("con límite NO inclusivo, el mínimo exacto queda fuera de rango", () => {
@@ -158,7 +160,7 @@ describe("resolverTasa: estatus", () => {
     c.tasas_mxn.tramos[1].estatus = "POR_CONFIRMAR";
     const s = cargar(c);
     const m = errorDe(s, { monto: "250000" }, "TRAMO_POR_CONFIRMAR");
-    expect(m).toContain("$200,000.01");
+    expect(m).toContain("$200,001.00");
     expect(resolverBien(s, { monto: "150000" }).tramo.indice).toBe(0);
   });
 

@@ -51,7 +51,7 @@ const VALIDO = {
   monto: "1,500,000",
   plazo: 12,
   confirmado: true,
-  versionTasas: "0.5",
+  versionTasas: semillaJson.version,
 };
 
 /** VALIDO sin una de sus claves. */

@@ -8,9 +8,9 @@ import { casos, cotizacionDe, intentarCotizar, type Caso, type Intento } from ".
 const intentos = new Map<Caso, Intento>(casos.map((c) => [c, intentarCotizar(c)]));
 const intentoDe = (c: Caso): Intento => intentos.get(c)!;
 
-describe("oro (a): las 160 celdas del golden", () => {
-  it("el golden trae 160 celdas", () => {
-    expect(casos).toHaveLength(160);
+describe("oro (a): las 168 celdas del golden", () => {
+  it("el golden trae 168 celdas", () => {
+    expect(casos).toHaveLength(168);
   });
 
   it.each(casos.map((c) => [c.nombre, c] as const))("%s", (_nombre, c) => {
@@ -41,9 +41,9 @@ describe("oro (a): el tramo de cada celda es el tramo_indice del golden", () => 
 });
 
 describe("oro (a): ninguna celda del golden trae aviso", () => {
-  it("las 160 celdas cotizan sin avisos", () => {
+  it("las 168 celdas cotizan sin avisos", () => {
     const conAviso = casos.filter((c) => cotizacionDe(c, intentoDe(c)).avisos.length > 0).map((c) => c.nombre);
-    expect(casos).toHaveLength(160);
+    expect(casos).toHaveLength(168);
     expect(conAviso).toEqual([]);
   });
 });
