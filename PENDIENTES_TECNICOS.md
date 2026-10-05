@@ -33,3 +33,8 @@
 - (ii) Prueba de extremo a extremo con Playwright: llenar el cotizador, confirmar, generar el PDF y revisar la descarga. Parcial: el sprint 2a agregó Playwright y `tests/e2e` (accesibilidad y capturas, que ya llenan el cotizador), pero falta confirmar, generar el PDF y revisar la descarga.
 - (jj) Etiqueta legible para el estatus del tramo en la vista previa (hoy se muestra la clave, por ejemplo `CONFIRMADA`).
 - (kk) Las pruebas de que el PDF no trae avisos se restituyeron con un aviso fabricado a mano (la Tabla de Diseño no produce avisos). Si vuelven los avisos reales, probarlos también con una semilla sintética.
+- (qq) Mover `INCREMENTO_MINIMO_REINVERSION` ($1,000, del Manual de capacitación, modalidad Creciente) de `src/domain/interes/escenario.ts` a la semilla.
+- (rr) El número de página del PDF va fijo ("Página N de 2"): si algún día hay una tercera página, hay que generarlo.
+- (ss) La banda de la modalidad 2 quedó mostaza (#8F7104) para cumplir el contraste 4.5:1 con texto blanco; evaluar el dorado original con texto oscuro.
+- (tt) Las 6 pruebas de muestras (`tests/unit/servidor/pdf/muestras.test.ts`) se omiten salvo con la variable `MUESTRAS_DIR`.
+- (uu) El escenario de reinversión es ilustrativo: la regla fina del producto Creciente (desde qué día rinde un incremento, base del cálculo) no está confirmada con la empresa.
