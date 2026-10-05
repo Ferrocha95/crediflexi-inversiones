@@ -57,7 +57,8 @@ export interface SerieGrafica {
 export interface GraficaPdf {
   readonly titulo: string;
   readonly rotulo: string | null;
-  readonly nota: string;
+  /** Nota debajo de la gráfica; null si la gráfica se omite (queda solo la nota de omisión). */
+  readonly nota: string | null;
   /** null si la gráfica se omite. */
   readonly dibujo: {
     readonly ejeX: readonly { readonly x: number; readonly texto: string }[];
@@ -189,6 +190,7 @@ function graficaEscenario(e: EscenarioReinversion, t: TextosPagina2): GraficaPdf
   if (e.tipo === "omitido") {
     return {
       ...base,
+      nota: null,
       dibujo: null,
       omision: e.motivo === "INCREMENTO_MINIMO" ? t.escenarioIncrementoMinimo : t.escenarioTasaNoDisponible,
     };

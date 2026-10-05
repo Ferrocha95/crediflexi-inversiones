@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { componer, contraste } from "../../../src/componentes/diseno/contraste";
 import { COLOR, VIDRIO } from "../../../src/componentes/diseno/tokens";
+import { COLOR_PDF } from "../../../src/servidor/pdf/colores";
 
 // Contraste WCAG 2.2 de las parejas texto/fondo del sistema de diseño. axe no
 // sabe calcularlo sobre backdrop-filter, así que el vidrio se revisa aquí con
@@ -94,4 +95,29 @@ describe("los tokens de TypeScript son los mismos de globals.css", () => {
       expect(css).toMatch(new RegExp(`--color-${kebab(nombre)}:\\s*${hex};`, "i"));
     });
   }
+});
+
+describe("PDF, página 2: texto blanco sobre las bandas y encabezados", () => {
+  it.each([
+    ["bandaVerde", "el verde del Excel, oscurecido"],
+    ["bandaDorada", "el dorado del Excel, oscurecido"],
+    ["marino", "el encabezado de las tablas"],
+  ] as const)("blanco sobre %s (%s) cumple 4.5:1", (clave, uso) => {
+    expect(contraste(COLOR_PDF.blanco, COLOR_PDF[clave]), uso).toBeGreaterThanOrEqual(TEXTO_NORMAL);
+  });
+
+  it("las bandas conservan el tono: el verde es verde y el dorado es dorado (rojo > azul)", () => {
+    const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [rv, gv, bv] = rgb(COLOR_PDF.bandaVerde);
+    expect(gv).toBeGreaterThan(rv);
+    expect(gv).toBeGreaterThan(bv);
+    const [rd, gd, bd] = rgb(COLOR_PDF.bandaDorada);
+    expect(rd).toBeGreaterThan(gd);
+    expect(gd).toBeGreaterThan(bd);
+  });
+
+  it("las etiquetas de las gráficas van en marino o gris, que sí cumplen 4.5:1 sobre blanco", () => {
+    expect(contraste(COLOR_PDF.marino, COLOR_PDF.blanco)).toBeGreaterThanOrEqual(TEXTO_NORMAL);
+    expect(contraste(COLOR_PDF.gris, COLOR_PDF.blanco)).toBeGreaterThanOrEqual(TEXTO_NORMAL);
+  });
 });

@@ -147,6 +147,8 @@ describe("modeloPagina2: gráfica 2, escenario ilustrativo de reinversión", () 
     expect(g.dibujo).toBeNull();
     expect(g.omision).toBe(T.escenarioIncrementoMinimo);
     expect(g.titulo).toBe(T.tituloGrafica2);
+    // Sin escenario no va la nota de sus supuestos: solo la nota de omisión.
+    expect(g.nota).toBeNull();
   });
 
   it("si falta una tasa, la nota dice que alguna tasa está por confirmar", () => {
