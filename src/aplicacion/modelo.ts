@@ -5,6 +5,7 @@ import type { Cotizacion } from "../domain/interes/cotizar";
 import type { Esquema, Estatus, Moneda, Salida } from "../domain/tasas/semilla.esquema";
 import { limpiarCampo } from "./campos";
 import { fechaDeTextoIso, fechaEnMexico } from "./fecha";
+import { modeloPagina2, type DatosPagina2, type ModeloPagina2 } from "./pagina2";
 import { rellenar } from "./rellenar";
 import { error, ok, type ResultadoApp } from "./resultado";
 import type { TextosCotizacion, TextosPdf } from "./textos";
@@ -156,19 +157,23 @@ export interface ModeloPdf {
     readonly vigencia: string | null;
     readonly notaAdicional: string | null;
   };
+  /** Página 2: calendario de las dos modalidades, comparación y escenario de reinversión. */
+  readonly pagina2: ModeloPagina2;
 }
 
 const oNulo = (texto: string) => (texto === "" ? null : texto);
 
 /**
- * Arma el modelo del PDF a partir de una cotización ya hecha. `ahora` entra
- * como parámetro para que la función sea pura.
+ * Arma el modelo del PDF a partir de una cotización ya hecha y de los datos de
+ * la página 2 (datosPagina2, con la misma semilla). `ahora` entra como
+ * parámetro para que la función sea pura.
  */
 export function modeloPdf(
   c: Cotizacion,
   contexto: ContextoPdf,
   entrada: EntradaPdf,
   ahora: Date,
+  datos: DatosPagina2,
 ): ResultadoApp<ModeloPdf> {
   const { entidad, moneda } = c.solicitud;
   const razonSocial = contexto.razonesSociales.get(entidad);
@@ -232,5 +237,6 @@ export function modeloPdf(
       vigencia: vigencia === "" ? null : rellenar(textos.lineaVigencia, { vigencia }),
       notaAdicional: oNulo(notaAdicional),
     },
+    pagina2: modeloPagina2(c, datos, textos.pdfPagina2),
   });
 }

@@ -5,6 +5,7 @@ import semillaJson from "../../../../seed/parametros_iniciales.json";
 import textosJson from "../../../../seed/textos_cotizacion.json";
 import { cargarRazonesSociales } from "../../../../src/aplicacion/entidades";
 import { modeloPdf, TOPES, type EntradaPdf, type ModeloPdf } from "../../../../src/aplicacion/modelo";
+import { datosPagina2 } from "../../../../src/aplicacion/pagina2";
 import { error, type ResultadoApp } from "../../../../src/aplicacion/resultado";
 import { cargarTextos } from "../../../../src/aplicacion/textos";
 import { cotizar } from "../../../../src/domain/interes/cotizar";
@@ -84,7 +85,7 @@ function esperado(solicitud: Partial<SolicitudTasa>, entrada: EntradaPdf = {}): 
   });
   if (!c.ok) throw new Error(c.error.mensaje);
   const ctx = { razonesSociales: parametros.razonesSociales, textos: parametros.textos };
-  return sinError(modeloPdf(c.valor, ctx, entrada, AHORA));
+  return sinError(modeloPdf(c.valor, ctx, entrada, AHORA, datosPagina2(semillaReal, c.valor.solicitud)));
 }
 
 async function errorJson(r: Response): Promise<{ error: string; detalles?: string[] }> {

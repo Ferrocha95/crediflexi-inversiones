@@ -1,5 +1,5 @@
 {
-  "version": "0.3",
+  "version": "0.4",
   "pie_base": "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente a 12 meses; la ganancia total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables son las del contrato que se firme.",
   "linea_preparado_por": "Preparado por {ejecutivo}.",
   "linea_vigencia": "Vigencia: {vigencia}.",
@@ -24,5 +24,34 @@
     "seccion_resultados": "Tus resultados",
     "seccion_calculo": "Cómo se calculó",
     "linea_tasas": "Tasas versión {version_tasas} del {fecha_tasas}."
+  },
+  "pdf_pagina2": {
+    "titulo": "Calendario de pagos y escenarios",
+    "modalidad_1": "MODALIDAD 1 · RENDIMIENTO MENSUAL",
+    "modalidad_2": "MODALIDAD 2 · PAGO AL VENCIMIENTO",
+    "tasa_anual": "TASA ANUAL",
+    "capital_inicial": "Capital inicial",
+    "rendimiento_estimado": "Rendimiento estimado",
+    "total": "Total capital + rendimiento",
+    "columna_mes": "Mes",
+    "columna_rendimiento_mes": "Rendimiento del mes",
+    "columna_rendimiento_acumulado": "Rendimiento acumulado",
+    "insignia": "Tu cotización",
+    "nota_centavos": "Los centavos se ajustan para que la suma coincida con el total.",
+    "modalidad_no_disponible": "Esta modalidad no se puede cotizar con el monto y el plazo elegidos.",
+    "titulo_grafica_1": "Comparación de modalidades",
+    "nota_grafica_1": "Rendimiento acumulado mes a mes: en la modalidad 1 se cobra cada mes; en la modalidad 2 se acumula y se paga al vencimiento.",
+    "serie_cobrado": "Modalidad 1 (cobrado)",
+    "serie_devengado": "Modalidad 2 (acumulado)",
+    "titulo_grafica_2": "Si reinviertes tus rendimientos",
+    "rotulo_escenario": "Escenario ilustrativo",
+    "serie_con_reinversion": "Reinvirtiendo",
+    "serie_sin_reinvertir": "Sin reinvertir",
+    "fin_primer_plazo": "Fin del primer plazo",
+    "nota_escenario": "Supone las tasas vigentes hoy y que se reinvierten los rendimientos; las tasas pueden cambiar. No es una promesa de rendimiento.",
+    "escenario_incremento_minimo": "El escenario de reinversión no se muestra porque el rendimiento mensual es menor al incremento mínimo para reinvertir.",
+    "escenario_tasa_no_disponible": "El escenario de reinversión no se muestra porque alguna de las tasas que usaría está por confirmar.",
+    "pagina": "Página",
+    "pagina_de": "de"
   }
 }

@@ -6,7 +6,8 @@ import { modeloPdf, TOPES, type EntradaPdf, type ModeloPdf } from "../../../../s
 import { cargarTextos } from "../../../../src/aplicacion/textos";
 import type { Esquema } from "../../../../src/domain/tasas/semilla.esquema";
 import { renderizarPdf } from "../../../../src/servidor/pdf/renderizar";
-import { cotizarBien } from "../../oro/ayudas";
+import { datosPagina2 } from "../../../../src/aplicacion/pagina2";
+import { cotizarBien, semillaReal } from "../../oro/ayudas";
 import { extraerTexto } from "./extraer";
 
 // Renderizado real con react-pdf y lectura del texto con pdfjs-dist. Todo con datos sintéticos.
@@ -30,7 +31,7 @@ const OPCIONALES: EntradaPdf = {
 
 function modelo(entidad: string, esquema: Esquema, entrada: EntradaPdf = OPCIONALES, monto = "1500000", plazo = 12) {
   const c = cotizarBien({ entidad, esquema, monto, plazo });
-  return sinError(modeloPdf(c, { razonesSociales, textos }, entrada, AHORA));
+  return sinError(modeloPdf(c, { razonesSociales, textos }, entrada, AHORA, datosPagina2(semillaReal, c.solicitud)));
 }
 
 async function render(m: ModeloPdf) {
