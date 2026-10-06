@@ -1,6 +1,6 @@
-import { leerParametrosCotizacion } from "../../../servidor/parametros";
-import { manejarPdf } from "../../../servidor/pdf/manejador";
-import { renderizarPdf } from "../../../servidor/pdf/renderizar";
+import { leerParametrosCotizacion } from "../../../../servidor/parametros";
+import { manejarPdf } from "../../../../servidor/pdf/manejador";
+import { renderizarPdf } from "../../../../servidor/pdf/renderizar";
 
 /**
  * POST /cotizador/pdf: genera el PDF de la cotización. Toda la lógica está en

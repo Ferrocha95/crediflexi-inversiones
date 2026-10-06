@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { previsualizarCon, type RespuestaVistaPrevia } from "../../servidor/vistaPrevia";
+import { previsualizarCon, type RespuestaVistaPrevia } from "../../../servidor/vistaPrevia";
 
 /**
  * Vista previa del cotizador. Recibe `unknown` porque una acción del servidor

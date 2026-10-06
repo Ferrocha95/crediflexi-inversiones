@@ -10,8 +10,8 @@ import {
   type AccionConfirmacion,
   type CamposHuella,
   type EstadoConfirmacion,
-} from "../../../src/app/cotizador/confirmacion";
-import { TEXTOS } from "../../../src/app/cotizador/textosPantalla";
+} from "../../../src/app/(app)/cotizador/confirmacion";
+import { TEXTOS } from "../../../src/app/(app)/cotizador/textosPantalla";
 
 /** Una vista previa cualquiera: el reducer no mira su contenido. */
 type Vista = { readonly tasa: string };
@@ -192,7 +192,7 @@ describe("textos de la confirmación", () => {
 });
 
 describe("confirmacion.ts es lógica pura", () => {
-  const codigo = readFileSync(path.join(process.cwd(), "src/app/cotizador/confirmacion.ts"), "utf8");
+  const codigo = readFileSync(path.join(process.cwd(), "src/app/(app)/cotizador/confirmacion.ts"), "utf8");
   const origenes = [...codigo.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]);
 
   it("no importa nada de src/domain ni de Next ni de React", () => {

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useId, useReducer, useState } from "react";
-import type { ModeloVistaPrevia } from "../../aplicacion/modelo";
-import type { OpcionesCotizador } from "../../aplicacion/opciones";
-import type { Esquema, Moneda } from "../../domain/tasas/semilla.esquema";
-import type { RespuestaVistaPrevia } from "../../servidor/vistaPrevia";
+import type { ModeloVistaPrevia } from "../../../aplicacion/modelo";
+import type { OpcionesCotizador } from "../../../aplicacion/opciones";
+import type { Esquema, Moneda } from "../../../domain/tasas/semilla.esquema";
+import type { RespuestaVistaPrevia } from "../../../servidor/vistaPrevia";
 import { previsualizar } from "./acciones";
 import {
   estadoInicial,
@@ -22,14 +22,14 @@ import {
   recortar,
   type OpcionalesPdf,
 } from "./peticionPdf";
-import { Aviso } from "../../componentes/ui/Aviso";
-import { Boton } from "../../componentes/ui/Boton";
-import { AreaTexto, Campo, Entrada } from "../../componentes/ui/Campo";
-import { Casilla } from "../../componentes/ui/Casilla";
-import { Esqueleto } from "../../componentes/ui/Esqueleto";
-import { Opciones } from "../../componentes/ui/Opciones";
-import { Selector } from "../../componentes/ui/Selector";
-import { TarjetaVidrio } from "../../componentes/ui/TarjetaVidrio";
+import { Aviso } from "../../../componentes/ui/Aviso";
+import { Boton } from "../../../componentes/ui/Boton";
+import { AreaTexto, Campo, Entrada } from "../../../componentes/ui/Campo";
+import { Casilla } from "../../../componentes/ui/Casilla";
+import { Esqueleto } from "../../../componentes/ui/Esqueleto";
+import { Opciones } from "../../../componentes/ui/Opciones";
+import { Selector } from "../../../componentes/ui/Selector";
+import { TarjetaVidrio } from "../../../componentes/ui/TarjetaVidrio";
 import { TEXTOS } from "./textosPantalla";
 import { VistaPrevia } from "./VistaPrevia";
 

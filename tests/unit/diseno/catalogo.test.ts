@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { proxy } from "../../../src/proxy";
 import * as proxyModulo from "../../../src/proxy";
@@ -10,7 +10,14 @@ import {
   PIPELINE_EJEMPLO,
   PROYECCION_EJEMPLO,
   SEMANA_EJEMPLO,
-} from "../../../src/app/diseno/datosEjemplo";
+} from "../../../src/app/(app)/diseno/datosEjemplo";
+
+// Cliente falso de Supabase sin sesión, para el paso del proxy después del guardia de host.
+vi.mock("@supabase/ssr", () => ({
+  createServerClient: () => ({ auth: { getClaims: async () => ({ data: null, error: null }) } }),
+}));
+vi.stubEnv("SUPABASE_URL", "http://127.0.0.1:54321");
+vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "llave-sintetica-de-prueba");
 
 const leer = (f: string) => readFileSync(path.join(process.cwd(), f), "utf8");
 
@@ -19,14 +26,15 @@ describe("catálogo /diseno: solo local", () => {
     expect("config" in proxyModulo).toBe(false);
   });
 
-  it("una petición a /diseno con Host no local recibe 403", () => {
-    const r = proxy(new NextRequest("http://ejemplo.com/diseno", { headers: { host: "ejemplo.com" } }));
+  it("una petición a /diseno con Host no local recibe 403", async () => {
+    const r = await proxy(new NextRequest("http://ejemplo.com/diseno", { headers: { host: "ejemplo.com" } }));
     expect(r.status).toBe(403);
   });
 
-  it("una petición a /diseno con Host localhost pasa", () => {
-    const r = proxy(new NextRequest("http://localhost:3000/diseno", { headers: { host: "localhost:3000" } }));
-    expect(r.status).toBe(200);
+  it("una petición a /diseno con Host localhost pasa el guardia y, sin sesión, va a /acceso", async () => {
+    const r = await proxy(new NextRequest("http://localhost:3000/diseno", { headers: { host: "localhost:3000" } }));
+    expect(r.status).toBe(307);
+    expect(new URL(r.headers.get("location")!).pathname).toBe("/acceso");
   });
 
   it("no aparece en el menú", () => {
@@ -36,7 +44,7 @@ describe("catálogo /diseno: solo local", () => {
 
 describe("catálogo /diseno: datos sintéticos y marcados", () => {
   it("cada sección con datos lleva el rótulo «Datos de ejemplo»", () => {
-    const pagina = leer("src/app/diseno/page.tsx");
+    const pagina = leer("src/app/(app)/diseno/page.tsx");
     expect(pagina).toContain("Datos de ejemplo");
     for (const titulo of ["Pipeline", "Plan semanal", "Proyección", "Cifras y totales", "Inicio", "Cartera", "Biblioteca"]) {
       expect(pagina).toMatch(new RegExp(`titulo="${titulo}"[^>]*ejemplo\\s*>`));

@@ -1,16 +1,16 @@
 import { FlaskConical } from "lucide-react";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Aviso } from "../../componentes/ui/Aviso";
-import { Boton } from "../../componentes/ui/Boton";
-import { Esqueleto } from "../../componentes/ui/Esqueleto";
-import { EstadoVacio } from "../../componentes/ui/EstadoVacio";
-import { ESTATUS_PIPELINE, InsigniaEstatus } from "../../componentes/ui/InsigniaEstatus";
-import { TarjetaCifra } from "../../componentes/ui/TarjetaCifra";
-import { TarjetaVidrio } from "../../componentes/ui/TarjetaVidrio";
-import { CuadriculaSemanal } from "../../componentes/vistas/CuadriculaSemanal";
-import { TablaPipeline } from "../../componentes/vistas/TablaPipeline";
-import { TablaProyeccion } from "../../componentes/vistas/TablaProyeccion";
+import { Aviso } from "../../../componentes/ui/Aviso";
+import { Boton } from "../../../componentes/ui/Boton";
+import { Esqueleto } from "../../../componentes/ui/Esqueleto";
+import { EstadoVacio } from "../../../componentes/ui/EstadoVacio";
+import { ESTATUS_PIPELINE, InsigniaEstatus } from "../../../componentes/ui/InsigniaEstatus";
+import { TarjetaCifra } from "../../../componentes/ui/TarjetaCifra";
+import { TarjetaVidrio } from "../../../componentes/ui/TarjetaVidrio";
+import { CuadriculaSemanal } from "../../../componentes/vistas/CuadriculaSemanal";
+import { TablaPipeline } from "../../../componentes/vistas/TablaPipeline";
+import { TablaProyeccion } from "../../../componentes/vistas/TablaProyeccion";
 import {
   TarjetaCarteraTotal,
   TarjetaDocumentosPorVencer,
@@ -21,8 +21,8 @@ import {
   TarjetaProyeccionSemana,
   TarjetaSeguimientos,
   TarjetaVencimientos,
-} from "../../componentes/inicio/TarjetasResumen";
-import { TarjetaCliente } from "../../componentes/vistas/TarjetaCliente";
+} from "../../../componentes/inicio/TarjetasResumen";
+import { TarjetaCliente } from "../../../componentes/vistas/TarjetaCliente";
 import {
   CARTERA_TOTAL_EJEMPLO,
   CLIENTES_EJEMPLO,

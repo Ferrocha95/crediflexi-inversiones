@@ -1,8 +1,8 @@
 "use client";
 
-import type { ModeloVistaPrevia } from "../../aplicacion/modelo";
-import { Aviso } from "../../componentes/ui/Aviso";
-import { TarjetaCifra } from "../../componentes/ui/TarjetaCifra";
+import type { ModeloVistaPrevia } from "../../../aplicacion/modelo";
+import { Aviso } from "../../../componentes/ui/Aviso";
+import { TarjetaCifra } from "../../../componentes/ui/TarjetaCifra";
 import { TEXTOS } from "./textosPantalla";
 
 /** Muestra la vista previa tal como llega del servidor: aquí no se calcula nada. */

@@ -14,7 +14,7 @@ import {
   PROYECCION_SEMANA_EJEMPLO,
   SEGUIMIENTOS_EJEMPLO,
   VENCIMIENTOS_EJEMPLO,
-} from "../../../src/app/diseno/datosEjemplo";
+} from "../../../src/app/(app)/diseno/datosEjemplo";
 
 const leer = (f: string) => readFileSync(path.join(process.cwd(), f), "utf8");
 
@@ -34,7 +34,7 @@ const html = (nombre: keyof typeof TARJETAS, datos?: unknown) =>
   renderToStaticMarkup(createElement(Tarjetas[nombre] as FunctionComponent<{ datos?: unknown }>, { datos }));
 
 describe("página de inicio (/): ningún dato inventado", () => {
-  const pagina = leer("src/app/page.tsx");
+  const pagina = leer("src/app/(app)/page.tsx");
 
   it("no importa datos de ejemplo ni nada de /diseno", () => {
     const importaciones = [...pagina.matchAll(/^import[^;]*?from\s+["']([^"']+)["']/gm)].map((m) => m[1]);

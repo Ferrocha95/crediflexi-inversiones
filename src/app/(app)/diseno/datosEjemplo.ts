@@ -8,12 +8,12 @@ import type {
   DatosProyeccionSemana,
   DatosSeguimientos,
   DatosVencimientos,
-} from "../../componentes/inicio/TarjetasResumen";
-import type { DatosCliente } from "../../componentes/vistas/TarjetaCliente";
-import type { DatosDocumento } from "../../componentes/vistas/TarjetaDocumento";
-import type { DiaPlan } from "../../componentes/vistas/CuadriculaSemanal";
-import type { FilaPipelineDatos } from "../../componentes/vistas/TablaPipeline";
-import type { FilaProyeccion } from "../../componentes/vistas/TablaProyeccion";
+} from "../../../componentes/inicio/TarjetasResumen";
+import type { DatosCliente } from "../../../componentes/vistas/TarjetaCliente";
+import type { DatosDocumento } from "../../../componentes/vistas/TarjetaDocumento";
+import type { DiaPlan } from "../../../componentes/vistas/CuadriculaSemanal";
+import type { FilaPipelineDatos } from "../../../componentes/vistas/TablaPipeline";
+import type { FilaProyeccion } from "../../../componentes/vistas/TablaProyeccion";
 
 /*
  * DATOS DE EJEMPLO, SINTÉTICOS. Ninguno corresponde a una persona real: los

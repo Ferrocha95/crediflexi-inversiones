@@ -5,10 +5,11 @@ import { describe, expect, it } from "vitest";
 const leer = (f: string) => readFileSync(path.join(process.cwd(), f), "utf8");
 
 describe("higiene del proyecto", () => {
-  it("dev y start escuchan solo en 127.0.0.1", () => {
+  it("dev y start pasan por scripts/con-entorno.mjs, que escucha solo en 127.0.0.1", () => {
     const { scripts } = JSON.parse(leer("package.json")) as { scripts: Record<string, string> };
-    expect(scripts.dev).toBe("next dev -H 127.0.0.1");
-    expect(scripts.start).toBe("next start -H 127.0.0.1");
+    expect(scripts.dev).toBe("node scripts/con-entorno.mjs dev");
+    expect(scripts.start).toBe("node scripts/con-entorno.mjs start");
+    expect(leer("scripts/con-entorno.mjs")).toMatch(/"-H", "127\.0\.0\.1"/);
   });
 
   it(".gitignore excluye los PDF y la carpeta de Playwright MCP", () => {

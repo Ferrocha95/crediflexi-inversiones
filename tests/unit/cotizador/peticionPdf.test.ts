@@ -8,8 +8,8 @@ import {
   nombreDeArchivo,
   recortar,
   type OpcionalesPdf,
-} from "../../../src/app/cotizador/peticionPdf";
-import { TEXTOS } from "../../../src/app/cotizador/textosPantalla";
+} from "../../../src/app/(app)/cotizador/peticionPdf";
+import { TEXTOS } from "../../../src/app/(app)/cotizador/textosPantalla";
 
 const CAMPOS = { entidad: "RAMI_SISE", moneda: "MXN", esquema: "final_del_plazo", monto: "1,500,000", plazo: 12 } as const;
 const VACIOS: OpcionalesPdf = { preparadoPara: "", ejecutivo: "", vigencia: "", notaAdicional: "" };
@@ -109,7 +109,7 @@ describe("contarCaracteres y recortar", () => {
 });
 
 describe("peticionPdf.ts es lógica pura", () => {
-  const codigo = readFileSync(path.join(process.cwd(), "src/app/cotizador/peticionPdf.ts"), "utf8");
+  const codigo = readFileSync(path.join(process.cwd(), "src/app/(app)/cotizador/peticionPdf.ts"), "utf8");
   it("no importa nada de src/domain, de la aplicación, del servidor, de Next ni de React", () => {
     const origenes = [...codigo.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]);
     expect(origenes.filter((o) => /domain|aplicacion|servidor|^next|^react/.test(o))).toEqual([]);

@@ -2,9 +2,9 @@ import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { opcionesCotizador } from "../../aplicacion/opciones";
-import { leerParametrosCotizacion } from "../../servidor/parametros";
-import { Aviso } from "../../componentes/ui/Aviso";
+import { opcionesCotizador } from "../../../aplicacion/opciones";
+import { leerParametrosCotizacion } from "../../../servidor/parametros";
+import { Aviso } from "../../../componentes/ui/Aviso";
 import { Cotizador } from "./Cotizador";
 import { TEXTOS } from "./textosPantalla";
 

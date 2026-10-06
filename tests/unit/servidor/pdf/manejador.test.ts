@@ -329,7 +329,7 @@ describe("manejarPdf: fallas del servidor", () => {
 });
 
 describe("manejador y ruta: no registran nada", () => {
-  it.each(["src/servidor/pdf/manejador.ts", "src/servidor/pdf/renderizar.ts", "src/app/cotizador/pdf/route.ts"])(
+  it.each(["src/servidor/pdf/manejador.ts", "src/servidor/pdf/renderizar.ts", "src/app/(app)/cotizador/pdf/route.ts"])(
     "%s no escribe en la consola",
     (f) => {
       expect(readFileSync(path.join(process.cwd(), f), "utf8")).not.toMatch(/console\./);
@@ -337,7 +337,7 @@ describe("manejador y ruta: no registran nada", () => {
   );
 
   it("la ruta solo exporta POST y usa el manejador", () => {
-    const codigo = readFileSync(path.join(process.cwd(), "src/app/cotizador/pdf/route.ts"), "utf8");
+    const codigo = readFileSync(path.join(process.cwd(), "src/app/(app)/cotizador/pdf/route.ts"), "utf8");
     expect(codigo).toMatch(/export async function POST/);
     expect(codigo).not.toMatch(/export (async )?function (GET|PUT|PATCH|DELETE)/);
     expect(codigo).toMatch(/manejarPdf/);

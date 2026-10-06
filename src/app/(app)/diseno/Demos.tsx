@@ -2,17 +2,17 @@
 
 import { LayoutGrid, List, RefreshCw } from "lucide-react";
 import { useId, useState } from "react";
-import { Boton } from "../../componentes/ui/Boton";
-import { AreaTexto, Campo, Entrada } from "../../componentes/ui/Campo";
-import { Casilla } from "../../componentes/ui/Casilla";
-import { Dialogo } from "../../componentes/ui/Dialogo";
-import { useNotificar } from "../../componentes/ui/Notificaciones";
-import { Opciones } from "../../componentes/ui/Opciones";
-import { Pestanas } from "../../componentes/ui/Pestanas";
-import { Selector } from "../../componentes/ui/Selector";
-import { BibliotecaDocumentos, type VistaBiblioteca } from "../../componentes/vistas/BibliotecaDocumentos";
-import { TarjetaDocumento } from "../../componentes/vistas/TarjetaDocumento";
-import { TarjetaTotal } from "../../componentes/vistas/TarjetaTotal";
+import { Boton } from "../../../componentes/ui/Boton";
+import { AreaTexto, Campo, Entrada } from "../../../componentes/ui/Campo";
+import { Casilla } from "../../../componentes/ui/Casilla";
+import { Dialogo } from "../../../componentes/ui/Dialogo";
+import { useNotificar } from "../../../componentes/ui/Notificaciones";
+import { Opciones } from "../../../componentes/ui/Opciones";
+import { Pestanas } from "../../../componentes/ui/Pestanas";
+import { Selector } from "../../../componentes/ui/Selector";
+import { BibliotecaDocumentos, type VistaBiblioteca } from "../../../componentes/vistas/BibliotecaDocumentos";
+import { TarjetaDocumento } from "../../../componentes/vistas/TarjetaDocumento";
+import { TarjetaTotal } from "../../../componentes/vistas/TarjetaTotal";
 import { CIFRAS_EJEMPLO, DOCUMENTOS_EJEMPLO } from "./datosEjemplo";
 
 /** Botón que recorre las cifras de ejemplo para ver rodar el número animado. */

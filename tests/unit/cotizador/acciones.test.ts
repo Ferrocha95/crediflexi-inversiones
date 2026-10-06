@@ -7,7 +7,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { MENSAJE_MONTO_CERO, MENSAJE_MONTO_ILEGIBLE } from "../../../src/aplicacion/monto";
-import { previsualizar } from "../../../src/app/cotizador/acciones";
+import { previsualizar } from "../../../src/app/(app)/cotizador/acciones";
 import { cotizar } from "../../../src/domain/interes/cotizar";
 import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
 import type { RespuestaVistaPrevia } from "../../../src/servidor/vistaPrevia";

@@ -1,16 +1,16 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { TEXTOS as TEXTOS_PANTALLA } from "../../../src/app/cotizador/textosPantalla";
+import { TEXTOS as TEXTOS_PANTALLA } from "../../../src/app/(app)/cotizador/textosPantalla";
 
 // Revisión estática de los archivos que llegan al navegador: no deben traer
 // el dominio, decimal.js ni la semilla, ni guardar o registrar lo que se escribe.
 
 const CLIENTE = [
-  "src/app/cotizador/Cotizador.tsx",
-  "src/app/cotizador/VistaPrevia.tsx",
-  "src/app/cotizador/textosPantalla.ts",
-  "src/app/cotizador/peticionPdf.ts",
+  "src/app/(app)/cotizador/Cotizador.tsx",
+  "src/app/(app)/cotizador/VistaPrevia.tsx",
+  "src/app/(app)/cotizador/textosPantalla.ts",
+  "src/app/(app)/cotizador/peticionPdf.ts",
 ];
 const leer = (f: string) => readFileSync(path.join(process.cwd(), f), "utf8");
 
@@ -34,26 +34,26 @@ describe("archivos del navegador", () => {
   });
 
   it("la acción no registra en la consola", () => {
-    for (const f of ["src/app/cotizador/acciones.ts", "src/servidor/vistaPrevia.ts", "src/servidor/guardiaHost.ts", "src/proxy.ts"]) {
+    for (const f of ["src/app/(app)/cotizador/acciones.ts", "src/servidor/vistaPrevia.ts", "src/servidor/guardiaHost.ts", "src/proxy.ts"]) {
       expect(leer(f)).not.toMatch(/console\./);
     }
   });
 
   it("acciones.ts es un archivo de acciones del servidor", () => {
-    expect(leer("src/app/cotizador/acciones.ts").startsWith('"use server";')).toBe(true);
+    expect(leer("src/app/(app)/cotizador/acciones.ts").startsWith('"use server";')).toBe(true);
   });
 
   it("la página principal enlaza al cotizador", () => {
-    expect(leer("src/app/page.tsx")).toMatch(/href="\/cotizador"/);
+    expect(leer("src/app/(app)/page.tsx")).toMatch(/href="\/cotizador"/);
   });
 });
 
 describe("pantalla: generación del PDF", () => {
-  const cotizador = leer("src/app/cotizador/Cotizador.tsx");
+  const cotizador = leer("src/app/(app)/cotizador/Cotizador.tsx");
 
   it("ya no muestra el aviso de la siguiente etapa", () => {
     expect(cotizador).not.toMatch(/pdfSiguienteEtapa|siguiente etapa/);
-    expect(leer("src/app/cotizador/textosPantalla.ts")).not.toMatch(/siguiente etapa/);
+    expect(leer("src/app/(app)/cotizador/textosPantalla.ts")).not.toMatch(/siguiente etapa/);
   });
 
   it("hace un POST a /cotizador/pdf con el cuerpo de cuerpoPeticionPdf y la versión de la vista previa", () => {
@@ -80,7 +80,7 @@ describe("pantalla: generación del PDF", () => {
   });
 
   it("peticionPdf.ts tampoco guarda ni registra nada", () => {
-    expect(leer("src/app/cotizador/peticionPdf.ts")).not.toMatch(
+    expect(leer("src/app/(app)/cotizador/peticionPdf.ts")).not.toMatch(
       /localStorage|sessionStorage|indexedDB|document\.cookie|console\./,
     );
   });

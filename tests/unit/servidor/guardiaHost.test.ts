@@ -1,7 +1,15 @@
 import { NextRequest } from "next/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { proxy } from "../../../src/proxy";
 import { MENSAJE_HOST_NO_LOCAL, rechazoPorHost } from "../../../src/servidor/guardiaHost";
+
+// El proxy, después del guardia de host, refresca la sesión con Supabase. Aquí
+// un cliente falso sin sesión: lo que importa es que el Host local pase el guardia.
+vi.mock("@supabase/ssr", () => ({
+  createServerClient: () => ({ auth: { getClaims: async () => ({ data: null, error: null }) } }),
+}));
+vi.stubEnv("SUPABASE_URL", "http://127.0.0.1:54321");
+vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "llave-sintetica-de-prueba");
 
 describe("rechazoPorHost", () => {
   it("con un Host público devuelve 403 con el mensaje en español", async () => {
@@ -33,13 +41,13 @@ describe("rechazoPorHost", () => {
 
 describe("proxy", () => {
   it("con Host: ejemplo.com responde 403 en /cotizador", async () => {
-    const r = proxy(new NextRequest("http://ejemplo.com/cotizador", { headers: { host: "ejemplo.com" } }));
+    const r = await proxy(new NextRequest("http://ejemplo.com/cotizador", { headers: { host: "ejemplo.com" } }));
     expect(r.status).toBe(403);
     expect(await r.text()).toBe(MENSAJE_HOST_NO_LOCAL);
   });
 
-  it("también responde 403 a un POST (como el de una acción del servidor)", () => {
-    const r = proxy(
+  it("también responde 403 a un POST (como el de una acción del servidor)", async () => {
+    const r = await proxy(
       new NextRequest("http://ejemplo.com/cotizador", {
         method: "POST",
         headers: { host: "ejemplo.com", "next-action": "x" },
@@ -49,9 +57,9 @@ describe("proxy", () => {
     expect(r.status).toBe(403);
   });
 
-  it("con localhost deja seguir la petición", () => {
-    const r = proxy(new NextRequest("http://localhost:3000/cotizador", { headers: { host: "localhost:3000" } }));
-    expect(r.status).toBe(200);
-    expect(r.headers.get("x-middleware-next")).toBe("1");
+  it("con localhost pasa el guardia y sigue a la revisión de sesión (sin sesión, a /acceso)", async () => {
+    const r = await proxy(new NextRequest("http://localhost:3000/cotizador", { headers: { host: "localhost:3000" } }));
+    expect(r.status).toBe(307);
+    expect(new URL(r.headers.get("location")!).pathname).toBe("/acceso");
   });
 });

@@ -1,8 +1,8 @@
 import { Calculator, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
-import { fechaDeHoy, horaEnMexico, saludoPara } from "../componentes/inicio/saludo";
-import { PROXIMAMENTE } from "../componentes/inicio/TarjetaResumen";
+import { fechaDeHoy, horaEnMexico, saludoPara } from "../../componentes/inicio/saludo";
+import { PROXIMAMENTE } from "../../componentes/inicio/TarjetaResumen";
 import {
   TarjetaCarteraTotal,
   TarjetaDocumentosPorVencer,
@@ -13,8 +13,8 @@ import {
   TarjetaProyeccionSemana,
   TarjetaSeguimientos,
   TarjetaVencimientos,
-} from "../componentes/inicio/TarjetasResumen";
-import { LineaFlecha } from "../componentes/ui/LineaFlecha";
+} from "../../componentes/inicio/TarjetasResumen";
+import { LineaFlecha } from "../../componentes/ui/LineaFlecha";
 
 const ACCESO =
   "flex min-h-24 items-center gap-4 rounded-2xl p-5 text-left";
