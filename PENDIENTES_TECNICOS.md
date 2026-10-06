@@ -37,3 +37,8 @@
 - (mm) Caída intermitente de Vitest en el proyecto rls (Windows, Node 24.15, Vitest 5.0.3): un worker sale con código 3221226505 (0xC0000409) al arrancar un archivo, en archivos distintos cada vez (integridad, bordes). `fileParallelism` ya es `false`. Medición del 5/10/2026: con el pool por omisión (`forks`), 4 caídas en 32 corridas (0 en las 22 de las mutaciones); con `--pool=threads` por línea de comandos, 0 en 10. Indicio, no prueba: evaluar `pool: "threads"` para el proyecto rls (cambio de configuración pendiente de aprobación). `scripts/mutacion.mjs` ya repite hasta 2 veces una corrida sin pruebas con nombre fallidas y, si persiste, marca la mutación como INCONCLUSA.
 - (nn) La guardia de datos sensibles no detecta tarjetas de crédito de 15 o 16 dígitos. Evaluar el algoritmo de Luhn si hace falta.
 - (oo) La validación del nombre del prospecto en la app (etapa C) usa tope de 150 caracteres, igual que la restricción `prospectos_nombre_largo_maximo` de la base.
+- (qq) Mover `INCREMENTO_MINIMO_REINVERSION` ($1,000, del Manual de capacitación, modalidad Creciente) de `src/domain/interes/escenario.ts` a la semilla.
+- (rr) El número de página del PDF va fijo ("Página N de 2"): si algún día hay una tercera página, hay que generarlo.
+- (ss) La banda de la modalidad 2 quedó mostaza (#8F7104) para cumplir el contraste 4.5:1 con texto blanco; evaluar el dorado original con texto oscuro.
+- (tt) Las 6 pruebas de muestras (`tests/unit/servidor/pdf/muestras.test.ts`) se omiten salvo con la variable `MUESTRAS_DIR`.
+- (uu) El escenario de reinversión es ilustrativo: la regla fina del producto Creciente (desde qué día rinde un incremento, base del cálculo) no está confirmada con la empresa.

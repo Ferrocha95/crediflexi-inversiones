@@ -1,13 +1,13 @@
 # Estado del proyecto — App interna de captación (Crediflexi / Rami Sise)
 
-**Actualizado:** 2 de octubre de 2026. **Dueño:** Fernando Rocha (ejecutivo de inversiones).
+**Actualizado:** 5 de octubre de 2026 (secciones 0, 2, 3 y 6 con lo verificado en git ese día). **Dueño:** Fernando Rocha (ejecutivo de inversiones).
 **Para quién es este documento:** para retomar el trabajo en una conversación nueva sin perder nada. Si algo de aquí contradice lo que ves en el repositorio, manda el repositorio (`git log`, `git status`) y se corrige este archivo.
 
 ## 0. Cómo retomar (primeros pasos en una conversación nueva)
 
 1. Pedirle a Fernando que corra, dentro de `C:\dev\crediflexi` (el prompt debe terminar en `C:\dev\crediflexi>`), estos tres comandos, uno a la vez: `git branch`, `git log --oneline -8` y `git status`.
-2. Confirmar si `sprint-1b` y el último ajuste (tramos en pesos enteros) quedaron fusionados a `main` y subidos a GitHub. **No lo pude verificar:** Fernando dijo "listo" y se asumió que sí.
-3. Preguntarle en qué punto está el **Sprint 2a** (ver sección 3) y si ya pegó el plan de Claude Code para revisarlo.
+2. Verificado con git el 5 de octubre de 2026: `main` = `origin/main` = `efbcdae` y contiene los sprints 0a, 1a, 1b (incluido `307f13b`, tramos en pesos enteros) y 2a.
+3. Hay dos ramas sin fusionar ni subir a GitHub: `sprint-2b` (etapa A) y `calendario-pdf` (ver sección 3). Preguntarle a Fernando qué revisó y qué quiere fusionar.
 4. Seguir el protocolo de la sección 9.
 
 ## 1. Qué es y para qué sirve
@@ -25,15 +25,28 @@ Una mesa de trabajo interna para cotizar, llevar el pipeline, planear la semana,
 |---|---|---|
 | 0a | Base de datos con roles `DIRECTOR_REGIONAL`, `GERENTE`, `EJECUTIVO`, sucursales, cadena de mando, seguridad por fila, 116 pruebas de seguridad y pruebas de mutación (se rompieron las políticas a propósito y la suite lo detectó) | ✅ en `main` |
 | 1a | Motor de tasas e interés en `src/domain`, pruebas de oro con valores independientes | ✅ en `main` (commit `24703fb`) |
-| 1b | Cotizador `/cotizador` con vista previa, confirmación obligatoria y PDF de marca (dos entidades); solo local en 127.0.0.1; unas 890 pruebas unitarias | ✅ terminado; **se asume fusionado a `main`**. Commits: `08cca23`, `333e008`, `826f113`, `89295d8`, `8868120`, `d7876f3`, `150ae01`, `ac7aa2f` y un último "Tramos que empiezan en pesos enteros: semilla 0.6 y golden 0.5" (su hash no se vio) |
+| 1b | Cotizador `/cotizador` con vista previa, confirmación obligatoria y PDF de marca (dos entidades); solo local en 127.0.0.1; unas 890 pruebas unitarias | ✅ en `main` (verificado con git: `08cca23` a `ac7aa2f`, y `307f13b` "Tramos que empiezan en pesos enteros: semilla 0.6 y golden 0.5") |
+| 2a | Sistema de diseño, Inicio, catálogo `/diseno`, cotizador rediseñado, pruebas en el navegador (Playwright) | ✅ en `main` (verificado con git: último commit `efbcdae`, igual a `origin/main`) |
+| 2b, etapa A | Tabla `prospectos` con seguridad por fila (migración `20261005120000_prospectos.sql`), 79 pruebas de seguridad nuevas (195 en total), 9 mutaciones nuevas (10 a 18; 19 en total, todas muertas) | ✅ en la rama `sprint-2b`, commit `f899646`. Sin fusionar a `main` y sin subir (la rama no tiene upstream). Su `git status` quedó limpio al hacer el commit; **por verificar** que siga igual |
+| Calendario del PDF | Página 2 del PDF: calendario de las dos modalidades, comparación de modalidades y escenario ilustrativo de reinversión; textos 0.4; el PDF pasa a 2 páginas | ✅ en la rama `calendario-pdf` (sale de `main`): `d3fe522` (dominio), `8984277` (modelo, escalas y textos 0.4), `edfed10` (página 2) y el commit de pendientes. Sin fusionar a `main` y sin subir |
 
 Respaldo: se hizo un bundle de git (`C:\dev\respaldos\crediflexi-sprint0a.bundle`) y la copia remota privada en GitHub (repositorio `crediflexi-inversiones`). Se verificó una restauración desde GitHub con éxito en octubre 1.
 
 ## 3. Qué está en curso
 
-**Sprint 2a: sistema de diseño y estructura.** Skill `frontend-design@claude-plugins-official` instalada en Claude Code. Alcance: tema oscuro azul marino (#012553; el logo usa #002050), tarjetas de vidrio solo en las importantes, acentos verde #00A010, amarillo #F8C818 y rojo #F80000; estatus con los tres colores del Excel; menú lateral plegable y barra inferior en celular; página de **Inicio** con tarjetas de resumen en estado "Próximamente"; catálogo de componentes en `/diseno` (fila de pipeline por estatus, cuadrícula semanal lunes a viernes, tabla de proyección, tarjeta de total animada, y, si se agregó la línea opcional, tarjeta de cliente con su inversión y tarjeta de documento); cotizador rediseñado sin cambiar su lógica ni el PDF. Reglas de calidad: contraste 4.5:1, `prefers-reduced-motion` y `prefers-reduced-transparency`, teclado, objetivos de 44 px, fuentes e íconos locales, capturas con Playwright a 390, 768 y 1280 px en `C:\dev\informes`.
+**Sprint 2b** (rama `sprint-2b`): inicio de sesión, pipeline guardado, importación y exportación del Excel, "Envío del viernes" y respaldo local. El plan va por etapas:
+- **A**, datos, seguridad y mutaciones: hecha (`f899646`).
+- **B**, sesión: pendiente. Requiere aprobar la instalación de `@supabase/ssr` 0.12.7.
+- **C**, pipeline: pendiente.
+- **D**, Excel: pendiente. Se propuso ExcelJS 4.4.0; correr `npm audit` antes de instalar.
+- **E**, Envío del viernes, Inicio, respaldo y documentación: pendiente.
 
-**Punto exacto:** Claude Code estaba en **modo plan**. Fernando debe pegar ese plan para revisarlo antes de ejecutarlo. Se le dieron dos líneas opcionales para ese plan (Inicio, y Cartera + Biblioteca como "Próximamente"). Dijo que agregó la de Inicio; **no está confirmado** que haya pegado la de Cartera + Biblioteca.
+Las notas aprobadas para B a E están en el plan de Claude Code. **Por verificar** que Fernando las tenga a la mano en la conversación nueva.
+
+**Calendario del PDF** (rama `calendario-pdf`): terminado; falta la revisión de Fernando y decidir cuándo se fusiona.
+- Las muestras de revisión visual (6 PDF con sus PNG) están en `C:\dev\informes\calendario-pdf`, fuera del repositorio.
+- **Por verificar:** que Fernando haya revisado los PNG y el texto.
+- **Ojo al fusionar:** esta rama y `sprint-2b` salen de `main` y las dos agregan líneas al final de `PENDIENTES_TECNICOS.md`. Se esperan conflictos sencillos en ese archivo.
 
 ## 4. Orden de lo que sigue
 
@@ -64,9 +77,15 @@ Respaldo: se hizo un bundle de git (`C:\dev\respaldos\crediflexi-sprint0a.bundle
 - **Tasas correctas:** la Tabla de Diseño (imagen y Excel `Tasas_Interes_Pesos_y_Dolares_2026.xlsx`; se compararon celda por celda y coinciden). Plazos 6, 12, 18 y 24 meses. Dos esquemas: rendimientos mensuales y al final del plazo. Tramos que empiezan en 30,000; 200,001; 400,001; 600,001; 800,001 y 1,000,001 (un monto exacto de 200,000 paga el tramo 1; un monto con centavos entre 200,000.00 y 200,000.99 cae en el tramo 1).
 - **Decisiones y por qué:** el PowerPoint de ejemplos (`TABLA_RENDIMIENTOS_EJEMPLOS.pptx`) **se descartó**: traía 20% para $30,000 y límites distintos. **No existe el plazo de 36 meses.** USD sigue `POR_CONFIRMAR` y deshabilitado.
 - **Cálculo:** interés simple. Salidas: pago mensual (monto × tasa ÷ 12), rendimiento anual equivalente (monto × tasa) y ganancia total del plazo (monto × tasa × meses ÷ 12). Cada cifra se redondea una sola vez desde su valor exacto. El anual es un equivalente a 12 meses, no lo que recibe el cliente en plazos menores a 12.
-- **Archivos de datos:** `seed/parametros_iniciales.json` **v0.6** (tasas, tramos, comisiones N1 verificadas, incentivos, parámetros), `seed/textos_cotizacion.json` **v0.3** (pie del PDF y textos del documento), `tests/golden/rendimientos_pptx.json` **v0.5** (168 celdas; el nombre quedó por historia, ya no trae datos del pptx).
+- **Archivos de datos:** `seed/parametros_iniciales.json` **v0.6** (tasas, tramos, comisiones N1 verificadas, incentivos, parámetros), `seed/textos_cotizacion.json` **v0.3** en `main` y **v0.4** en `calendario-pdf` (agrega el bloque `pdf_pagina2`), `tests/golden/rendimientos_pptx.json` **v0.5** (168 celdas; el nombre quedó por historia, ya no trae datos del pptx).
 - **Entidades:** CREDIFLEXI, S.A.P.I. DE C.V. y RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R. Hoy usan la misma tabla de tasas. Logo del PDF: siempre Crediflexi. Pitágoras es la marca comercial de los servicios financieros.
 - **PDF:** Carta, una página, fuente Nunito (licencia OFL), cifra principal grande, resumen, resultados, "Cómo se calculó", franja de contacto y pie con texto base fijo (opción 3 del pie). **Sin textos legales ni promesas propias**; una prueba vigila que no aparezcan palabras como garantizado, sin riesgo, neta, libre de impuestos, supervisada, CNBV, CONDUSEF.
+- **Página 2 del PDF** (solo en la rama `calendario-pdf`):
+  - Siempre las dos modalidades lado a lado. Modalidad 1: el último pago ajusta los centavos. Modalidad 2: diferencia de acumulados redondeados.
+  - Comparación de modalidades.
+  - Escenario ilustrativo de reinversión a dos plazos, con la tasa que corresponde al capital de cada mes. Se omite si el primer pago es menor a $1,000 o si falta una tasa.
+  - Bandas #00860D (verde) y #8F7104 (mostaza), con 4.5:1 de contraste con texto blanco.
+  - El PDF tiene siempre 2 páginas, con "Página N de 2".
 - **Protecciones del cotizador:** solo atiende a Host local (no es seguridad real, es un seguro contra despliegue accidental), `npm run dev` y `start` escuchan solo en 127.0.0.1, nada de lo escrito se guarda, el PDF recalcula en el servidor y detecta si las tasas cambiaron entre la vista previa y la descarga.
 
 ## 7. Formatos de Excel (cada viernes por correo)

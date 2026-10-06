@@ -34,9 +34,9 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 }
 
 describe("cargarTextos: el archivo real", () => {
-  it("carga seed/textos_cotizacion.json versión 0.3", () => {
+  it("carga seed/textos_cotizacion.json versión 0.4", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.3");
+    expect(t.version).toBe("0.4");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +
@@ -251,5 +251,95 @@ describe("cargarTextos: textos vacíos y estructura", () => {
 
   it("si el JSON no es un objeto, falla con un mensaje en español", () => {
     expect(errorDe("hola").mensaje).toContain(ARCHIVO);
+  });
+});
+
+const CLAVES_PAGINA2 = [
+  "titulo",
+  "modalidad_1",
+  "modalidad_2",
+  "tasa_anual",
+  "capital_inicial",
+  "rendimiento_estimado",
+  "total",
+  "columna_mes",
+  "columna_rendimiento_mes",
+  "columna_rendimiento_acumulado",
+  "insignia",
+  "nota_centavos",
+  "modalidad_no_disponible",
+  "titulo_grafica_1",
+  "nota_grafica_1",
+  "serie_cobrado",
+  "serie_devengado",
+  "titulo_grafica_2",
+  "rotulo_escenario",
+  "serie_con_reinversion",
+  "serie_sin_reinvertir",
+  "fin_primer_plazo",
+  "nota_escenario",
+  "escenario_incremento_minimo",
+  "escenario_tasa_no_disponible",
+  "pagina",
+  "pagina_de",
+] as const;
+
+describe("cargarTextos: el bloque pdf_pagina2", () => {
+  it("trae los textos de la página 2 con los que fijó Fernando", () => {
+    const p = cargarBien(textosJson).pdfPagina2;
+    expect(p.modalidad1).toBe("MODALIDAD 1 · RENDIMIENTO MENSUAL");
+    expect(p.modalidad2).toBe("MODALIDAD 2 · PAGO AL VENCIMIENTO");
+    expect(p.tasaAnual).toBe("TASA ANUAL");
+    expect(p.capitalInicial).toBe("Capital inicial");
+    expect(p.rendimientoEstimado).toBe("Rendimiento estimado");
+    expect(p.total).toBe("Total capital + rendimiento");
+    expect(p.columnaMes).toBe("Mes");
+    expect(p.columnaRendimientoMes).toBe("Rendimiento del mes");
+    expect(p.columnaRendimientoAcumulado).toBe("Rendimiento acumulado");
+    expect(p.insignia).toBe("Tu cotización");
+    expect(p.notaCentavos).toBe("Los centavos se ajustan para que la suma coincida con el total.");
+    expect(p.rotuloEscenario).toBe("Escenario ilustrativo");
+    expect(p.notaEscenario).toBe(
+      "Supone las tasas vigentes hoy y que se reinvierten los rendimientos; las tasas pueden cambiar. " +
+        "No es una promesa de rendimiento.",
+    );
+  });
+
+  it("trae las 27 claves, todas con texto", () => {
+    const p = cargarBien(textosJson).pdfPagina2;
+    expect(Object.keys(p)).toHaveLength(CLAVES_PAGINA2.length);
+    for (const v of Object.values(p)) expect(v.trim()).not.toBe("");
+  });
+
+  it.each(CLAVES_PAGINA2)("pdf_pagina2.%s no admite ningún marcador", (clave) => {
+    const j = copia();
+    j.pdf_pagina2[clave] = "Texto con {razon_social}";
+    const detalle = errorDe(j).detalles.find((d) => d.includes("{razon_social}"));
+    expect(detalle).toContain(`pdf_pagina2.${clave}`);
+    expect(detalle).toMatch(/ningún marcador/);
+  });
+
+  it.each(CLAVES_PAGINA2)("pdf_pagina2.%s vacío rompe la carga", (clave) => {
+    const j = copia();
+    j.pdf_pagina2[clave] = "  ";
+    expect(errorDe(j).detalles.join("\n")).toContain(`pdf_pagina2.${clave}`);
+  });
+
+  it("falta una clave del bloque pdf_pagina2", () => {
+    const j: { pdf_pagina2: Record<string, unknown> } = copia();
+    delete j.pdf_pagina2.nota_escenario;
+    expect(errorDe(j).detalles.join("\n")).toContain("nota_escenario");
+  });
+
+  it("una clave desconocida en el bloque pdf_pagina2 rompe la carga", () => {
+    const j: { pdf_pagina2: Record<string, unknown> } = copia();
+    j.pdf_pagina2.titulo_grafica_3 = "Otra gráfica";
+    expect(errorDe(j).detalles.join("\n")).toContain("titulo_grafica_3");
+  });
+
+  it("falta el bloque pdf_pagina2 completo", () => {
+    const j: Record<string, unknown> = copia();
+    delete j.pdf_pagina2;
+    expect(errorDe(j).detalles.join("\n")).toContain("pdf_pagina2");
   });
 });

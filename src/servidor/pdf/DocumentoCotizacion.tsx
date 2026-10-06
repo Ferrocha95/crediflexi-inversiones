@@ -13,25 +13,12 @@ import {
   View,
 } from "@react-pdf/renderer";
 import type { ModeloPdf } from "../../aplicacion/modelo";
+import { COLOR_PDF as COLOR } from "./colores";
 import { FAMILIA } from "./fuente";
+import { PaginaCalendario } from "./PaginaCalendario";
 
 // Solo presenta el modelo: aquí no se calcula nada y no hay textos propios.
 // Todo texto sale de ModeloPdf (archivo de textos, semilla o cotización).
-
-/** Colores sacados del logo. Amarillo y rojo solo van en la línea decorativa. */
-const COLOR = {
-  marino: "#002050",
-  verde: "#00A010",
-  amarillo: "#F8C818",
-  naranja: "#FC6A0C",
-  rojo: "#F80000",
-  gris: "#566176",
-  linea: "#DCE2EB",
-  fondoVerde: "#EAF7EC",
-  fondoMarino: "#F0F3F8",
-  fondoTenue: "#F8FAFC",
-  blanco: "#FFFFFF",
-} as const;
 
 const MARGEN = 36;
 const ANCHO_UTIL = 612 - 2 * MARGEN; // Carta: 612 × 792 pt.
@@ -148,6 +135,17 @@ const e = StyleSheet.create({
   franjaDerecha: { maxWidth: "45%", fontSize: 9, color: COLOR.blanco, fontWeight: "bold", textAlign: "right" },
   pieBase: { marginTop: 7, fontSize: 8, color: COLOR.gris, lineHeight: 1.3 },
   pieNota: { marginTop: 3, fontSize: 8, color: COLOR.gris, lineHeight: 1.3 },
+
+  /** En el margen inferior, fuera del flujo: no mueve nada del contenido de la página. */
+  numeroPagina: {
+    position: "absolute",
+    bottom: 16,
+    left: MARGEN,
+    right: MARGEN,
+    fontSize: 7.5,
+    color: COLOR.gris,
+    textAlign: "right",
+  },
 });
 
 /** Línea fina con el degradado de la flecha del logo (rojo -> naranja -> amarillo). */
@@ -166,6 +164,18 @@ function LineaMarca() {
   );
 }
 
+/**
+ * El documento tiene siempre dos páginas (las pruebas lo exigen). El número va
+ * escrito por página: el render dinámico de react-pdf no se dibujó en el
+ * margen inferior.
+ */
+const TOTAL_PAGINAS = 2;
+
+/** "Página N de 2", con las palabras del archivo de textos. */
+function NumeroPagina({ pagina, de, numero }: { pagina: string; de: string; numero: number }) {
+  return <Text style={e.numeroPagina}>{`${pagina} ${numero} ${de} ${TOTAL_PAGINAS}`}</Text>;
+}
+
 function Casilla({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   return (
     <View style={e.casilla}>
@@ -176,7 +186,8 @@ function Casilla({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 }
 
 export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo: Buffer }) {
-  const { textos: t, cifraPrincipal, pie } = modelo;
+  const { textos: t, cifraPrincipal, pie, pagina2 } = modelo;
+  const numero = (n: number) => <NumeroPagina pagina={pagina2.textos.pagina} de={pagina2.textos.paginaDe} numero={n} />;
   const hayFranja = pie.preparadoPor !== null || pie.vigencia !== null;
 
   return (
@@ -265,6 +276,12 @@ export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo:
           <Text style={e.pieBase}>{pie.base}</Text>
           {pie.notaAdicional !== null && <Text style={e.pieNota}>{pie.notaAdicional}</Text>}
         </View>
+        {numero(1)}
+      </Page>
+
+      <Page size="LETTER" style={e.pagina}>
+        <PaginaCalendario modelo={pagina2} logo={logo} />
+        {numero(2)}
       </Page>
     </Document>
   );

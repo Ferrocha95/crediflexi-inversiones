@@ -6,12 +6,15 @@ import {
   modeloPdf,
   modeloVistaPrevia,
   TOPES,
+  type ContextoPdf,
   type EntradaPdf,
   type ModeloPdf,
 } from "../../../src/aplicacion/modelo";
 import { cargarTextos, type TextosCotizacion } from "../../../src/aplicacion/textos";
 import { ESTATUS } from "../../../src/domain/tasas/semilla.esquema";
-import { cargar, copiaSemilla, cotizarBien } from "../oro/ayudas";
+import { datosPagina2 } from "../../../src/aplicacion/pagina2";
+import type { Cotizacion } from "../../../src/domain/interes/cotizar";
+import { cargar, copiaSemilla, cotizarBien, semillaReal } from "../oro/ayudas";
 
 function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: string } }): T {
   if (!r.ok) throw new Error(r.error.mensaje);
@@ -22,6 +25,11 @@ const textos: TextosCotizacion = sinError(cargarTextos(textosJson, "seed/textos_
 const razonesSociales = sinError(cargarRazonesSociales(semillaJson, "seed/parametros_iniciales.json"));
 const contexto = { razonesSociales, textos };
 const VERSION = semillaJson.version;
+
+/** modeloPdf con los datos de la página 2 calculados con la semilla real. */
+function modeloPdfConDatos(c: Cotizacion, ...resto: [ContextoPdf, EntradaPdf, Date]) {
+  return modeloPdf(c, ...resto, datosPagina2(semillaReal, c.solicitud));
+}
 
 /** 1 de octubre de 2026, 12:00 en la Ciudad de México. */
 const AHORA = new Date("2026-10-01T18:00:00Z");
@@ -51,7 +59,7 @@ const ENTRADA_COMPLETA: EntradaPdf = {
 };
 
 function pdf(entidad: string, entrada: EntradaPdf = {}, cambios = {}): ModeloPdf {
-  return sinError(modeloPdf(cotizarBien({ entidad, ...cambios }), contexto, entrada, AHORA));
+  return sinError(modeloPdfConDatos(cotizarBien({ entidad, ...cambios }), contexto, entrada, AHORA));
 }
 
 const cuenta = (texto: string, buscado: string) => texto.split(buscado).length - 1;
@@ -88,7 +96,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
   it("cada cifra trae la fórmula y la operación tal como vienen en la cotización", () => {
     for (const esquema of ["mensual", "final_del_plazo"] as const) {
       const c = cotizarBien({ entidad: clave, esquema, monto: "500000", plazo: 24 });
-      const m = sinError(modeloPdf(c, contexto, {}, AHORA));
+      const m = sinError(modeloPdfConDatos(c, contexto, {}, AHORA));
       expect(m.cifras.map((x) => [x.clave, x.formula, x.operacion])).toEqual(
         c.salidas.map((s) => [s.clave, s.desglose.formula, s.desglose.operacion]),
       );
@@ -147,7 +155,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
         lineaTasas: "Versión sintética {version_tasas}, {fecha_tasas}",
       },
     };
-    const m = sinError(modeloPdf(cotizarBien({ entidad: clave }), { razonesSociales, textos: otros }, {}, AHORA));
+    const m = sinError(modeloPdfConDatos(cotizarBien({ entidad: clave }), { razonesSociales, textos: otros }, {}, AHORA));
     expect(m.textos.titulo).toBe("Título sintético");
     expect(m.textos.seccionCalculo).toBe("Cálculo sintético");
     expect(m.lineaTasas).toBe(`Versión sintética ${VERSION}, 02/10/2026`);
@@ -165,7 +173,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
       datos: { esquema: "mensual" },
     };
     const c = { ...cotizarBien({ entidad: clave }), avisos: [aviso] };
-    const texto = JSON.stringify(sinError(modeloPdf(c, contexto, ENTRADA_COMPLETA, AHORA)));
+    const texto = JSON.stringify(sinError(modeloPdfConDatos(c, contexto, ENTRADA_COMPLETA, AHORA)));
     expect(texto).not.toContain("Aviso sintético");
     expect(texto).not.toContain("TASA_MAYOR_QUE_TRAMO_SIGUIENTE");
     expect(texto).not.toMatch(/aviso/i);
@@ -195,7 +203,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
   });
 
   it("la fecha del PDF es la de la Ciudad de México", () => {
-    const m = sinError(modeloPdf(cotizarBien({ entidad: clave }), contexto, {}, new Date("2026-10-02T05:00:00Z")));
+    const m = sinError(modeloPdfConDatos(cotizarBien({ entidad: clave }), contexto, {}, new Date("2026-10-02T05:00:00Z")));
     expect(m.fecha).toBe("01/10/2026");
   });
 
@@ -220,8 +228,8 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     const c = cotizarBien({ entidad: clave });
     const f = cotizarBien({ entidad: clave, esquema: "final_del_plazo" });
     const ctx = { razonesSociales, textos: textosOtrosNombres };
-    expect(sinError(modeloPdf(c, ctx, {}, AHORA)).solicitud.esquema).toBe("Esquema sintético A");
-    expect(sinError(modeloPdf(f, ctx, {}, AHORA)).solicitud.esquema).toBe("Esquema sintético B");
+    expect(sinError(modeloPdfConDatos(c, ctx, {}, AHORA)).solicitud.esquema).toBe("Esquema sintético A");
+    expect(sinError(modeloPdfConDatos(f, ctx, {}, AHORA)).solicitud.esquema).toBe("Esquema sintético B");
   });
 
   it("la razón social solo aparece en el encabezado y en el pie (el PDF no dice que las tasas sean de la entidad)", () => {
@@ -283,7 +291,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
   it("el modelo del PDF jamás incluye el estatus del tramo", () => {
     const c = cotizarBien({ entidad: clave, monto: "1500000", plazo: 12 });
     expect(c.tramo.estatus).not.toBeNull();
-    const texto = JSON.stringify(sinError(modeloPdf(c, contexto, ENTRADA_COMPLETA, AHORA)));
+    const texto = JSON.stringify(sinError(modeloPdfConDatos(c, contexto, ENTRADA_COMPLETA, AHORA)));
     expect(texto).not.toMatch(/estatus/i);
     for (const e of ESTATUS) {
       expect(texto).not.toContain(e);
@@ -296,7 +304,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     j.tasas_mxn.tramos[5].estatus = "CONFIRMADA";
     const c = cotizarBien({ entidad: clave }, cargar(j));
     expect(c.tramo.estatus).toBe("CONFIRMADA");
-    const texto = JSON.stringify(sinError(modeloPdf(c, contexto, ENTRADA_COMPLETA, AHORA)));
+    const texto = JSON.stringify(sinError(modeloPdfConDatos(c, contexto, ENTRADA_COMPLETA, AHORA)));
     expect(texto).not.toContain("CONFIRMADA");
     expect(texto).not.toContain(textos.estatusTramo.CONFIRMADA);
   });
@@ -304,7 +312,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
 
 describe("modeloPdf: errores", () => {
   it("si la entidad no tiene razón social, falla con un mensaje en español", () => {
-    const r = modeloPdf(cotizarBien({}), { razonesSociales: new Map(), textos }, {}, AHORA);
+    const r = modeloPdfConDatos(cotizarBien({}), { razonesSociales: new Map(), textos }, {}, AHORA);
     if (r.ok) throw new Error("Se esperaba un error");
     expect(r.error.codigo).toBe("ENTIDADES_INVALIDAS");
     expect(r.error.mensaje).toContain("CREDIFLEXI");
@@ -314,7 +322,7 @@ describe("modeloPdf: errores", () => {
   it("si la semilla no trae la salida que se destaca, falla con un mensaje en español", () => {
     const c = cotizarBien({});
     const sinMensual = { ...c, salidas: c.salidas.filter((x) => x.clave !== "rendimiento_mensual_pesos") };
-    const r = modeloPdf(sinMensual, contexto, {}, AHORA);
+    const r = modeloPdfConDatos(sinMensual, contexto, {}, AHORA);
     if (r.ok) throw new Error("Se esperaba un error");
     expect(r.error.codigo).toBe("SEMILLA_INVALIDA");
     expect(r.error.mensaje).toContain("rendimiento_mensual_pesos");

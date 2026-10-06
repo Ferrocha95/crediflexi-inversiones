@@ -15,8 +15,8 @@ export const MARCADORES = [
 export type Marcador = (typeof MARCADORES)[number];
 
 /**
- * Marcadores permitidos en cada campo; los de estatus_tramo, nombre_esquema y
- * el resto del bloque pdf no admiten ninguno.
+ * Marcadores permitidos en cada campo; los de estatus_tramo, nombre_esquema,
+ * el resto del bloque pdf y todo el bloque pdf_pagina2 no admiten ninguno.
  */
 export const MARCADORES_POR_CAMPO = {
   pie_base: ["razon_social", "version_tasas", "fecha_tasas"],
@@ -38,6 +38,8 @@ export interface TextosCotizacion {
   readonly monedaDeshabilitada: string;
   /** Textos fijos del PDF. */
   readonly pdf: TextosPdf;
+  /** Textos fijos de la página 2 del PDF (calendario, gráficas y escenario). */
+  readonly pdfPagina2: TextosPagina2;
 }
 
 export interface TextosPdf {
@@ -54,6 +56,75 @@ export interface TextosPdf {
   /** Plantilla con {version_tasas} y {fecha_tasas}. */
   readonly lineaTasas: string;
 }
+
+/** Textos de la página 2 del PDF. Ninguno admite marcadores. */
+export interface TextosPagina2 {
+  readonly titulo: string;
+  readonly modalidad1: string;
+  readonly modalidad2: string;
+  readonly tasaAnual: string;
+  readonly capitalInicial: string;
+  readonly rendimientoEstimado: string;
+  readonly total: string;
+  readonly columnaMes: string;
+  readonly columnaRendimientoMes: string;
+  readonly columnaRendimientoAcumulado: string;
+  /** Marca la modalidad de la cotización. */
+  readonly insignia: string;
+  readonly notaCentavos: string;
+  /** Reemplaza la tarjeta de una modalidad que no se puede cotizar. */
+  readonly modalidadNoDisponible: string;
+  readonly tituloGrafica1: string;
+  readonly notaGrafica1: string;
+  readonly serieCobrado: string;
+  readonly serieDevengado: string;
+  readonly tituloGrafica2: string;
+  readonly rotuloEscenario: string;
+  readonly serieConReinversion: string;
+  readonly serieSinReinvertir: string;
+  readonly finPrimerPlazo: string;
+  readonly notaEscenario: string;
+  /** Reemplaza la gráfica 2 si el primer pago es menor al incremento mínimo. */
+  readonly escenarioIncrementoMinimo: string;
+  /** Reemplaza la gráfica 2 si alguna tasa del escenario no está disponible. */
+  readonly escenarioTasaNoDisponible: string;
+  /** "Página" y "de", para el pie "Página 1 de 2". */
+  readonly pagina: string;
+  readonly paginaDe: string;
+}
+
+/** Clave del archivo (snake_case) -> clave de TextosPagina2. */
+const CLAVES_PAGINA2 = {
+  titulo: "titulo",
+  modalidad_1: "modalidad1",
+  modalidad_2: "modalidad2",
+  tasa_anual: "tasaAnual",
+  capital_inicial: "capitalInicial",
+  rendimiento_estimado: "rendimientoEstimado",
+  total: "total",
+  columna_mes: "columnaMes",
+  columna_rendimiento_mes: "columnaRendimientoMes",
+  columna_rendimiento_acumulado: "columnaRendimientoAcumulado",
+  insignia: "insignia",
+  nota_centavos: "notaCentavos",
+  modalidad_no_disponible: "modalidadNoDisponible",
+  titulo_grafica_1: "tituloGrafica1",
+  nota_grafica_1: "notaGrafica1",
+  serie_cobrado: "serieCobrado",
+  serie_devengado: "serieDevengado",
+  titulo_grafica_2: "tituloGrafica2",
+  rotulo_escenario: "rotuloEscenario",
+  serie_con_reinversion: "serieConReinversion",
+  serie_sin_reinvertir: "serieSinReinvertir",
+  fin_primer_plazo: "finPrimerPlazo",
+  nota_escenario: "notaEscenario",
+  escenario_incremento_minimo: "escenarioIncrementoMinimo",
+  escenario_tasa_no_disponible: "escenarioTasaNoDisponible",
+  pagina: "pagina",
+  pagina_de: "paginaDe",
+} as const satisfies Readonly<Record<string, keyof TextosPagina2>>;
+
+type ClaveArchivoPagina2 = keyof typeof CLAVES_PAGINA2;
 
 const RE_MARCADOR = /\{([^{}]*)\}/g;
 
@@ -130,6 +201,12 @@ const esquemaTextos = z
         },
         { error: claveDesconocida },
       ),
+      pdf_pagina2: z.strictObject(
+        Object.fromEntries(
+          Object.keys(CLAVES_PAGINA2).map((clave) => [clave, texto(`pdf_pagina2.${clave}`)]),
+        ) as Record<ClaveArchivoPagina2, ReturnType<typeof texto>>,
+        { error: claveDesconocida },
+      ),
     },
     { error: claveDesconocida },
   )
@@ -154,6 +231,12 @@ const esquemaTextos = z
         seccionCalculo: t.pdf.seccion_calculo,
         lineaTasas: t.pdf.linea_tasas,
       },
+      pdfPagina2: Object.fromEntries(
+        (Object.entries(CLAVES_PAGINA2) as [ClaveArchivoPagina2, keyof TextosPagina2][]).map(([archivo, clave]) => [
+          clave,
+          t.pdf_pagina2[archivo],
+        ]),
+      ) as unknown as TextosPagina2,
     }),
   );
 

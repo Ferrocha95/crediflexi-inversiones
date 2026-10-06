@@ -4,6 +4,7 @@ import { fechaIsoEnMexico } from "../../aplicacion/fecha";
 import { esHostLocal } from "../../aplicacion/host";
 import { modeloPdf, TOPES, type ModeloPdf } from "../../aplicacion/modelo";
 import { normalizarMonto } from "../../aplicacion/monto";
+import { datosPagina2 } from "../../aplicacion/pagina2";
 import type { ResultadoApp } from "../../aplicacion/resultado";
 import { cotizar } from "../../domain/interes/cotizar";
 import { ESQUEMAS, MONEDAS } from "../../domain/tasas/semilla.esquema";
@@ -106,7 +107,8 @@ export async function manejarPdf(request: Request, deps: DependenciasPdf): Promi
   if (!c.ok) return json(422, c.error.mensaje, c.error.detalles);
 
   const ahora = deps.ahora();
-  const modelo = modeloPdf(c.valor, { razonesSociales, textos }, entrada, ahora);
+  const datos = datosPagina2(semilla, { entidad, moneda, esquema, monto: monto.valor, plazo });
+  const modelo = modeloPdf(c.valor, { razonesSociales, textos }, entrada, ahora, datos);
   if (!modelo.ok) return json(500, modelo.error.mensaje, modelo.error.detalles);
 
   let bytes: Uint8Array;
