@@ -42,3 +42,10 @@
 - (ss) La banda de la modalidad 2 quedó mostaza (#8F7104) para cumplir el contraste 4.5:1 con texto blanco; evaluar el dorado original con texto oscuro.
 - (tt) Las 6 pruebas de muestras (`tests/unit/servidor/pdf/muestras.test.ts`) se omiten salvo con la variable `MUESTRAS_DIR`.
 - (uu) El escenario de reinversión es ilustrativo: la regla fina del producto Creciente (desde qué día rinde un incremento, base del cálculo) no está confirmada con la empresa.
+- (vv) Segundo factor (MFA) obligatorio antes de salir de localhost: hoy la sesión es solo correo y contraseña. Va con (b), las políticas con aal2.
+- (ww) Hosting: dónde vive la app para que la usen otras personas. Pendiente de decisión (ver la sección 8 de `docs/ESTADO_DEL_PROYECTO.md`).
+- (xx) Lista de verificación antes de cargar datos reales: autorización de la gerente; segundo factor (vv); respaldos cifrados; registro público apagado en producción (`enable_signup = false` en `[auth]`; ojo: en `[auth.email]` ese mismo valor apaga también el inicio de sesión con correo); contraseñas reales, no las de los scripts; revisar las políticas de RLS; borrar los usuarios sintéticos (`@ejemplo.test`, `@e2e.test`, `@rls.test`); HTTPS.
+- (yy) Correo real (SMTP) y recuperación de contraseña: hoy no hay. Las contraseñas las da `scripts/crear-usuarios-sinteticos.mjs` y el correo local solo llega a Mailpit.
+- (zz) Base local separada para el uso real (etapa B3): que los datos reales no vivan en la base de desarrollo que `npm run db:reset` borra.
+- (aaa) `npm audit` da 5 avisos altos en la cadena `braces` → `micromatch` → `fast-glob` → `@next/eslint-plugin-next` → `eslint-config-next`. Solo afecta el lint de desarrollo. No usar `npm audit fix --force`: bajaría `eslint-config-next` a 14.2.35. Revisar cuando salga una versión corregida.
+- (bbb) La primera corrida de `npm run test:rls` después de `npm run db:reset` (paso 53) dio 192 de 195 con un archivo sin terminar; la segunda dio 195 de 195. No se guardó el error: probablemente es la caída intermitente de Vitest (mm).

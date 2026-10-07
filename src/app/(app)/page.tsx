@@ -15,6 +15,7 @@ import {
   TarjetaVencimientos,
 } from "../../componentes/inicio/TarjetasResumen";
 import { LineaFlecha } from "../../componentes/ui/LineaFlecha";
+import { exigirUsuario } from "../../servidor/sesion";
 
 const ACCESO =
   "flex min-h-24 items-center gap-4 rounded-2xl p-5 text-left";
@@ -25,6 +26,8 @@ const ACCESO =
  * persona inventada. Los datos de ejemplo viven solo en /diseno.
  */
 export default async function Home() {
+  // Cada página revisa al usuario: el layout no se vuelve a ejecutar al navegar.
+  await exigirUsuario();
   // El saludo y la fecha dependen de la hora: sin esto se fijarían al compilar.
   await connection();
   const ahora = new Date();

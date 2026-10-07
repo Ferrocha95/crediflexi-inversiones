@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { RUTA_ACCESO, rutaSinRefresco } from "../../aplicacion/acceso/rutas";
+import { MENSAJE_SESION_EXPIRADA } from "../../componentes/acceso/textos";
 import { configSupabase } from "./config";
 
 /**
@@ -10,6 +11,12 @@ import { configSupabase } from "./config";
  * la sesión sin verificar su firma) y la respuesta lleva las cookies y los
  * encabezados de caché que da setAll. /acceso, los estáticos de Next, el
  * ícono y public quedan fuera (ver rutaSinRefresco).
+ *
+ * Sin sesión, una navegación (GET) va a /acceso, pero un POST o una acción
+ * del servidor (encabezado Next-Action) recibe 401 en text/plain: seguir la
+ * redirección le entregaría HTML a quien esperaba un PDF o una respuesta de la
+ * acción. El content-type es exactamente "text/plain" porque así Next pasa el
+ * texto como mensaje del Error de la acción.
  *
  * El proxy no basta como autorización: cada acción y cada página vuelve a
  * revisar la sesión (src/servidor/sesion.ts).
@@ -41,6 +48,15 @@ export async function actualizarSesion(request: NextRequest): Promise<NextRespon
   const { data } = await supabase.auth.getClaims();
 
   if (!data?.claims) {
+    if (!esNavegacion(request)) {
+      const rechazo = new NextResponse(MENSAJE_SESION_EXPIRADA, {
+        status: 401,
+        headers: { "content-type": "text/plain", "cache-control": "no-store" },
+      });
+      for (const cookie of respuesta.cookies.getAll()) rechazo.cookies.set(cookie);
+      return rechazo;
+    }
+
     const destino = request.nextUrl.clone();
     destino.pathname = RUTA_ACCESO;
     destino.search = "";
@@ -54,4 +70,10 @@ export async function actualizarSesion(request: NextRequest): Promise<NextRespon
   }
 
   return respuesta;
+}
+
+/** Una navegación del navegador: GET o HEAD y sin encabezado de acción del servidor. */
+function esNavegacion(request: NextRequest): boolean {
+  const metodo = request.method.toUpperCase();
+  return (metodo === "GET" || metodo === "HEAD") && !request.headers.has("next-action");
 }

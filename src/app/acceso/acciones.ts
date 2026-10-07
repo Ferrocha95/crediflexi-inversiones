@@ -3,7 +3,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { MENSAJES_ACCESO, mensajeDeErrorAuth } from "../../aplicacion/acceso/mensajes";
-import { RUTA_ACCESO } from "../../aplicacion/acceso/rutas";
 import { siguienteSeguro } from "../../aplicacion/acceso/siguiente";
 import { esHostLocal } from "../../aplicacion/host";
 import { MENSAJE_HOST_NO_LOCAL } from "../../servidor/guardiaHost";
@@ -62,12 +61,16 @@ export async function iniciarSesion(_previo: EstadoAcceso, datos: FormData): Pro
   redirect(siguienteSeguro(texto(datos, "siguiente")));
 }
 
-/** Salir. Repite el guardia de host y solo llama a signOut si hay sesión. */
-export async function cerrarSesion(): Promise<never> {
+/**
+ * Salir. Repite el guardia de host y solo llama a signOut si hay sesión. No
+ * redirige: el botón (src/componentes/estructura/Usuario.tsx) navega a
+ * /acceso con una carga completa, que además limpia lo que el navegador tenía
+ * en memoria, y lo hace aunque esta acción falle porque la sesión ya expiró.
+ */
+export async function cerrarSesion(): Promise<void> {
   if (!esHostLocal((await headers()).get("host"))) throw new Error(MENSAJE_HOST_NO_LOCAL);
 
   const cliente = await crearClienteServidor();
   const { data } = await cliente.auth.getClaims();
   if (data?.claims) await cliente.auth.signOut();
-  redirect(RUTA_ACCESO);
 }

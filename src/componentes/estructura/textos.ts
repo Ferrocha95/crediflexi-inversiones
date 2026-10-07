@@ -8,4 +8,5 @@ export const TEXTOS_ESTRUCTURA = {
   irAlInicio: "Crediflexi, ir al inicio",
   mas: "Más",
   masDestinos: "Más secciones",
+  cerrarSesion: "Cerrar sesión",
 } as const;

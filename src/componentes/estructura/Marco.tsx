@@ -5,12 +5,15 @@ import { ProveedorNotificaciones } from "../ui/Notificaciones";
 import { BarraInferior } from "./BarraInferior";
 import { MenuLateral } from "./MenuLateral";
 import { TEXTOS_ESTRUCTURA as T } from "./textos";
+import { EncabezadoUsuario, type UsuarioMenu } from "./Usuario";
 
 /**
  * Estructura de todas las pantallas: enlace para saltar al contenido, menú
- * lateral (desde 768 px) o encabezado con logo y barra inferior (celular).
+ * lateral (desde 768 px) o encabezado con logo y barra inferior (celular). El
+ * usuario (nombre, rol y sucursal) aparece en el menú lateral, en el
+ * encabezado del celular y en el diálogo "Más", con el botón para salir.
  */
-export function Marco({ children }: { readonly children: ReactNode }) {
+export function Marco({ usuario, children }: { readonly usuario: UsuarioMenu; readonly children: ReactNode }) {
   return (
     <ProveedorNotificaciones>
       <a
@@ -20,12 +23,13 @@ export function Marco({ children }: { readonly children: ReactNode }) {
         {T.saltarContenido}
       </a>
       <div className="flex min-h-dvh">
-        <MenuLateral />
+        <MenuLateral usuario={usuario} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center px-4 pt-4 md:hidden">
-            <Link href="/" aria-label={T.irAlInicio} className="flex min-h-11 items-center rounded-xl">
-              <Image src="/logo-blanco.png" alt="" width={640} height={201} loading="eager" unoptimized className="h-auto w-40" />
+          <header className="flex items-center justify-between gap-3 px-4 pt-4 md:hidden">
+            <Link href="/" aria-label={T.irAlInicio} className="flex min-h-11 shrink-0 items-center rounded-xl">
+              <Image src="/logo-blanco.png" alt="" width={640} height={201} loading="eager" unoptimized className="h-auto w-32" />
             </Link>
+            <EncabezadoUsuario usuario={usuario} />
           </header>
           <main
             id="contenido"
@@ -36,7 +40,7 @@ export function Marco({ children }: { readonly children: ReactNode }) {
           </main>
         </div>
       </div>
-      <BarraInferior />
+      <BarraInferior usuario={usuario} />
     </ProveedorNotificaciones>
   );
 }

@@ -47,6 +47,17 @@ export function mensajeDeErrorPdf(estado: number, cuerpo: unknown): string {
   return TEXTOS.errorPdfGenerico(estado);
 }
 
+/**
+ * Qué hacer con la respuesta del POST al PDF: descargarla, avisar que la
+ * sesión expiró (401) o mostrar un error. Un 200 que no es un PDF (por
+ * ejemplo, HTML) es una respuesta inesperada y nunca se descarga.
+ */
+export function clasificarRespuestaPdf(estado: number, contentType: string | null): "pdf" | "sesion_expirada" | "error" | "inesperada" {
+  if (estado === 401) return "sesion_expirada";
+  if (estado < 200 || estado >= 300) return "error";
+  return (contentType ?? "").toLowerCase().startsWith("application/pdf") ? "pdf" : "inesperada";
+}
+
 const RE_NOMBRE = /filename="(cotizacion-\d{4}-\d{2}-\d{2}\.pdf)"/;
 
 /** Nombre del archivo según Content-Disposition; si no tiene la forma esperada, el nombre por omisión. */

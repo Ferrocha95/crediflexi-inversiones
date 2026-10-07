@@ -12,8 +12,8 @@
 // la foto. Las pruebas que necesitan administrador la leen con admin.ts.
 
 import { isDeepStrictEqual } from "node:util";
-import { randomBytes } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { generarContrasena } from "../../scripts/contrasena.mjs";
 import type { TestProject } from "vitest/node";
 import { OPCIONES_CLIENTE, leerEntornoLocal } from "./entorno";
 import {
@@ -256,7 +256,7 @@ export default async function setup(project: TestProject) {
   const admin = createClient(entorno.url, entorno.llaveSecreta, OPCIONES_CLIENTE);
 
   // Contraseña sintética distinta en cada corrida; nunca se imprime.
-  const contrasena = randomBytes(24).toString("base64url");
+  const contrasena = generarContrasena();
 
   await limpiar(admin);
   await verificarLimpio(admin);

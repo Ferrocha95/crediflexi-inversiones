@@ -4,6 +4,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { opcionesCotizador } from "../../../aplicacion/opciones";
 import { leerParametrosCotizacion } from "../../../servidor/parametros";
+import { exigirUsuario } from "../../../servidor/sesion";
 import { Aviso } from "../../../componentes/ui/Aviso";
 import { Cotizador } from "./Cotizador";
 import { TEXTOS } from "./textosPantalla";
@@ -18,6 +19,8 @@ export const metadata: Metadata = {
  * navegador.
  */
 export default async function PaginaCotizador() {
+  // Cada página revisa al usuario: el layout no se vuelve a ejecutar al navegar.
+  await exigirUsuario();
   // Sin esto, next build prerenderizaría la página con la semilla del momento de la compilación.
   await connection();
   const parametros = await leerParametrosCotizacion();

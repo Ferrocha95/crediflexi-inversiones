@@ -2,6 +2,7 @@ import { FlaskConical } from "lucide-react";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Aviso } from "../../../componentes/ui/Aviso";
+import { exigirUsuario } from "../../../servidor/sesion";
 import { Boton } from "../../../componentes/ui/Boton";
 import { Esqueleto } from "../../../componentes/ui/Esqueleto";
 import { EstadoVacio } from "../../../componentes/ui/EstadoVacio";
@@ -81,7 +82,9 @@ function Seccion({ titulo, descripcion, ejemplo = false, children }: { titulo: s
  * solo responde en localhost (src/proxy.ts) y no aparece en el menú. Todo lo
  * que muestra son datos sintéticos.
  */
-export default function PaginaDiseno() {
+export default async function PaginaDiseno() {
+  // Cada página revisa al usuario: el layout no se vuelve a ejecutar al navegar.
+  await exigirUsuario();
   return (
     <div className="flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-8">
       <header className="flex flex-col gap-3">

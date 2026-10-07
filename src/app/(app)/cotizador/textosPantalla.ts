@@ -57,6 +57,8 @@ export const TEXTOS = {
   tituloErrorPdf: "No se pudo generar el PDF",
   errorPdfGenerico: (estado: number) =>
     `El servidor no pudo generar el PDF (código ${estado}). Vuelve a intentarlo; si sigue fallando, reinicia la app.`,
+  errorPdfInesperado:
+    "El servidor respondió algo que no es un PDF, así que no se descargó nada. Recarga la página y vuelve a intentarlo.",
   nombrePdfPorOmision: "cotizacion.pdf",
 
   tituloErrorParametros: "No se pudieron cargar los parámetros del cotizador",

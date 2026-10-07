@@ -32,6 +32,7 @@ const { proxy } = await import("../../../src/proxy");
 const { actualizarSesion } = await import("../../../src/servidor/supabase/proxy");
 const { ARCHIVOS_PUBLICOS, rutaSinRefresco } = await import("../../../src/aplicacion/acceso/rutas");
 const { configSupabase } = await import("../../../src/servidor/supabase/config");
+const { MENSAJE_SESION_EXPIRADA } = await import("../../../src/componentes/acceso/textos");
 
 const peticion = (ruta: string, host = "127.0.0.1:3000") =>
   new NextRequest(`http://127.0.0.1:3000${ruta}`, { headers: { host } });
@@ -122,6 +123,50 @@ describe("actualizarSesion", () => {
       expect(crearCliente).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("actualizarSesion: peticiones que no son de navegación", () => {
+  const post = (ruta: string, encabezados: Record<string, string> = {}) =>
+    new NextRequest(`http://127.0.0.1:3000${ruta}`, {
+      method: "POST",
+      headers: { host: "127.0.0.1:3000", "content-type": "application/json", ...encabezados },
+      body: "{}",
+    });
+
+  it("un POST sin sesión (el PDF) recibe 401 con texto en español, no una redirección a HTML", async () => {
+    const r = await actualizarSesion(post("/cotizador/pdf"));
+    expect(r.status).toBe(401);
+    expect(r.headers.get("location")).toBeNull();
+    expect(await r.text()).toBe(MENSAJE_SESION_EXPIRADA);
+  });
+
+  it("el 401 es text/plain exacto: así Next pasa el mensaje a la acción que falló", async () => {
+    const r = await actualizarSesion(post("/cotizador", { "next-action": "abc123" }));
+    expect(r.status).toBe(401);
+    expect(r.headers.get("content-type")).toBe("text/plain");
+    expect(r.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("una petición con Next-Action sin sesión recibe 401 aunque no sea POST", async () => {
+    const r = await actualizarSesion(new NextRequest("http://127.0.0.1:3000/cotizador", { headers: { host: "127.0.0.1:3000", "next-action": "abc123" } }));
+    expect(r.status).toBe(401);
+  });
+
+  it("el 401 conserva las cookies y los encabezados de caché que dio setAll", async () => {
+    escenario.refresca = true;
+    const r = await actualizarSesion(post("/cotizador/pdf"));
+    expect(r.status).toBe(401);
+    expect(r.cookies.get("sb-local-auth-token")?.value).toBe("renovada");
+  });
+
+  it("un GET sin sesión sigue redirigiendo a /acceso", async () => {
+    expect((await actualizarSesion(peticion("/cotizador"))).status).toBe(307);
+  });
+
+  it("con sesión, un POST pasa", async () => {
+    escenario.conSesion = true;
+    expect((await actualizarSesion(post("/cotizador/pdf"))).status).toBe(200);
+  });
 });
 
 describe("proxy", () => {

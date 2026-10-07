@@ -124,10 +124,15 @@ describe("iniciarSesion", () => {
 });
 
 describe("cerrarSesion", () => {
-  it("cierra la sesión y manda a /acceso", async () => {
+  it("cierra la sesión sin redirigir: el botón navega a /acceso con una carga completa", async () => {
     estado.claims = { sub: "00000000-0000-4000-8000-0000000000aa" };
-    await expect(cerrarSesion()).rejects.toThrow("REDIRECCION:/acceso");
+    await expect(cerrarSesion()).resolves.toBeUndefined();
     expect(estado.llamadas).toEqual(["getClaims", "signOut"]);
+  });
+
+  it("sin sesión no llama a signOut ni falla", async () => {
+    await expect(cerrarSesion()).resolves.toBeUndefined();
+    expect(estado.llamadas).toEqual(["getClaims"]);
   });
 
   it("con Host no local no hace nada", async () => {

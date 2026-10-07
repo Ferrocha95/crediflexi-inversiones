@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Dialogo } from "../ui/Dialogo";
 import { DESTINOS, EN_BARRA, esDestinoActual, type Destino } from "./navegacion";
 import { TEXTOS_ESTRUCTURA as T } from "./textos";
+import { BloqueUsuario, type UsuarioMenu } from "./Usuario";
 
 const BASE_BARRA =
   "relative flex min-h-16 w-full flex-col items-center justify-center gap-1 px-1 text-xs font-semibold";
@@ -68,7 +69,7 @@ function ItemDestino({ d, actual, enLista, alNavegar }: { d: Destino; actual: st
  * Barra de navegación del celular (menos de 768 px), fija abajo y con vidrio
  * más opaco. Caben cuatro destinos; los demás van en el diálogo "Más".
  */
-export function BarraInferior() {
+export function BarraInferior({ usuario }: { readonly usuario: UsuarioMenu }) {
   const actual = usePathname();
   const [abierto, setAbierto] = useState(false);
   const visibles = DESTINOS.slice(0, EN_BARRA);
@@ -107,6 +108,9 @@ export function BarraInferior() {
             </li>
           ))}
         </ul>
+        <div className="mt-4">
+          <BloqueUsuario usuario={usuario} />
+        </div>
       </Dialogo>
     </nav>
   );

@@ -11,8 +11,9 @@
 //   solo llevan mensajes de Supabase/Postgres, no la configuración del cliente.
 // - Únicamente la cargan los archivos de prueba que importan este módulo.
 
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { generarContrasena } from "../../scripts/contrasena.mjs";
 import { OPCIONES_CLIENTE, leerEntornoLocal } from "./entorno";
 import { DOMINIO_PRUEBAS, MARCA, type EstatusProspecto, type Rol } from "./fixtures";
 
@@ -78,7 +79,7 @@ export class Registro {
 
   async crearCuenta(): Promise<{ authId: string; correo: string; contrasena: string }> {
     const correo = `int-${sufijo()}${DOMINIO_PRUEBAS}`;
-    const contrasena = randomBytes(24).toString("base64url");
+    const contrasena = generarContrasena();
     const { data, error } = await this.admin.auth.admin.createUser({
       email: correo,
       password: contrasena,

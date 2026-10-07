@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { DESTINOS, esDestinoActual } from "./navegacion";
 import { TEXTOS_ESTRUCTURA as T } from "./textos";
+import { BloqueUsuario, type UsuarioMenu } from "./Usuario";
 
 /** "auto": plegado de 768 a 1279 px y abierto de 1280 en adelante (lo decide el CSS, sin saltos al cargar). */
 type Plegado = "auto" | "si" | "no";
@@ -28,7 +29,7 @@ const SOLO_ABIERTO =
  * deja solo los íconos; las etiquetas siguen en el DOM para el lector de
  * pantalla. El estado vive solo en React: no se guarda.
  */
-export function MenuLateral() {
+export function MenuLateral({ usuario }: { readonly usuario: UsuarioMenu }) {
   const actual = usePathname();
   const [plegado, setPlegado] = useState<Plegado>("auto");
   const anchoGrande = useSyncExternalStore(
@@ -115,6 +116,8 @@ export function MenuLateral() {
           })}
         </ul>
       </nav>
+
+      <BloqueUsuario usuario={usuario} soloAbierto={SOLO_ABIERTO} />
 
       <button
         type="button"

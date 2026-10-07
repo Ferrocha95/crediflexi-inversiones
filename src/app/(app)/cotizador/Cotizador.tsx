@@ -15,6 +15,7 @@ import {
   vistaPreviaVigente,
 } from "./confirmacion";
 import {
+  clasificarRespuestaPdf,
   contarCaracteres,
   cuerpoPeticionPdf,
   mensajeDeErrorPdf,
@@ -22,6 +23,8 @@ import {
   recortar,
   type OpcionalesPdf,
 } from "./peticionPdf";
+import { AvisoSesionExpirada } from "../../../componentes/acceso/AvisoSesionExpirada";
+import { errorEsSesionExpirada, vistaPreviaSinSesion } from "../../../componentes/acceso/sesionExpirada";
 import { Aviso } from "../../../componentes/ui/Aviso";
 import { Boton } from "../../../componentes/ui/Boton";
 import { AreaTexto, Campo, Entrada } from "../../../componentes/ui/Campo";
@@ -78,6 +81,8 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
   const [opcionales, setOpcionales] = useState<OpcionalesPdf>(OPCIONALES_VACIOS);
   const [generando, setGenerando] = useState(false);
   const [mensajePdf, setMensajePdf] = useState<MensajePdf | null>(null);
+  /** La sesión expiró (o el usuario ya no está activo): se muestra el aviso con el enlace a /acceso. */
+  const [sesionExpirada, setSesionExpirada] = useState(false);
 
   function cambiar(cambio: Partial<Campos>) {
     const nuevos = { ...campos, ...cambio };
@@ -97,9 +102,12 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
       let r: RespuestaVistaPrevia;
       try {
         r = await previsualizar({ ...campos, peticion: version });
-      } catch {
+      } catch (e) {
+        // El proxy responde 401 a una acción sin sesión y Next lo convierte en este error.
+        if (errorEsSesionExpirada(e)) setSesionExpirada(true);
         r = { peticion: version, plazos: null, resultado: { tipo: "error", mensaje: TEXTOS.errorConexion, detalles: [] } };
       }
+      if (vistaPreviaSinSesion(r.resultado)) setSesionExpirada(true);
       // Si los campos cambiaron mientras tanto, la respuesta es vieja y se descarta.
       if (!vigente || r.peticion !== version) return;
       setRespuesta(r);
@@ -143,7 +151,17 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
         cache: "no-store",
         body: JSON.stringify(cuerpoPeticionPdf({ ...campos, plazo: campos.plazo }, opcionales, vista.tasas.version)),
       });
-      if (!r.ok) {
+      const clase = clasificarRespuestaPdf(r.status, r.headers.get("content-type"));
+      if (clase === "sesion_expirada") {
+        setSesionExpirada(true);
+        setMensajePdf(null);
+        return;
+      }
+      if (clase === "inesperada") {
+        setMensajePdf({ tipo: "error", texto: TEXTOS.errorPdfInesperado });
+        return;
+      }
+      if (clase === "error") {
         const cuerpo: unknown = await r.json().catch(() => undefined);
         setMensajePdf({ tipo: "error", texto: mensajeDeErrorPdf(r.status, cuerpo) });
         return;
@@ -166,6 +184,11 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
 
   return (
     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
+      {sesionExpirada && (
+        <div className="lg:col-span-2">
+          <AvisoSesionExpirada siguiente="/cotizador" />
+        </div>
+      )}
       <form
         className="superficie flex flex-col gap-5 rounded-2xl p-5 sm:p-6"
         autoComplete="off"

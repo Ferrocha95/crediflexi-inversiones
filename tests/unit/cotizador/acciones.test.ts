@@ -6,9 +6,19 @@ vi.mock("next/headers", () => ({
   headers: async () => new Headers(encabezados.host === null ? {} : { host: encabezados.host }),
 }));
 
+// La acción comprueba al usuario con usuarioActual(); aquí, activo salvo que la prueba diga otra cosa.
+const sesion = vi.hoisted(() => ({ activo: true, llamadas: 0 }));
+vi.mock("../../../src/servidor/sesion", () => ({
+  usuarioActual: async () => {
+    sesion.llamadas += 1;
+    return sesion.activo ? { id: "u-1", nombre: "Ejecutivo Sintético", rol: "EJECUTIVO" } : null;
+  },
+}));
+
 import { MENSAJE_MONTO_CERO, MENSAJE_MONTO_ILEGIBLE } from "../../../src/aplicacion/monto";
 import { previsualizar } from "../../../src/app/(app)/cotizador/acciones";
 import { cotizar } from "../../../src/domain/interes/cotizar";
+import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
 import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
 import type { RespuestaVistaPrevia } from "../../../src/servidor/vistaPrevia";
 import { MENSAJE_FORMA_INVALIDA } from "../../../src/servidor/vistaPrevia";
@@ -173,5 +183,36 @@ describe("previsualizar: guardia de host", () => {
   it("con localhost sí calcula", async () => {
     encabezados.host = "127.0.0.1:3100";
     expect((await pedir()).resultado.tipo).toBe("vista_previa");
+  });
+
+  it("con Host no local no lee la sesión", async () => {
+    encabezados.host = "ejemplo.com";
+    sesion.llamadas = 0;
+    await pedir();
+    expect(sesion.llamadas).toBe(0);
+  });
+});
+
+describe("previsualizar: usuario activo", () => {
+  it("un usuario inactivo con sesión vigente no recibe vista previa: error en español", async () => {
+    encabezados.host = "localhost:3000";
+    sesion.activo = false;
+    try {
+      const r = await pedir({ peticion: 7 });
+      expect(r).toEqual({
+        peticion: 7,
+        plazos: null,
+        resultado: { tipo: "error", mensaje: MENSAJE_SESION_EXPIRADA, detalles: [] },
+      });
+    } finally {
+      sesion.activo = true;
+    }
+  });
+
+  it("con usuario activo calcula y consulta la sesión", async () => {
+    encabezados.host = "localhost:3000";
+    sesion.llamadas = 0;
+    expect((await pedir()).resultado.tipo).toBe("vista_previa");
+    expect(sesion.llamadas).toBe(1);
   });
 });
