@@ -27,12 +27,12 @@ function detallesDelFallo(json: unknown): string[] {
   return [...(r.error.detalles ?? [])];
 }
 
-describe("cargarSemilla: semilla real 0.6", () => {
+describe("cargarSemilla: semilla real 0.7", () => {
   const semilla = cargarBien(semillaJson);
 
   it("conserva versión y fecha de la semilla", () => {
-    expect(semilla.version).toBe("0.6");
-    expect(semilla.generado).toBe("2026-10-02");
+    expect(semilla.version).toBe("0.7");
+    expect(semilla.generado).toBe("2026-10-07");
   });
 
   it("carga las entidades", () => {
@@ -61,11 +61,12 @@ describe("cargarSemilla: semilla real 0.6", () => {
     expect(semilla.tablas.MXN!.tramos[5].hasta).toBeNull();
   });
 
-  it("normaliza la tabla USD: POR_CONFIRMAR, sin límite definido, 6 tramos", () => {
+  it("normaliza la tabla USD: CONFIRMADA, límite inclusivo, solo RAMI_SISE, 6 tramos", () => {
     const usd = semilla.tablas.USD;
     expect(usd).toBeDefined();
-    expect(usd!.estatus).toBe("POR_CONFIRMAR");
-    expect(usd!.limiteInferiorInclusivo).toBeNull();
+    expect(usd!.estatus).toBe("CONFIRMADA");
+    expect(usd!.limiteInferiorInclusivo).toBe(true);
+    expect(usd!.aplicaAEntidades).toEqual(["RAMI_SISE"]);
     expect(usd!.tramos).toHaveLength(6);
     expect(usd!.tramos[1].desde.toFixed(2)).toBe("40001.00");
     expect(usd!.tramos[0].tasas.mensual.get(6)!.toString()).toBe("0.08");
@@ -176,6 +177,7 @@ describe("cargarSemilla: tabla USD", () => {
   it("rechaza desbloquear USD sin definir limite_inferior_inclusivo", () => {
     const c = copia();
     c.tasas_usd.estatus = "SEGUN_USUARIO_PPTX";
+    delete comoRegistro(c.tasas_usd).limite_inferior_inclusivo;
     expect(detallesDelFallo(c).join("\n")).toContain("tasas_usd.limite_inferior_inclusivo");
   });
 

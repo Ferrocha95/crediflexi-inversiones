@@ -102,12 +102,11 @@ describe("oro (h): los cambios en la semilla cambian el resultado", () => {
     expect(codigoDeError({ monto: "250000" }, cargar(j))).toBe("TRAMO_POR_CONFIRMAR");
   });
 
-  it("desbloquear USD con su límite en una copia permite cotizar en USD", () => {
+  it("USD: CREDIFLEXI no tiene tabla; agregarla a aplica_a_entidades en una copia permite cotizar", () => {
     const usd = { moneda: "USD" as const, monto: "10000", plazo: 12 };
-    expect(codigoDeError(usd)).toBe("TABLA_POR_CONFIRMAR");
+    expect(codigoDeError(usd)).toBe("ENTIDAD_SIN_TABLA");
     const j = copiaSemilla();
-    j.tasas_usd.estatus = "CONFIRMADA";
-    (j.tasas_usd as { limite_inferior_inclusivo?: boolean }).limite_inferior_inclusivo = true;
+    j.tasas_usd.aplica_a_entidades = ["CREDIFLEXI", "RAMI_SISE"];
     const c = cotizarBien(usd, cargar(j));
     expect(c.solicitud.moneda).toBe("USD");
     expect(c.tramo.estatus).toBe("CONFIRMADA");

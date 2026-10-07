@@ -132,7 +132,7 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
     expect(texto).toContain("Tu cotización de inversión");
     for (const cifra of caso.cifras) expect(texto).toContain(cifra);
     for (const etiqueta of caso.etiquetas) expect(texto).toContain(etiqueta);
-    expect(texto).toContain(`Tasas versión ${semillaJson.version} del 02/10/2026`);
+    expect(texto).toContain(`Tasas versión ${semillaJson.version} del ${semillaJson.generado.split("-").reverse().join("/")}`);
     for (const t of [
       "Preparado para",
       "Fecha",

@@ -3,11 +3,21 @@ import { TOPES } from "./modelo";
 import { rellenar } from "./rellenar";
 import type { TextosCotizacion } from "./textos";
 
+/** Una moneda del formulario. */
+export interface OpcionMoneda {
+  readonly moneda: Moneda;
+  /** false si su tabla está POR_CONFIRMAR (va deshabilitada con su motivo). */
+  readonly habilitada: boolean;
+  readonly motivo: string | null;
+  /** Entidades a las que aplica su tabla (aplica_a_entidades de la semilla); null = a todas. */
+  readonly entidades: readonly string[] | null;
+}
+
 /** Opciones del formulario del cotizador. Solo texto: es lo que recibe el navegador. */
 export interface OpcionesCotizador {
   readonly entidades: readonly { readonly clave: string; readonly razonSocial: string }[];
   /** Solo las monedas con tabla en la semilla; las POR_CONFIRMAR van deshabilitadas con su motivo. */
-  readonly monedas: readonly { readonly moneda: Moneda; readonly habilitada: boolean; readonly motivo: string | null }[];
+  readonly monedas: readonly OpcionMoneda[];
   readonly esquemas: readonly { readonly esquema: Esquema; readonly nombre: string }[];
   /** Topes en caracteres de los campos opcionales del PDF (los de modelo.ts). */
   readonly topes: Readonly<Record<keyof typeof TOPES, number>>;
@@ -27,7 +37,14 @@ export function opcionesCotizador({ semilla, razonesSociales, textos }: Parametr
       const tabla = semilla.tablas[moneda];
       if (tabla === undefined) return [];
       const habilitada = tabla.estatus !== "POR_CONFIRMAR";
-      return [{ moneda, habilitada, motivo: habilitada ? null : rellenar(textos.monedaDeshabilitada, { moneda }) }];
+      return [
+        {
+          moneda,
+          habilitada,
+          motivo: habilitada ? null : rellenar(textos.monedaDeshabilitada, { moneda }),
+          entidades: tabla.aplicaAEntidades === null ? null : [...tabla.aplicaAEntidades],
+        },
+      ];
     }),
     esquemas: ESQUEMAS.map((esquema) => ({ esquema, nombre: textos.nombreEsquema[esquema] })),
     topes: { ...TOPES },

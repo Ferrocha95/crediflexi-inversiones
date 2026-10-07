@@ -3,6 +3,7 @@ import semillaJson from "../../../seed/parametros_iniciales.json";
 import textosJson from "../../../seed/textos_cotizacion.json";
 import { cargarRazonesSociales } from "../../../src/aplicacion/entidades";
 import { opcionesCotizador } from "../../../src/aplicacion/opciones";
+import { monedaParaEntidad, monedasDeEntidad, monedasSoloPara } from "../../../src/app/(app)/cotizador/monedas";
 import { TOPES } from "../../../src/aplicacion/modelo";
 import { cargarTextos, type TextosCotizacion } from "../../../src/aplicacion/textos";
 import { cargar, copiaSemilla, semillaReal } from "../oro/ayudas";
@@ -24,19 +25,43 @@ describe("opcionesCotizador", () => {
     ]);
   });
 
-  it("MXN habilitada y USD deshabilitada con el texto de moneda_deshabilitada", () => {
+  it("MXN y USD habilitadas; USD solo para RAMI_SISE (aplica_a_entidades de la semilla)", () => {
     expect(opcionesCotizador(parametros).monedas).toEqual([
-      { moneda: "MXN", habilitada: true, motivo: null },
-      { moneda: "USD", habilitada: false, motivo: "Las tasas en USD están por confirmar." },
+      { moneda: "MXN", habilitada: true, motivo: null, entidades: ["CREDIFLEXI", "RAMI_SISE"] },
+      { moneda: "USD", habilitada: true, motivo: null, entidades: ["RAMI_SISE"] },
     ]);
   });
 
-  it("el estado de la moneda sale de los datos: si la tabla USD se confirma, se habilita", () => {
+  it("el estado de la moneda sale de los datos: una tabla USD POR_CONFIRMAR va deshabilitada con su motivo", () => {
     const j = copiaSemilla();
-    j.tasas_usd.estatus = "CONFIRMADA";
-    (j.tasas_usd as Record<string, unknown>).limite_inferior_inclusivo = true;
+    j.tasas_usd.estatus = "POR_CONFIRMAR";
     const o = opcionesCotizador({ ...parametros, semilla: cargar(j) });
-    expect(o.monedas).toContainEqual({ moneda: "USD", habilitada: true, motivo: null });
+    expect(o.monedas).toContainEqual({ moneda: "USD", habilitada: false, motivo: "Las tasas en USD están por confirmar.", entidades: ["RAMI_SISE"] });
+  });
+
+  it("una tabla sin aplica_a_entidades aplica a todas las entidades (entidades: null)", () => {
+    const j = copiaSemilla();
+    delete (j.tasas_usd as Record<string, unknown>).aplica_a_entidades;
+    expect(opcionesCotizador({ ...parametros, semilla: cargar(j) }).monedas[1].entidades).toBeNull();
+  });
+
+  it("monedasDeEntidad: CREDIFLEXI solo ofrece MXN y RAMI_SISE ofrece MXN y USD", () => {
+    const o = opcionesCotizador(parametros);
+    expect(monedasDeEntidad(o, "CREDIFLEXI").map((m) => m.moneda)).toEqual(["MXN"]);
+    expect(monedasDeEntidad(o, "RAMI_SISE").map((m) => m.moneda)).toEqual(["MXN", "USD"]);
+  });
+
+  it("monedaParaEntidad: conserva la moneda si aplica y, si no, regresa a la primera habilitada", () => {
+    const o = opcionesCotizador(parametros);
+    expect(monedaParaEntidad(o, "RAMI_SISE", "USD")).toBe("USD");
+    expect(monedaParaEntidad(o, "CREDIFLEXI", "USD")).toBe("MXN");
+    expect(monedaParaEntidad(o, "CREDIFLEXI", "MXN")).toBe("MXN");
+  });
+
+  it("monedasSoloPara: explica que USD es solo para la razón social de RAMI_SISE", () => {
+    const o = opcionesCotizador(parametros);
+    expect(monedasSoloPara(o, "CREDIFLEXI")).toEqual([{ moneda: "USD", razonesSociales: ["RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R."] }]);
+    expect(monedasSoloPara(o, "RAMI_SISE")).toEqual([]);
   });
 
   it("una moneda sin tabla en la semilla no se ofrece", () => {

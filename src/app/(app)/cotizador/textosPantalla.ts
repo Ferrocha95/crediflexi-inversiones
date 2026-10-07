@@ -12,6 +12,9 @@ export const TEXTOS = {
   tituloFormulario: "Datos de la cotización",
   entidad: "Entidad",
   moneda: "Moneda",
+  /** Por qué una moneda no aparece para la entidad elegida (la lista sale de aplica_a_entidades de la semilla). */
+  monedaSoloPara: (moneda: string, razonesSociales: readonly string[]) =>
+    `${moneda} solo está disponible para ${razonesSociales.join(" y ")}.`,
   esquema: "Esquema",
   monto: "Monto",
   ayudaMonto: "Ejemplo: 150,000.50 o 150000.50",

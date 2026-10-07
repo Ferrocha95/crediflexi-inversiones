@@ -41,8 +41,12 @@ describe("plazosDisponibles: devuelve el error del dominio tal cual", () => {
     expect(codigo({ monto: "29999.99" })).toBe("MONTO_FUERA_DE_RANGO");
   });
 
-  it("USD está por confirmar", () => {
-    expect(codigo({ moneda: "USD" })).toBe("TABLA_POR_CONFIRMAR");
+  it("USD no aplica a CREDIFLEXI", () => {
+    expect(codigo({ entidad: "CREDIFLEXI", moneda: "USD", monto: "10000" })).toBe("ENTIDAD_SIN_TABLA");
+  });
+
+  it("USD de RAMI_SISE ofrece 6, 12, 18 y 24 desde 4,000 dólares", () => {
+    expect(plazos({ entidad: "RAMI_SISE", moneda: "USD", monto: "4000" })).toEqual([6, 12, 18, 24]);
   });
 
   it("entidad que no existe", () => {

@@ -25,6 +25,8 @@ const textos: TextosCotizacion = sinError(cargarTextos(textosJson, "seed/textos_
 const razonesSociales = sinError(cargarRazonesSociales(semillaJson, "seed/parametros_iniciales.json"));
 const contexto = { razonesSociales, textos };
 const VERSION = semillaJson.version;
+/** Fecha de la semilla como la imprime la app (DD/MM/AAAA). */
+const FECHA_SEMILLA = semillaJson.generado.split("-").reverse().join("/");
 
 /** modeloPdf con los datos de la página 2 calculados con la semilla real. */
 function modeloPdfConDatos(c: Cotizacion, ...resto: [ContextoPdf, EntradaPdf, Date]) {
@@ -41,7 +43,7 @@ const ENTIDADES = [
 
 const pieEsperado = (razonSocial: string) =>
   `Cotización informativa para ${razonSocial}, calculada con interés simple sobre la tasa anual indicada ` +
-  `y con las tasas de la versión ${VERSION} del 02/10/2026. El rendimiento anual es un equivalente a 12 meses; ` +
+  `y con las tasas de la versión ${VERSION} del ${FECHA_SEMILLA}. El rendimiento anual es un equivalente a 12 meses; ` +
   "la ganancia total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables " +
   "son las del contrato que se firme.";
 
@@ -158,11 +160,11 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     const m = sinError(modeloPdfConDatos(cotizarBien({ entidad: clave }), { razonesSociales, textos: otros }, {}, AHORA));
     expect(m.textos.titulo).toBe("Título sintético");
     expect(m.textos.seccionCalculo).toBe("Cálculo sintético");
-    expect(m.lineaTasas).toBe(`Versión sintética ${VERSION}, 02/10/2026`);
+    expect(m.lineaTasas).toBe(`Versión sintética ${VERSION}, ${FECHA_SEMILLA}`);
   });
 
   it("la línea de las tasas lleva la versión y la fecha de la semilla", () => {
-    expect(pdf(clave).lineaTasas).toBe(`Tasas versión ${VERSION} del 02/10/2026.`);
+    expect(pdf(clave).lineaTasas).toBe(`Tasas versión ${VERSION} del ${FECHA_SEMILLA}.`);
   });
 
   it("el modelo del PDF no trae avisos (aviso fabricado a mano en la cotización)", () => {
@@ -199,7 +201,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
       monto: "$1,500,000.00 MXN",
       plazo: "12 meses",
     });
-    expect(m.tasas).toEqual({ version: VERSION, fecha: "02/10/2026" });
+    expect(m.tasas).toEqual({ version: VERSION, fecha: FECHA_SEMILLA });
   });
 
   it("la fecha del PDF es la de la Ciudad de México", () => {
@@ -368,7 +370,7 @@ describe.each(ENTIDADES)("modeloVistaPrevia ($clave)", ({ clave }) => {
       monto: "$1,500,000.00 MXN",
       plazo: "12 meses",
     });
-    expect(v.tasas).toEqual({ version: VERSION, fecha: "02/10/2026" });
+    expect(v.tasas).toEqual({ version: VERSION, fecha: FECHA_SEMILLA });
   });
 
   it("muestra el tramo aplicado con su estatus y la explicación del archivo de textos (pendiente t)", () => {

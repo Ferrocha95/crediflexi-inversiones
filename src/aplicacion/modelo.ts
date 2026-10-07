@@ -1,9 +1,10 @@
 import { Decimal } from "../domain/comun/decimal";
-import { formatearMonto, formatearPesos, formatearPorcentaje } from "../domain/comun/formato";
+import { formatearMonto, formatearPorcentaje } from "../domain/comun/formato";
 import type { CodigoAviso } from "../domain/comun/resultado";
 import type { Cotizacion } from "../domain/interes/cotizar";
 import type { Esquema, Estatus, Moneda, Salida } from "../domain/tasas/semilla.esquema";
 import { limpiarCampo } from "./campos";
+import { formatearDinero } from "./dinero";
 import { fechaDeTextoIso, fechaEnMexico } from "./fecha";
 import { modeloPagina2, type DatosPagina2, type ModeloPagina2 } from "./pagina2";
 import { rellenar } from "./rellenar";
@@ -20,7 +21,7 @@ export const TOPES = {
   notaAdicional: 300,
 } as const;
 
-const pesos = (texto: string) => formatearPesos(new Decimal(texto));
+const dinero = (texto: string, moneda: Moneda) => formatearDinero(new Decimal(texto), moneda);
 const monto = (texto: string, moneda: Moneda) => formatearMonto(new Decimal(texto), moneda);
 const meses = (plazo: number) => `${plazo} ${plazo === 1 ? "mes" : "meses"}`;
 
@@ -85,7 +86,7 @@ export function modeloVistaPrevia(c: Cotizacion, textos: TextosCotizacion): Mode
     salidas: c.salidas.map((s) => ({
       clave: s.clave,
       etiqueta: s.etiqueta,
-      cifra: pesos(s.redondeado),
+      cifra: dinero(s.redondeado, moneda),
       formula: s.desglose.formula,
       operacion: s.desglose.operacion,
     })),
@@ -197,7 +198,7 @@ export function modeloPdf(
   const cifras: CifraPdf[] = c.salidas.map((s) => ({
     clave: s.clave,
     etiqueta: s.etiqueta,
-    cifra: pesos(s.redondeado),
+    cifra: dinero(s.redondeado, c.solicitud.moneda),
     formula: s.desglose.formula,
     operacion: s.desglose.operacion,
   }));

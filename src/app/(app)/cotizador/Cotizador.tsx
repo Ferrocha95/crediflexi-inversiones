@@ -3,6 +3,7 @@
 import { useEffect, useId, useReducer, useState } from "react";
 import type { ModeloVistaPrevia } from "../../../aplicacion/modelo";
 import type { OpcionesCotizador } from "../../../aplicacion/opciones";
+import { monedaParaEntidad, monedasDeEntidad, monedasSoloPara } from "./monedas";
 import type { Esquema, Moneda } from "../../../domain/tasas/semilla.esquema";
 import type { RespuestaVistaPrevia } from "../../../servidor/vistaPrevia";
 import { previsualizar } from "./acciones";
@@ -48,9 +49,10 @@ interface Campos {
 }
 
 function camposIniciales(opciones: OpcionesCotizador): Campos {
+  const entidad = opciones.entidades[0]?.clave ?? "";
   return {
-    entidad: opciones.entidades[0]?.clave ?? "",
-    moneda: (opciones.monedas.find((m) => m.habilitada) ?? opciones.monedas[0])?.moneda ?? "MXN",
+    entidad,
+    moneda: monedaParaEntidad(opciones, entidad, "MXN"),
     esquema: opciones.esquemas[0]?.esquema ?? "mensual",
     monto: "",
     plazo: null,
@@ -133,10 +135,12 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
 
   const actual = hayMonto && respuesta !== null && respuesta.peticion === version ? respuesta : null;
   const plazos = hayMonto ? (respuesta?.plazos ?? []) : [];
-  const monedaElegida = opciones.monedas.find((m) => m.moneda === campos.moneda);
+  const monedasEntidad = monedasDeEntidad(opciones, campos.entidad);
+  const monedaElegida = monedasEntidad.find((m) => m.moneda === campos.moneda);
+  const soloPara = monedasSoloPara(opciones, campos.entidad);
   const puedePdf = puedeGenerarPdf(confirmacion);
   const motivoPdf = motivoPdfDeshabilitado(confirmacion);
-  const motivosMoneda = opciones.monedas.filter((m) => !m.habilitada && m.motivo !== null);
+  const motivosMoneda = monedasEntidad.filter((m) => !m.habilitada && m.motivo !== null);
 
   /** POST a /cotizador/pdf; el servidor recalcula todo y responde el archivo o un error en español. */
   async function generarPdf() {
@@ -200,7 +204,14 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
         </h2>
 
         <Campo id={`${id}-entidad`} etiqueta={TEXTOS.entidad}>
-          <Selector id={`${id}-entidad`} value={campos.entidad} onChange={(e) => cambiar({ entidad: e.target.value })}>
+          <Selector
+            id={`${id}-entidad`}
+            value={campos.entidad}
+            onChange={(e) =>
+              // Si la moneda elegida no aplica a la nueva entidad (USD solo para Rami Sise), regresa a la primera que sí.
+              cambiar({ entidad: e.target.value, moneda: monedaParaEntidad(opciones, e.target.value, campos.moneda) })
+            }
+          >
             {opciones.entidades.map((e) => (
               <option key={e.clave} value={e.clave}>
                 {e.razonSocial}
@@ -214,23 +225,26 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
             <Selector
               id={`${id}-moneda`}
               value={campos.moneda}
-              aria-describedby={motivosMoneda.length > 0 ? `${id}-motivo-moneda` : undefined}
+              aria-describedby={motivosMoneda.length > 0 || soloPara.length > 0 ? `${id}-motivo-moneda` : undefined}
               onChange={(e) => {
-                const m = opciones.monedas.find((x) => x.moneda === e.target.value);
+                const m = monedasEntidad.find((x) => x.moneda === e.target.value);
                 if (m?.habilitada) cambiar({ moneda: m.moneda });
               }}
             >
-              {opciones.monedas.map((m) => (
+              {monedasEntidad.map((m) => (
                 <option key={m.moneda} value={m.moneda} disabled={!m.habilitada}>
                   {m.moneda}
                 </option>
               ))}
             </Selector>
           </Campo>
-          {motivosMoneda.length > 0 && (
+          {(motivosMoneda.length > 0 || soloPara.length > 0) && (
             <ul id={`${id}-motivo-moneda`} className="text-sm text-hielo-tenue">
               {motivosMoneda.map((m) => (
                 <li key={m.moneda}>{m.motivo}</li>
+              ))}
+              {soloPara.map((m) => (
+                <li key={m.moneda}>{TEXTOS.monedaSoloPara(m.moneda, m.razonesSociales)}</li>
               ))}
             </ul>
           )}

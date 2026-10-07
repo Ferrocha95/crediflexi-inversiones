@@ -53,7 +53,7 @@ describe("resolverTasa: caso base", () => {
     expect(t.tramo.hasta).toBeNull();
     expect(t.tramo.estatus).toBe("CONFIRMADA");
     expect(t.monto.toFixed(2)).toBe("1500000.00");
-    expect(t.semilla).toEqual({ version: semillaJson.version, generado: "2026-10-02" });
+    expect(t.semilla).toEqual({ version: semillaJson.version, generado: semillaJson.generado });
   });
 
   it("el esquema final del plazo toma su propia columna", () => {
@@ -178,27 +178,27 @@ describe("resolverTasa: estatus", () => {
 });
 
 describe("resolverTasa: tabla USD", () => {
-  it("la tabla USD de la semilla está POR_CONFIRMAR y bloquea", () => {
-    const m = errorDe(semilla, { moneda: "USD", monto: "10000", plazo: 12 }, "TABLA_POR_CONFIRMAR");
+  it("la tabla USD de la semilla aplica solo a RAMI_SISE: CREDIFLEXI da ENTIDAD_SIN_TABLA", () => {
+    const m = errorDe(semilla, { moneda: "USD", monto: "10000", plazo: 12 }, "ENTIDAD_SIN_TABLA");
     expect(m).toContain("USD");
+    expect(m).toContain("RAMI_SISE");
   });
 
-  it("bloquea USD aunque el monto sea inválido (primero el estatus)", () => {
-    errorDe(semilla, { moneda: "USD", monto: "abc" }, "TABLA_POR_CONFIRMAR");
-  });
-
-  it("al desbloquearla en una copia cotiza con la tasa de la semilla", () => {
+  it("una tabla USD POR_CONFIRMAR (en una copia) bloquea aunque el monto sea inválido (primero el estatus)", () => {
     const c = copia();
-    c.tasas_usd.estatus = "CONFIRMADA";
-    (c.tasas_usd as { limite_inferior_inclusivo?: boolean }).limite_inferior_inclusivo = true;
-    const s = cargar(c);
-    const t = resolverBien(s, { moneda: "USD", monto: "4000", plazo: 6 });
+    c.tasas_usd.estatus = "POR_CONFIRMAR";
+    errorDe(cargar(c), { entidad: "RAMI_SISE", moneda: "USD", monto: "abc" }, "TABLA_POR_CONFIRMAR");
+  });
+
+  it("RAMI_SISE cotiza en USD con la tasa de la semilla", () => {
+    const rami = { entidad: "RAMI_SISE", moneda: "USD" } as const;
+    const t = resolverBien(semilla, { ...rami, monto: "4000", plazo: 6 });
     expect(t.tasa.toString()).toBe("0.08");
     expect(t.tramo.estatus).toBe("CONFIRMADA");
-    const f = resolverBien(s, { moneda: "USD", monto: "200001", plazo: 24, esquema: "final_del_plazo" });
+    const f = resolverBien(semilla, { ...rami, monto: "200001", plazo: 24, esquema: "final_del_plazo" });
     expect(f.tasa.toString()).toBe("0.14");
     expect(f.tramo.indice).toBe(5);
-    errorDe(s, { moneda: "USD", monto: "3999.99", plazo: 6 }, "MONTO_FUERA_DE_RANGO");
+    errorDe(semilla, { ...rami, monto: "3999.99", plazo: 6 }, "MONTO_FUERA_DE_RANGO");
   });
 
   it("sin tabla USD en la semilla da MONEDA_SIN_TABLA", () => {

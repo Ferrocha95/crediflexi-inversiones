@@ -1,6 +1,6 @@
 {
   "_leeme": "Semilla INICIAL. Todo es editable desde la app. Generado por codigo a partir de los archivos originales (sin transcripcion manual). Las tasas estan como texto decimal para evitar errores de punto flotante.",
-  "generado": "2026-10-02",
+  "generado": "2026-10-07",
   "entidades": [
     {
       "clave": "CREDIFLEXI",
@@ -213,8 +213,8 @@
     ]
   },
   "tasas_usd": {
-    "fuente": "Tasas_Interes_Pesos_y_Dolares_2026.xlsx (hoja 'Esquema en Dólares'); NO esta en el pptx",
-    "estatus": "POR_CONFIRMAR",
+    "fuente": "Folleto 'Rami Sise · Inversión a plazo fijo (USD)' (CREDIFLEXI_FPI_2026_USD). Comparado celda por celda con esta tabla el 2026-10-07: coincide. Monto desde 4,000 USD; plazos 6, 12, 18 y 24 meses. Tasas sujetas a cambio.",
+    "estatus": "CONFIRMADA",
     "mensual": [
       {
         "desde": 4000,
@@ -314,6 +314,10 @@
         "18": "0.135",
         "24": "0.14"
       }
+    ],
+    "limite_inferior_inclusivo": true,
+    "aplica_a_entidades": [
+      "RAMI_SISE"
     ]
   },
   "comisiones": {
@@ -705,7 +709,8 @@
     "D5 Calculadora Excel: 24% escrito a mano en 'SIMULADOR'; no existe en ninguna tabla.",
     "D6 Contrato machote (ambas entidades): 20% a 24 meses con $30,000; la tabla da 17.50% mensual o 19.50% al final del plazo.",
     "D7 Tabla N3 nuevos: celda 6 meses/primer tramo no sigue el 70% de N1.",
-    "D8 RESUELTA (2026-10-02): Pitagoras es la marca comercial de los servicios financieros; no cambia nada en el calculo ni en el PDF (usa el logo de Crediflexi)."
+    "D8 RESUELTA (2026-10-02): Pitagoras es la marca comercial de los servicios financieros; no cambia nada en el calculo ni en el PDF (usa el logo de Crediflexi).",
+    "D9 RESUELTA (2026-10-07): la tabla USD se habilita (estatus CONFIRMADA) solo para RAMI_SISE, como en el folleto; sus tramos empiezan en dolares enteros (40,001; 80,001...)."
   ],
-  "version": "0.6"
+  "version": "0.7"
 }

@@ -1,11 +1,12 @@
 import { Decimal } from "../domain/comun/decimal";
-import { formatearCantidad, formatearPesos, formatearPorcentaje } from "../domain/comun/formato";
+import { formatearCantidad, formatearPorcentaje } from "../domain/comun/formato";
 import type { Resultado } from "../domain/comun/resultado";
 import { calendarios, type CalendarioModalidad } from "../domain/interes/calendario";
 import type { Cotizacion } from "../domain/interes/cotizar";
 import { escenarioReinversion, type EscenarioReinversion } from "../domain/interes/escenario";
 import type { SolicitudTasa } from "../domain/tasas/resolver";
-import type { Esquema, Semilla } from "../domain/tasas/semilla.esquema";
+import type { Esquema, Moneda, Semilla } from "../domain/tasas/semilla.esquema";
+import { formatearDinero } from "./dinero";
 import { escalaLineal, marcasMeses, marcasValor, separarEtiquetas, trazado } from "./graficas";
 import type { TextosPagina2 } from "./textos";
 
@@ -90,7 +91,7 @@ export const LIENZO_GRAFICA = {
   separacionEtiquetas: 9,
 } as const;
 
-const pesos = (texto: string) => formatearPesos(new Decimal(texto));
+const dinero = (texto: string, moneda: Moneda) => formatearDinero(new Decimal(texto), moneda);
 /** Marca del eje de valores: pesos sin centavos si son cero ("$1,800,000"). */
 const marcaPesos = (v: number) => `$${formatearCantidad(new Decimal(v)).replace(/\.00$/, "")}`;
 
@@ -100,7 +101,9 @@ function tarjeta(
   elegida: boolean,
   r: Resultado<CalendarioModalidad>,
   t: TextosPagina2,
+  moneda: Moneda,
 ): TarjetaPdf {
+  const pesos = (texto: string) => dinero(texto, moneda);
   if (!r.ok) return { esquema, titulo, elegida, detalle: null, nota: t.modalidadNoDisponible };
   const c = r.valor;
   return {
@@ -135,6 +138,7 @@ function dibujo(
   minimo: number,
   tituloEjeX: string,
   lineaVertical: { readonly mes: number; readonly texto: string } | null,
+  moneda: Moneda,
 ): NonNullable<GraficaPdf["dibujo"]> {
   const { area, separacionEtiquetas } = LIENZO_GRAFICA;
   const maximo = Math.max(...series.flatMap((s) => s.valores.map(Number)));
@@ -157,7 +161,7 @@ function dibujo(
       color: s.color,
       trazo: s.trazo,
       ruta: trazado(s.valores.map((v, mes) => ({ x: x(mes), y: y(Number(v)) }))),
-      final: { x: area.derecha + 4, y: finales[i], texto: pesos(s.valores.at(-1)!) },
+      final: { x: area.derecha + 4, y: finales[i], texto: dinero(s.valores.at(-1)!, moneda) },
     })),
     lineaVertical: lineaVertical === null ? null : { x: x(lineaVertical.mes), texto: lineaVertical.texto },
   };
@@ -168,6 +172,7 @@ function graficaComparacion(
   m2: Resultado<CalendarioModalidad>,
   plazo: number,
   t: TextosPagina2,
+  moneda: Moneda,
 ): GraficaPdf {
   const series: SerieDatos[] = [];
   for (const [r, nombre, color, trazo] of [
@@ -180,12 +185,12 @@ function graficaComparacion(
     titulo: t.tituloGrafica1,
     rotulo: null,
     nota: t.notaGrafica1,
-    dibujo: series.length === 0 ? null : dibujo(series, plazo, 0, t.columnaMes, null),
+    dibujo: series.length === 0 ? null : dibujo(series, plazo, 0, t.columnaMes, null, moneda),
     omision: series.length === 0 ? t.modalidadNoDisponible : null,
   };
 }
 
-function graficaEscenario(e: EscenarioReinversion, t: TextosPagina2): GraficaPdf {
+function graficaEscenario(e: EscenarioReinversion, t: TextosPagina2, moneda: Moneda): GraficaPdf {
   const base = { titulo: t.tituloGrafica2, rotulo: t.rotuloEscenario, nota: t.notaEscenario };
   if (e.tipo === "omitido") {
     return {
@@ -214,7 +219,7 @@ function graficaEscenario(e: EscenarioReinversion, t: TextosPagina2): GraficaPdf
     dibujo: dibujo(series, e.meses, Number(e.capitalInicial), t.columnaMes, {
       mes: e.finPrimerPlazo,
       texto: t.finPrimerPlazo,
-    }),
+    }, moneda),
     omision: null,
   };
 }
@@ -223,12 +228,16 @@ function graficaEscenario(e: EscenarioReinversion, t: TextosPagina2): GraficaPdf
 export function modeloPagina2(c: Cotizacion, datos: DatosPagina2, textos: TextosPagina2): ModeloPagina2 {
   const { mensual, finalDelPlazo } = datos.calendarios;
   const elegido = c.solicitud.esquema;
+  const { moneda } = c.solicitud;
   return {
     textos,
     tarjetas: [
-      tarjeta("mensual", textos.modalidad1, elegido === "mensual", mensual, textos),
-      tarjeta("final_del_plazo", textos.modalidad2, elegido === "final_del_plazo", finalDelPlazo, textos),
+      tarjeta("mensual", textos.modalidad1, elegido === "mensual", mensual, textos, moneda),
+      tarjeta("final_del_plazo", textos.modalidad2, elegido === "final_del_plazo", finalDelPlazo, textos, moneda),
     ],
-    graficas: [graficaComparacion(mensual, finalDelPlazo, c.solicitud.plazo, textos), graficaEscenario(datos.escenario, textos)],
+    graficas: [
+      graficaComparacion(mensual, finalDelPlazo, c.solicitud.plazo, textos, moneda),
+      graficaEscenario(datos.escenario, textos, moneda),
+    ],
   };
 }

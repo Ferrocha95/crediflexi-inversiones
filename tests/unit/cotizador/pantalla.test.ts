@@ -11,6 +11,7 @@ const CLIENTE = [
   "src/app/(app)/cotizador/VistaPrevia.tsx",
   "src/app/(app)/cotizador/textosPantalla.ts",
   "src/app/(app)/cotizador/peticionPdf.ts",
+  "src/app/(app)/cotizador/monedas.ts",
 ];
 const leer = (f: string) => readFileSync(path.join(process.cwd(), f), "utf8");
 
