@@ -48,10 +48,12 @@ describe("página de inicio (/): ningún dato inventado", () => {
     expect(pagina.match(/<Tarjeta\w+ \/>/g)).toHaveLength(9);
   });
 
-  it("el acceso al cotizador está activo y el de nuevo prospecto es Próximamente", () => {
+  it("los accesos a nueva cotización y a nuevo prospecto están activos", () => {
     expect(pagina).toMatch(/href="\/cotizador"/);
     expect(pagina).toContain("Nueva cotización");
-    expect(pagina).toMatch(/aria-disabled="true"\s+aria-label=\{`Nuevo prospecto, \$\{PROXIMAMENTE\}`\}/);
+    expect(pagina).toMatch(/href="\/pipeline\?nuevo=1"/);
+    expect(pagina).toContain("Nuevo prospecto");
+    expect(pagina).not.toMatch(/aria-disabled/);
   });
 });
 

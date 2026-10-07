@@ -59,13 +59,13 @@ async function idSucursalE2E(): Promise<string> {
 }
 
 /** Usuario activo con contraseña aleatoria (12 o más caracteres, minúscula, mayúscula y dígito). */
-export async function crearUsuarioE2E(datos: { correo: string; nombre: string; rol: string }): Promise<UsuarioE2E> {
+export async function crearUsuarioE2E(datos: { correo: string; nombre: string; rol: string; jefeId?: string }): Promise<UsuarioE2E> {
   const contrasena = generarContrasena();
   const cuenta = await admin().auth.admin.createUser({ email: datos.correo, password: contrasena, email_confirm: true });
   if (cuenta.error) falla(`crear la cuenta ${datos.correo}`, cuenta.error.message);
   const fila = await admin()
     .from("usuarios")
-    .insert({ auth_id: cuenta.data.user.id, nombre: datos.nombre, rol: datos.rol, sucursal_id: await idSucursalE2E() })
+    .insert({ auth_id: cuenta.data.user.id, nombre: datos.nombre, rol: datos.rol, sucursal_id: await idSucursalE2E(), jefe_id: datos.jefeId ?? null })
     .select("id")
     .single();
   if (fila.error) falla(`crear el usuario ${datos.nombre}`, fila.error.message);
@@ -80,8 +80,33 @@ export async function desactivarUsuario(usuarioId: string): Promise<void> {
   if (error) falla("desactivar el usuario", error.message);
 }
 
-/** Borra todos los usuarios @e2e.test, sus filas y la organización E2E. */
-export async function borrarTodoE2E(): Promise<void> {
+/** Prospecto sintético a nombre de un usuario E2E (lo crea el administrador, con el ejecutivo explícito). */
+export async function crearProspectoE2E(datos: {
+  ejecutivoId: string;
+  nombre: string;
+  contacto: string;
+  estatus: "INTERESADO" | "INTERMITENTE" | "NO_INTERESADO";
+  seguimiento?: string | null;
+  comentarios?: string;
+}): Promise<string> {
+  const { data, error } = await admin()
+    .from("prospectos")
+    .insert({
+      ejecutivo_id: datos.ejecutivoId,
+      nombre: datos.nombre,
+      contacto: datos.contacto,
+      estatus: datos.estatus,
+      seguimiento: datos.seguimiento ?? null,
+      comentarios: datos.comentarios ?? "",
+    })
+    .select("id")
+    .single();
+  if (error) falla(`crear el prospecto ${datos.nombre}`, error.message);
+  return data.id as string;
+}
+
+/** Ids de Auth de todas las cuentas @e2e.test. */
+async function cuentasE2E(): Promise<string[]> {
   const ids: string[] = [];
   for (let pagina = 1; ; pagina++) {
     const { data, error } = await admin().auth.admin.listUsers({ page: pagina, perPage: 1000 });
@@ -89,7 +114,53 @@ export async function borrarTodoE2E(): Promise<void> {
     for (const u of data.users) if (u.email?.toLowerCase().endsWith(DOMINIO_E2E)) ids.push(u.id);
     if (data.users.length < 1000) break;
   }
+  return ids;
+}
+
+/** Id de la fila de usuarios de una cuenta E2E, o null si no existe. */
+export async function idUsuarioE2E(correo: string): Promise<string | null> {
+  const { data: cuentas, error: errorCuentas } = await admin().auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (errorCuentas) falla("listar las cuentas E2E", errorCuentas.message);
+  const cuenta = cuentas.users.find((u) => u.email?.toLowerCase() === correo.toLowerCase());
+  if (cuenta === undefined) return null;
+  const { data, error } = await admin().from("usuarios").select("id").eq("auth_id", cuenta.id).maybeSingle();
+  if (error) falla("leer el usuario E2E", error.message);
+  return (data?.id as string | undefined) ?? null;
+}
+
+/** Cuánto queda de lo E2E: cuentas, filas de usuarios, sus prospectos y la organización. */
+export async function contarRestosE2E(idsUsuarios: readonly string[]): Promise<{ cuentas: number; usuarios: number; prospectos: number; organizaciones: number }> {
+  const cuentas = (await cuentasE2E()).length;
+  const u = await admin().from("usuarios").select("id", { count: "exact", head: true }).in("id", [...idsUsuarios]);
+  const p = await admin().from("prospectos").select("id", { count: "exact", head: true }).in("ejecutivo_id", [...idsUsuarios]);
+  const o = await admin().from("organizaciones").select("id", { count: "exact", head: true }).eq("nombre", ORGANIZACION_E2E);
+  for (const r of [u, p, o]) if (r.error) falla("contar los restos E2E", r.error.message);
+  return { cuentas, usuarios: u.count ?? -1, prospectos: p.count ?? -1, organizaciones: o.count ?? -1 };
+}
+
+/** Ids de las filas de usuarios de todas las cuentas E2E. */
+export async function idsUsuariosE2E(): Promise<string[]> {
+  const ids = await cuentasE2E();
+  if (ids.length === 0) return [];
+  const { data, error } = await admin().from("usuarios").select("id").in("auth_id", ids);
+  if (error) falla("leer los usuarios E2E", error.message);
+  return data.map((u) => u.id as string);
+}
+
+/** Borra todos los usuarios @e2e.test, sus prospectos, sus filas y la organización E2E. */
+export async function borrarTodoE2E(): Promise<void> {
+  const ids = await cuentasE2E();
   if (ids.length > 0) {
+    // prospectos.ejecutivo_id es "on delete restrict": se borran antes que los usuarios.
+    const usuarios = await admin().from("usuarios").select("id").in("auth_id", ids);
+    if (usuarios.error) falla("leer los usuarios E2E", usuarios.error.message);
+    const idsUsuarios = usuarios.data.map((u) => u.id as string);
+    if (idsUsuarios.length > 0) {
+      const p = await admin().from("prospectos").delete().in("ejecutivo_id", idsUsuarios);
+      if (p.error) falla("borrar los prospectos E2E", p.error.message);
+      const j = await admin().from("usuarios").update({ jefe_id: null }).in("id", idsUsuarios);
+      if (j.error) falla("soltar los jefes E2E", j.error.message);
+    }
     const filas = await admin().from("usuarios").delete().in("auth_id", ids);
     if (filas.error) falla("borrar los usuarios E2E", filas.error.message);
     for (const id of ids) {
@@ -113,5 +184,6 @@ export async function entrar(page: Page, correo: string, contrasena: string, rut
   await page.getByLabel("Correo").fill(correo);
   await page.getByLabel("Contraseña").fill(contrasena);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page).not.toHaveURL(/\/acceso/);
+  // Con varias pruebas iniciando sesión a la vez, Auth puede tardar más de los 5 s por omisión.
+  await expect(page).not.toHaveURL(/\/acceso/, { timeout: 20_000 });
 }

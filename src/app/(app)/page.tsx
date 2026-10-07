@@ -2,7 +2,6 @@ import { Calculator, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { fechaDeHoy, horaEnMexico, saludoPara } from "../../componentes/inicio/saludo";
-import { PROXIMAMENTE } from "../../componentes/inicio/TarjetaResumen";
 import {
   TarjetaCarteraTotal,
   TarjetaDocumentosPorVencer,
@@ -21,8 +20,8 @@ const ACCESO =
   "flex min-h-24 items-center gap-4 rounded-2xl p-5 text-left";
 
 /**
- * Inicio. Sin base de datos todavía, así que las tarjetas de resumen van en
- * "Próximamente" y NO reciben datos: aquí no se muestra ninguna cifra ni
+ * Inicio. Las tarjetas de resumen siguen en "Próximamente" (se conectan en
+ * la etapa E) y NO reciben datos: aquí no se muestra ninguna cifra ni
  * persona inventada. Los datos de ejemplo viven solo en /diseno.
  */
 export default async function Home() {
@@ -54,20 +53,15 @@ export default async function Home() {
               <span className="text-hielo">Calcula una inversión con las tasas vigentes.</span>
             </span>
           </Link>
-          <button
-            type="button"
-            aria-disabled="true"
-            aria-label={`Nuevo prospecto, ${PROXIMAMENTE}`}
-            className={`${ACCESO} superficie cursor-not-allowed`}
-          >
-            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-hielo/10 text-hielo-tenue">
+          <Link href="/pipeline?nuevo=1" className={`${ACCESO} vidrio elevable`}>
+            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-hielo text-marino">
               <UserPlus aria-hidden="true" className="size-6" />
             </span>
             <span className="flex flex-col">
-              <span className="text-lg font-bold text-hielo">Nuevo prospecto</span>
-              <span className="text-hielo-tenue">{PROXIMAMENTE}: llega con el módulo de Pipeline.</span>
+              <span className="text-lg font-bold">Nuevo prospecto</span>
+              <span className="text-hielo">Registra un prospecto en tu pipeline.</span>
             </span>
-          </button>
+          </Link>
         </div>
       </section>
 

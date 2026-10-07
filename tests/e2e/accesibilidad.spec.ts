@@ -62,15 +62,16 @@ test.describe("2. teclado en el menú", () => {
 
     const cotizador = menu.getByRole("link", { name: "Cotizador" });
     await expect(cotizador).toHaveAttribute("aria-current", "page");
+    await expect(menu.getByRole("link", { name: "Pipeline" })).toHaveAttribute("href", "/pipeline");
 
-    for (const nombre of esperados.slice(1)) {
+    for (const nombre of esperados.slice(2)) {
       const b = menu.getByRole("button", { name: new RegExp(nombre) });
       await expect(b).toHaveAttribute("aria-disabled", "true");
       await expect(b).toContainText("Próximamente");
     }
 
     // Enter sobre un destino "Próximamente" no navega.
-    await menu.getByRole("button", { name: /Pipeline/ }).focus();
+    await menu.getByRole("button", { name: /Plan semanal/ }).focus();
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/cotizador$/);
   });
@@ -96,7 +97,8 @@ test.describe("2. teclado en el menú", () => {
     const barra = page.getByRole("navigation", { name: "Navegación principal" });
     await expect(barra).toHaveCount(1); // el menú lateral está oculto
     await expect(barra.getByRole("link", { name: "Cotizador" })).toHaveAttribute("aria-current", "page");
-    await expect(barra.getByRole("button", { name: "Pipeline, Próximamente" })).toHaveAttribute("aria-disabled", "true");
+    await expect(barra.getByRole("link", { name: "Pipeline" })).toHaveAttribute("href", "/pipeline");
+    await expect(barra.getByRole("button", { name: "Plan semanal, Próximamente" })).toHaveAttribute("aria-disabled", "true");
 
     const mas = barra.getByRole("button", { name: "Más" });
     await mas.focus();
@@ -265,15 +267,18 @@ test("máximo 4 capas con desenfoque por pantalla", async ({ page }) => {
 });
 
 test.describe("inicio", () => {
-  test("nueve tarjetas en Próximamente, sin cifras, y el acceso al cotizador funciona", async ({ page }) => {
+  test("nueve tarjetas en Próximamente, sin cifras, y los accesos a cotizador y nuevo prospecto funcionan", async ({ page }) => {
     await page.goto("/");
     const resumen = page.getByRole("region", { name: "Resumen" });
     const tarjetas = resumen.getByRole("region");
     await expect(tarjetas).toHaveCount(9);
     for (const t of await tarjetas.all()) await expect(t).toContainText("Próximamente");
     await expect(resumen).not.toContainText("$");
-    await expect(page.getByRole("button", { name: "Nuevo prospecto, Próximamente" })).toHaveAttribute("aria-disabled", "true");
     await page.getByRole("link", { name: /Nueva cotización/ }).click();
     await expect(page).toHaveURL(/\/cotizador$/);
+    await page.goto("/");
+    await page.getByRole("link", { name: /Nuevo prospecto/ }).click();
+    await expect(page).toHaveURL(/\/pipeline\?nuevo=1$/);
+    await expect(page.getByRole("dialog", { name: "Nuevo prospecto" })).toBeVisible();
   });
 });

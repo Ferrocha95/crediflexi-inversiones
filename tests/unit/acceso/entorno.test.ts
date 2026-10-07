@@ -44,13 +44,24 @@ describe("scripts/con-entorno.mjs", () => {
   });
 });
 
+// El prefijo de las llaves secretas se arma por partes para que ningún literal
+// de llave aparezca en el repositorio (git grep de llaves debe dar cero).
+const PREFIJO_LLAVE_SECRETA = "sb_" + "secret_";
+const EXPUESTO = new RegExp(
+  ["createBrowserClient", "getSession\\(", "NEXT_PUBLIC_SUPABASE", "service_role", "SERVICE_ROLE", "SECRET_KEY", PREFIJO_LLAVE_SECRETA].join("|"),
+);
+
 describe("la app no expone Supabase al navegador", () => {
   const fuentes = archivosDe("src").map((f) => [path.relative(process.cwd(), f), readFileSync(f, "utf8")] as const);
 
+  it("el detector marca una llave secreta de ejemplo inventada", () => {
+    const ejemplo = `const llave = "${PREFIJO_LLAVE_SECRETA}EjemploInventado0000";`;
+    expect(EXPUESTO.test(ejemplo)).toBe(true);
+    expect(EXPUESTO.test('const llave = "texto sin llave";')).toBe(false);
+  });
+
   it("ningún archivo de src usa createBrowserClient, getSession, NEXT_PUBLIC_SUPABASE ni llaves secretas", () => {
-    const hallazgos = fuentes
-      .filter(([, c]) => /createBrowserClient|getSession\(|NEXT_PUBLIC_SUPABASE|service_role|SERVICE_ROLE|SECRET_KEY|sb_secret_/.test(c))
-      .map(([f]) => f);
+    const hallazgos = fuentes.filter(([, c]) => EXPUESTO.test(c)).map(([f]) => f);
     expect(hallazgos).toEqual([]);
   });
 

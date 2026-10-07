@@ -10,10 +10,10 @@ export interface Destino {
   readonly disponible: boolean;
 }
 
-/** Destinos del menú, en orden. Solo el cotizador existe hoy. */
+/** Destinos del menú, en orden. Hoy existen el cotizador y el pipeline. */
 export const DESTINOS: readonly Destino[] = [
   { ruta: "/cotizador", etiqueta: "Cotizador", corta: "Cotizador", Icono: Calculator, disponible: true },
-  { ruta: "/pipeline", etiqueta: "Pipeline", corta: "Pipeline", Icono: Kanban, disponible: false },
+  { ruta: "/pipeline", etiqueta: "Pipeline", corta: "Pipeline", Icono: Kanban, disponible: true },
   { ruta: "/plan-semanal", etiqueta: "Plan semanal", corta: "Plan", Icono: CalendarDays, disponible: false },
   { ruta: "/proyeccion", etiqueta: "Proyección", corta: "Proyección", Icono: TrendingUp, disponible: false },
   { ruta: "/metas", etiqueta: "Metas", corta: "Metas", Icono: Target, disponible: false },

@@ -32,9 +32,10 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
       "src/app/(app)/cotizador/page.tsx",
       "src/app/(app)/diseno/page.tsx",
       "src/app/(app)/page.tsx",
+      "src/app/(app)/pipeline/page.tsx",
     ]);
     expect(rutas.map(relativo)).toEqual(["src/app/(app)/cotizador/pdf/route.ts"]);
-    expect(acciones.map(relativo)).toEqual(["src/app/(app)/cotizador/acciones.ts"]);
+    expect(acciones.map(relativo).sort()).toEqual(["src/app/(app)/cotizador/acciones.ts", "src/app/(app)/pipeline/acciones.ts"]);
   });
 
   it.each(paginas.map(relativo))("%s llama a exigirUsuario()", (f) => {
@@ -51,6 +52,11 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
     const funciones = funcionesExportadas(leer(path.join(process.cwd(), f)));
     expect(funciones.length).toBeGreaterThan(0);
     for (const { nombre, cuerpo } of funciones) expect(cuerpo, nombre).toMatch(/await usuarioActual\(\)/);
+  });
+
+  it.each(acciones.map(relativo))("%s repite el guardia de host en cada acción", (f) => {
+    const funciones = funcionesExportadas(leer(path.join(process.cwd(), f)));
+    for (const { nombre, cuerpo } of funciones) expect(cuerpo, nombre).toMatch(/esHostLocal\(/);
   });
 
   it("ningún otro archivo de src/app/(app) queda fuera de la revisión por ser .js o .jsx", () => {
