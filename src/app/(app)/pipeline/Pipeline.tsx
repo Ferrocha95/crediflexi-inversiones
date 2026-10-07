@@ -5,6 +5,7 @@ import Form from "next/form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { MENSAJES_EXCEL, TIPO_XLSX } from "../../../aplicacion/excel/archivo";
 import type { ContextoAvisos } from "../../../aplicacion/pipeline/avisos";
 import { hrefPipeline, type Conteo, type Filtros } from "../../../aplicacion/pipeline/filtros";
 import type { Estatus } from "../../../aplicacion/pipeline/normalizar";
@@ -21,6 +22,7 @@ import { Selector } from "../../../componentes/ui/Selector";
 import { TablaPipeline, type FilaPipelineDatos } from "../../../componentes/vistas/TablaPipeline";
 import { archivarProspecto, crearProspecto, editarProspecto, restaurarProspecto, type RespuestaPipeline } from "./acciones";
 import { BarraEstatus } from "./BarraEstatus";
+import { DialogoImportar } from "./DialogoImportar";
 import { DialogoProspecto, VALORES_NUEVO } from "./DialogoProspecto";
 import { TEXTOS } from "./textosPantalla";
 
@@ -124,6 +126,8 @@ export function Pipeline({ filtros, filas, totalSinFiltrar, totalArchivados, con
   const [edicion, setEdicion] = useState<Edicion | null>(filtros.nuevo ? { id: null, valores: VALORES_NUEVO, clave: 0 } : null);
   const [sesionExpirada, setSesionExpirada] = useState(false);
   const [ocupado, iniciar] = useTransition();
+  const [importando, setImportando] = useState(false);
+  const [descargando, iniciarDescarga] = useTransition();
   const porId = new Map(filas.map((f) => [f.datos.id, f]));
 
   const abrirNuevo = () => setEdicion({ id: null, valores: VALORES_NUEVO, clave: Date.now() });
@@ -155,6 +159,45 @@ export function Pipeline({ filtros, filas, totalSinFiltrar, totalArchivados, con
         );
       } else {
         notificar({ tono: "error", titulo: TEXTOS.notificacionError, texto: r.mensaje });
+      }
+    });
+  }
+
+  /**
+   * Descarga PIPELINE_{MES}.xlsx de la semana elegida (y, para un superior,
+   * del ejecutivo del filtro). Se pide con fetch para mostrar los errores en
+   * la pantalla en vez de navegar a una página de error.
+   */
+  function descargar() {
+    if (superior && filtros.ejecutivo === null) {
+      notificar({ tono: "error", titulo: TEXTOS.descargaFalla, texto: MENSAJES_EXCEL.eligeEjecutivo });
+      return;
+    }
+    iniciarDescarga(async () => {
+      const consulta = new URLSearchParams({ semana: semanaElegida.lunes });
+      if (superior && filtros.ejecutivo !== null) consulta.set("ejecutivo", filtros.ejecutivo);
+      try {
+        const r = await fetch(`/pipeline/excel?${consulta.toString()}`);
+        if (r.status === 401) {
+          setSesionExpirada(true);
+          return;
+        }
+        if (!r.ok || r.headers.get("content-type") !== TIPO_XLSX) {
+          const cuerpo = (await r.json().catch(() => null)) as { error?: string } | null;
+          notificar({ tono: "error", titulo: TEXTOS.descargaFalla, texto: cuerpo?.error ?? TEXTOS.importarFalla });
+          return;
+        }
+        const nombre = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? "PIPELINE.xlsx";
+        const url = URL.createObjectURL(await r.blob());
+        const enlace = document.createElement("a");
+        enlace.href = url;
+        enlace.download = nombre;
+        document.body.append(enlace);
+        enlace.click();
+        enlace.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch {
+        notificar({ tono: "error", titulo: TEXTOS.descargaFalla, texto: TEXTOS.importarFalla });
       }
     });
   }
@@ -203,22 +246,12 @@ export function Pipeline({ filtros, filas, totalSinFiltrar, totalArchivados, con
           <p className="text-lg text-hielo">{superior ? TEXTOS.introSuperior : TEXTOS.introEjecutivo}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {[
-            { texto: TEXTOS.importarExcel, Icono: Upload },
-            { texto: TEXTOS.descargarExcel, Icono: Download },
-          ].map(({ texto, Icono }) => (
-            <Boton
-              key={texto}
-              variante="fantasma"
-              aria-disabled="true"
-              aria-label={`${texto}, ${TEXTOS.proximamente}`}
-              className="cursor-not-allowed border border-hielo/20 text-hielo-tenue hover:bg-transparent"
-              icono={<Icono aria-hidden="true" className="size-5" />}
-            >
-              {texto}
-              <span className="rounded-full bg-hielo/10 px-2 py-0.5 text-xs font-semibold text-hielo">{TEXTOS.proximamente}</span>
-            </Boton>
-          ))}
+          <Boton variante="secundario" onClick={() => setImportando(true)} icono={<Upload aria-hidden="true" className="size-5" />}>
+            {TEXTOS.importarExcel}
+          </Boton>
+          <Boton variante="secundario" onClick={descargar} cargando={descargando} icono={<Download aria-hidden="true" className="size-5" />}>
+            {TEXTOS.descargarExcel}
+          </Boton>
           <Boton onClick={abrirNuevo} icono={<Plus aria-hidden="true" className="size-5" />}>
             {TEXTOS.nuevoProspecto}
           </Boton>
@@ -336,6 +369,19 @@ export function Pipeline({ filtros, filas, totalSinFiltrar, totalArchivados, con
           />
         )}
       </section>
+
+      {importando && (
+        <DialogoImportar
+          abierto
+          alCerrar={() => setImportando(false)}
+          alSesionExpirada={() => setSesionExpirada(true)}
+          alImportar={(n) => {
+            setImportando(false);
+            notificar({ tono: "exito", titulo: TEXTOS.notificacionImportados(n) });
+            router.refresh();
+          }}
+        />
+      )}
 
       {edicion !== null && (
         <DialogoProspecto

@@ -13,11 +13,25 @@ Imagen de encabezado (la misma en ambos): `public/logo-encabezado-excel.png` (20
 
 ## 1. Pipeline — hoja `PROSPECTOS SUCURSAL`
 
-- **Qué filas lleva:** todos los prospectos de la semana que se reporta (confirmado por Fernando).
+La app lo genera con `src/servidor/excel/pipeline.ts` (`exportarPipeline`) y lo descarga en `GET /pipeline/excel?semana=AAAA-MM-DD&ejecutivo=<id>`.
+
+- **Qué filas lleva:** todos los prospectos **activos** del ejecutivo (supuesto D1 aprobado en el plan del Sprint 2b). La semana elegida solo cambia el rango de `D1:F2` y el mes del nombre del archivo. Antes este documento decía "los de la semana que se reporta"; se corrigió.
+- **Un ejecutivo por archivo.** `C2` lleva un solo nombre: un ejecutivo descarga lo suyo y un superior elige a un ejecutivo de su equipo.
+- **Nombre del archivo:** `PIPELINE_{MES}.xlsx`, con el mes del viernes de la semana (una semana del 28 de septiembre al 2 de octubre da `PIPELINE_OCTUBRE.xlsx`).
 - Anchos de columna (caracteres): A 49.1 · B 19.1 · C 114.0 · D 19.4 · E 17.7 · F 29.0.
-- Filas 1 y 2 (alto 64.5 y 60.0): fondo **#012553** en A–F. `A1:B2` combinadas con la imagen. `C1` = " PIPELINE INVERSIONES" (título). `C2` = nombre del ejecutivo. `D1:F2` combinadas = rango de la semana en texto, ej. "28 DE SEPTIEMBRE A 2 DE OCTUBRE 2026".
-- Fila 3, encabezados, fondo **#DAE9F8**, Arial 12 negrita: NOMBRE · CONTACTO · COMENTARIOS · ESTATUS · SEGUIMIENTO · EJECUTIVO.
-- Filas de datos desde la 4: Arial 12, bordes finos, COMENTARIOS con ajuste de texto y alineado a la izquierda, SEGUIMIENTO con formato `D/M/YYYY`, CONTACTO como número.
+- **Filas 1 y 2** (alto 64.5 y 60.0): fondo **#012553** en A–F.
+  - `A1:B2` combinadas, con la imagen anclada en ese rango.
+  - `C1` = " PIPELINE INVERSIONES" (con el espacio inicial): Arial 30, blanco, centrado.
+  - `C2` = nombre del ejecutivo en MAYÚSCULAS: Arial 24, blanco.
+  - `D1:F2` combinadas = rango de la semana en texto (ej. "28 DE SEPTIEMBRE A 2 DE OCTUBRE 2026"): Arial 30, blanco, centrado.
+- **Fila 3**, encabezados con fondo **#DAE9F8**: NOMBRE · CONTACTO · COMENTARIOS · ESTATUS · SEGUIMIENTO · EJECUTIVO.
+- **La fila 3 y todas las filas de datos** van en Arial 12 **negrita**, color **#012653** (no negro), con bordes finos.
+- **Filas de datos desde la 4:**
+  - NOMBRE y EJECUTIVO en MAYÚSCULAS;
+  - CONTACTO como número, con formato General (si empezara con 0 se escribe como texto para no perder el cero);
+  - COMENTARIOS con ajuste de texto y alineado a la izquierda;
+  - ESTATUS con espacio ("NO INTERESADO");
+  - SEGUIMIENTO como fecha con formato `D/M/YYYY`, escrita como fecha en UTC para que el día no se mueva.
 - **Toda la fila (A–F) se pinta según el estatus. Son tres colores:**
 
 | ESTATUS (texto exacto) | Color de la fila |
@@ -26,7 +40,31 @@ Imagen de encabezado (la misma en ambos): `public/logo-encabezado-excel.png` (20
 | INTERMITENTE | **#FFD965** (amarillo) |
 | NO INTERESADO | **#F4B083** (naranja) |
 
-- Color del texto del título: no verificado (probablemente blanco).
+- **Textos que empiezan con =, +, - o @** (por ejemplo, un nombre "=HYPERLINK(…)" o un comentario "- llamar"): se escriben como celdas de **texto**, nunca como fórmula, y el texto visible no cambia. No llevan el apóstrofo oculto de Excel (`quotePrefix`): exceljs 4.4.0 no lo soporta. Son inertes al abrir el archivo, pero si alguien edita la celda en Excel, Excel puede convertirla en fórmula (ver `PENDIENTES_TECNICOS.md`).
+
+### Importar el pipeline
+
+La app lee un `.xlsx` en `POST /pipeline/importar` (`src/servidor/excel/importar.ts`), muestra una vista previa y solo guarda al confirmar (acción `confirmarImportacion`, que vuelve a validar todo).
+
+- **Archivo:**
+  - extensión `.xlsx` y firma ZIP;
+  - 5 MB como máximo (content-length y bytes reales);
+  - sin `xl/vbaProject.bin` (macros);
+  - 50 MB como máximo descomprimido, según lo que declara el índice del ZIP;
+  - 2,000 filas como máximo.
+- **Hoja y encabezados:** se lee la hoja `PROSPECTOS SUCURSAL` (o la primera). La fila de encabezados se busca por su texto, en cualquier fila y orden; son obligatorias NOMBRE, CONTACTO y ESTATUS.
+- **Fórmulas:** nunca se evalúan. Una fila con una celda de fórmula se rechaza ("la celda C7 tiene una fórmula"). Un texto que empieza con =, +, - o @ no es fórmula: se importa como texto.
+- **Normalización** (las mismas reglas de la pantalla):
+  - estatus con espacios de más o en minúsculas;
+  - teléfono guardado como número, con guiones, espacios o +52;
+  - seguimiento como fecha, número de serie de Excel o texto `D/M/AAAA`;
+  - el nombre se queda tal cual (también en mayúsculas).
+- **Ejecutivo:** cada fila queda a nombre de quien importa. Si venía vacía o con otro nombre, se reporta como corregida.
+- **Reporte, una línea por fila:**
+  - "se importa", con sus correcciones;
+  - "se importa con aviso": seguimiento de otro año o de hace más de 60 días, o teléfono repetido contra los activos visibles o dentro del archivo;
+  - "no se importa", con el motivo (incluido el guardia de CLABE, RFC o CURP).
+- **Confirmar:** inserta todo en una sola operación. Si una fila falla, no se inserta ninguna y se dice cuál.
 
 ## 2. Plan y proyección
 
@@ -62,7 +100,7 @@ Problemas vistos en el pipeline real (17 filas):
 
 ## 4. Semana
 
-- El pipeline reporta los prospectos trabajados en la semana (de lunes a viernes).
+- El pipeline lleva todos los prospectos activos del ejecutivo; la semana (de lunes a viernes) solo define el encabezado y el mes del nombre del archivo.
 - El encabezado del pipeline lleva el rango lunes a viernes de la semana que se reporta.
 - El plan cubre lunes a viernes de la semana siguiente (en el ejemplo, del 6 al 10 de octubre).
 - La app muestra, además, el total ponderado (CANTIDAD × % CIERRE). **No va en el Excel**, para no alterar el formato que se manda.

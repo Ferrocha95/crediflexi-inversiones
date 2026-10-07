@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { headers } from "next/headers";
+import { TOPES_IMPORTACION } from "../../../aplicacion/excel/archivo";
 import { fechaIsoEnMexico } from "../../../aplicacion/fecha";
 import { esHostLocal } from "../../../aplicacion/host";
 import { avisosProspecto } from "../../../aplicacion/pipeline/avisos";
@@ -21,6 +23,8 @@ import { crearClienteServidor } from "../../../servidor/supabase/servidor";
  *   3. valida lo recibido (`unknown`) con Zod;
  *   4. escribe con la sesión del usuario, así que RLS tiene la última palabra.
  * Nadie borra: se archiva. Al crear no se manda ejecutivo_id (lo pone la base).
+ * confirmarImportacion inserta las filas de un Excel ya revisado en la vista
+ * previa, pero no confía en ella: vuelve a validar todo.
  */
 
 export type RespuestaPipeline =
@@ -146,4 +150,52 @@ export async function restaurarProspecto(id: unknown): Promise<RespuestaPipeline
   }
   revalidatePath(RUTA);
   return { ok: true, id: prospectoId, avisos: [] };
+}
+
+export type RespuestaImportacion =
+  | { readonly ok: true; readonly insertadas: number }
+  | { readonly ok: false; readonly mensaje: string; readonly filas: readonly number[] };
+
+/** Lo que manda el navegador: el número de fila de Excel y la fila ya normalizada. */
+const ESQUEMA_IMPORTACION = z
+  .array(z.strictObject({ fila: z.number().int().min(1).max(1_048_576), datos: z.unknown() }))
+  .min(1)
+  .max(TOPES_IMPORTACION.filas);
+
+/**
+ * Inserta las filas de la vista previa a nombre del usuario, en UN solo insert
+ * de arreglo: si alguna falla, no se inserta ninguna. Antes vuelve a validar
+ * cada fila con las reglas del alta (incluido el guardia de datos sensibles);
+ * una sola fila inválida rechaza todo e indica cuál.
+ */
+export async function confirmarImportacion(filas: unknown): Promise<RespuestaImportacion> {
+  const sinFilas = (mensaje: string): RespuestaImportacion => ({ ok: false, mensaje, filas: [] });
+  if (!esHostLocal((await headers()).get("host"))) return sinFilas(MENSAJE_HOST_NO_LOCAL);
+  const usuario = await usuarioActual();
+  if (usuario === null) return sinFilas(MENSAJE_SESION_EXPIRADA);
+  const forma = ESQUEMA_IMPORTACION.safeParse(filas);
+  if (!forma.success) return sinFilas(MENSAJE_FORMA_INVALIDA);
+
+  const validas: ProspectoValido[] = [];
+  const invalidas: { fila: number; motivo: string }[] = [];
+  for (const f of forma.data) {
+    const v = validarProspecto(f.datos);
+    if (v.ok) validas.push(v.valor);
+    else invalidas.push({ fila: f.fila, motivo: Object.values(v.errores).join(" ") || v.mensaje });
+  }
+  if (invalidas.length > 0) {
+    const [primera] = invalidas;
+    const mas = invalidas.length > 1 ? ` y ${invalidas.length - 1} más` : "";
+    return {
+      ok: false,
+      mensaje: `No se importó ningún prospecto: la fila ${primera.fila} no es válida (${primera.motivo})${mas}. Corrige el archivo y vuelve a intentar.`,
+      filas: invalidas.map((i) => i.fila),
+    };
+  }
+
+  const cliente = await crearClienteServidor();
+  const { data, error } = await cliente.from("prospectos").insert(validas).select("id");
+  if (error) return sinFilas(`No se importó ningún prospecto: ${mensajeDeErrorBase(error)}`);
+  revalidatePath(RUTA);
+  return { ok: true, insertadas: data.length };
 }

@@ -147,12 +147,15 @@ test.describe("pipeline", () => {
     await expect(filasTabla(page).first()).toContainText("NO INTERESADO");
   });
 
-  test("Descargar e Importar Excel se ven pero están deshabilitados (Próximamente)", async ({ page }) => {
+  test("Descargar Excel e Importar Excel están activos (ya no dicen Próximamente)", async ({ page }) => {
     await entrarComo(page, "Ejecutivo E2E Excel");
     await page.goto("/pipeline");
-    for (const nombre of ["Descargar Excel, Próximamente", "Importar Excel, Próximamente"]) {
-      await expect(page.getByRole("button", { name: nombre })).toHaveAttribute("aria-disabled", "true");
+    for (const nombre of ["Descargar Excel", "Importar Excel"]) {
+      const boton = page.getByRole("button", { name: nombre, exact: true });
+      await expect(boton).toBeEnabled();
+      await expect(boton).not.toHaveAttribute("aria-disabled", "true");
     }
+    await expect(page.getByRole("button", { name: /Excel, Próximamente/ })).toHaveCount(0);
   });
 
   test("un gerente ve a su equipo en lectura, con columna y filtro de ejecutivo", async ({ page }) => {

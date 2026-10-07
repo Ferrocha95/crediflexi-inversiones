@@ -22,7 +22,7 @@ vi.mock("../../../src/servidor/supabase/servidor", () => ({
   },
 }));
 
-import { archivarProspecto, crearProspecto, editarProspecto, restaurarProspecto } from "../../../src/app/(app)/pipeline/acciones";
+import { archivarProspecto, confirmarImportacion, crearProspecto, editarProspecto, restaurarProspecto } from "../../../src/app/(app)/pipeline/acciones";
 import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
 import { MENSAJE_FORMA_INVALIDA } from "../../../src/aplicacion/pipeline/entrada";
 import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
@@ -35,6 +35,7 @@ const llamadas = {
   editar: () => editarProspecto(ID, valido),
   archivar: () => archivarProspecto(ID),
   restaurar: () => restaurarProspecto(ID),
+  confirmarImportacion: () => confirmarImportacion([{ fila: 4, datos: valido }]),
 };
 
 beforeEach(() => {
@@ -46,13 +47,41 @@ beforeEach(() => {
 describe.each(Object.entries(llamadas))("acción %s", (_nombre, llamar) => {
   it("con un Host que no es local responde el mensaje del guardia sin tocar la base", async () => {
     encabezados.host = "crediflexi.example";
-    expect(await llamar()).toEqual({ ok: false, mensaje: MENSAJE_HOST_NO_LOCAL, errores: {} });
+    expect(await llamar()).toMatchObject({ ok: false, mensaje: MENSAJE_HOST_NO_LOCAL });
     expect(base.llamadas).toBe(0);
   });
 
   it("sin usuario activo responde que la sesión expiró", async () => {
     sesion.activo = false;
-    expect(await llamar()).toEqual({ ok: false, mensaje: MENSAJE_SESION_EXPIRADA, errores: {} });
+    expect(await llamar()).toMatchObject({ ok: false, mensaje: MENSAJE_SESION_EXPIRADA });
+    expect(base.llamadas).toBe(0);
+  });
+});
+
+describe("confirmarImportacion: valida todo otra vez antes de la base", () => {
+  it.each([
+    ["no es una lista", { fila: 4, datos: valido }],
+    ["lista vacía", []],
+    ["más de 2,000 filas", Array.from({ length: 2001 }, (_, i) => ({ fila: i + 4, datos: valido }))],
+    ["con un ejecutivo_id", [{ fila: 4, datos: { ...valido, ejecutivo_id: ID } }]],
+    ["con una clave de más en la fila", [{ fila: 4, datos: valido, ejecutivo: "Otro" }]],
+    ["sin número de fila", [{ datos: valido }]],
+  ])("rechaza %s sin tocar la base", async (_n, filas) => {
+    const r = await confirmarImportacion(filas);
+    expect(r.ok).toBe(false);
+    expect(base.llamadas).toBe(0);
+  });
+
+  it("una sola fila inválida rechaza todo e indica cuál", async () => {
+    const r = await confirmarImportacion([
+      { fila: 4, datos: valido },
+      { fila: 9, datos: { ...valido, contacto: "123" } },
+    ]);
+    expect(r).toEqual({
+      ok: false,
+      mensaje: "No se importó ningún prospecto: la fila 9 no es válida (El contacto debe tener 10 dígitos.). Corrige el archivo y vuelve a intentar.",
+      filas: [9],
+    });
     expect(base.llamadas).toBe(0);
   });
 });

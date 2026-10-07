@@ -34,12 +34,21 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
       "src/app/(app)/page.tsx",
       "src/app/(app)/pipeline/page.tsx",
     ]);
-    expect(rutas.map(relativo)).toEqual(["src/app/(app)/cotizador/pdf/route.ts"]);
+    expect(rutas.map(relativo).sort()).toEqual([
+      "src/app/(app)/cotizador/pdf/route.ts",
+      "src/app/(app)/pipeline/excel/route.ts",
+      "src/app/(app)/pipeline/importar/route.ts",
+    ]);
     expect(acciones.map(relativo).sort()).toEqual(["src/app/(app)/cotizador/acciones.ts", "src/app/(app)/pipeline/acciones.ts"]);
   });
 
   it.each(paginas.map(relativo))("%s llama a exigirUsuario()", (f) => {
     expect(leer(path.join(process.cwd(), f))).toMatch(/await exigirUsuario\(\)/);
+  });
+
+  it.each(rutas.map(relativo))("%s repite el guardia de host en cada método", (f) => {
+    const funciones = funcionesExportadas(leer(path.join(process.cwd(), f)));
+    for (const { nombre, cuerpo } of funciones) expect(cuerpo, nombre).toMatch(/rechazoPorHost\(/);
   });
 
   it.each(rutas.map(relativo))("%s llama a usuarioActual() en cada método", (f) => {
