@@ -82,6 +82,19 @@ test.describe("comisiones", () => {
     await expect(page.getByText(/Sueldo base/)).toHaveCount(0);
   });
 
+  test("externo: bono por captación nueva aparte de la comisión (1,000,000 -> $15,000.00), sin fecha de pago", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/comisiones");
+    await page.getByText("Externo", { exact: true }).click();
+    await inversion(page, 1, "1,000,000", "12 meses", "2026-10-20");
+    const bono = page.getByRole("region", { name: "Bono por captación nueva" });
+    await expect(bono).toContainText("$15,000.00");
+    await expect(bono).not.toContainText(/fecha|por confirmar/i);
+    // La comisión no cambia: 1,000,000 × 2.838% = 28,380.00.
+    await expect(page.getByText("$28,380.00", { exact: true }).first()).toBeVisible();
+    await sinViolaciones(page);
+  });
+
   test("gerente: inversiones del equipo con el bono de gerente aparte (25,215.00 -> 7,564.50)", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/comisiones");

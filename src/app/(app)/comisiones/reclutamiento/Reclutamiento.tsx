@@ -18,14 +18,14 @@ import { simularReclutamiento } from "./acciones";
 const PAUSA_MS = 400;
 const RE_NOMBRE = /filename="([^"]+)"/;
 
-interface Escenario {
-  readonly nombre: string;
-  readonly montos: Readonly<Record<string, string>>;
-}
-
 interface Campos {
   readonly presenta: string;
-  readonly escenarios: readonly Escenario[];
+  /** "¿Cuánto captarías al mes?", tal como se escribe. */
+  readonly monto: string;
+  /** Plazo de la cifra grande; null = el de los textos. */
+  readonly plazo: number | null;
+  /** Personalizar: monto por plazo, tal como se escribe. */
+  readonly mezcla: Readonly<Record<string, string>>;
   /** Tal como se escribe; el servidor valida que sea un entero de 1 a 20. */
   readonly inversionesPorPlazo: string;
 }
@@ -33,13 +33,20 @@ interface Campos {
 /** Lo que se manda al servidor: inversiones por plazo como número (0 si no es un entero: el servidor lo rechaza). */
 const paraServidor = (c: Campos) => ({
   presenta: c.presenta,
-  escenarios: c.escenarios,
+  monto: c.monto,
+  ...(c.plazo === null ? {} : { plazo: c.plazo }),
+  mezcla: c.mezcla,
   inversionesPorPlazo: /^\d{1,3}$/.test(c.inversionesPorPlazo.trim()) ? Number(c.inversionesPorPlazo.trim()) : 0,
 });
+
+/** Solo los dígitos y el punto: "$1,000,000.00" y "1000000" son el mismo monto de ejemplo. */
+const mismoMonto = (escrito: string, valor: string) => escrito.replace(/[$,\s]/g, "").replace(/\.0{1,2}$/, "") === valor;
 
 export interface PropsReclutamiento {
   readonly textos: TextosReclutamiento;
   readonly plazos: readonly number[];
+  /** Montos de un toque: el valor sin comas y su etiqueta ("$1,000,000"). */
+  readonly montosEjemplo: readonly { readonly valor: string; readonly etiqueta: string; readonly escrito: string }[];
   readonly inicial: Campos;
   /** Calculado en el servidor con los campos iniciales; null si no se pudo. */
   readonly modeloInicial: ModeloReclutamiento | null;
@@ -51,10 +58,11 @@ type Mensaje = { readonly tipo: "estado" | "error"; readonly texto: string };
 const conMeses = (plantilla: string, meses: number) => plantilla.replace("{meses}", String(meses));
 
 /**
- * Modo reclutamiento. Lo escrito vive solo en el estado de React: no se guarda
- * en el navegador, en cookies, en la URL ni en logs.
+ * Modo reclutamiento: un solo dato visible y lo demás en "Personalizar". Lo
+ * escrito vive solo en el estado de React: no se guarda en el navegador, en
+ * cookies, en la URL ni en logs.
  */
-export function Reclutamiento({ textos: t, plazos, inicial, modeloInicial }: PropsReclutamiento) {
+export function Reclutamiento({ textos: t, plazos, montosEjemplo, inicial, modeloInicial }: PropsReclutamiento) {
   const id = useId();
   const [campos, setCampos] = useState<Campos>(inicial);
   const [version, setVersion] = useState(0);
@@ -63,14 +71,10 @@ export function Reclutamiento({ textos: t, plazos, inicial, modeloInicial }: Pro
   const [generando, setGenerando] = useState(false);
   const [mensajePdf, setMensajePdf] = useState<Mensaje | null>(null);
 
-  function cambiar(nuevos: Campos) {
-    setCampos(nuevos);
+  function cambiar(cambio: Partial<Campos>) {
+    setCampos((c) => ({ ...c, ...cambio }));
     setVersion((v) => v + 1);
     setMensajePdf(null);
-  }
-
-  function cambiarEscenario(i: number, cambio: Partial<Escenario>) {
-    cambiar({ ...campos, escenarios: campos.escenarios.map((e, j) => (j === i ? { ...e, ...cambio } : e)) });
   }
 
   useEffect(() => {
@@ -145,30 +149,157 @@ export function Reclutamiento({ textos: t, plazos, inicial, modeloInicial }: Pro
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full max-w-3xl flex-col gap-6">
       {sesionExpirada && <AvisoSesionExpirada siguiente="/comisiones/reclutamiento" />}
 
-      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:gap-8">
-        <form
-          className="superficie flex flex-col gap-5 rounded-2xl p-5 sm:p-6"
-          autoComplete="off"
-          onSubmit={(e) => e.preventDefault()}
-          aria-labelledby={`${id}-titulo`}
-        >
-          <h2 id={`${id}-titulo`} className="text-2xl font-bold">
-            {t.tituloEscenarios}
-          </h2>
-          <p className="-mt-3 text-sm text-hielo-tenue">{t.ayudaEscenarios}</p>
+      {/* El único dato visible: la captación del mes, con montos de un toque. */}
+      <form className="superficie flex flex-col gap-3 rounded-2xl p-5 sm:p-6" autoComplete="off" onSubmit={(e) => e.preventDefault()}>
+        <Campo id={`${id}-monto`} etiqueta={<span className="text-xl font-bold text-blanco">{t.preguntaMonto}</span>} ayuda={t.ayudaMonto}>
+          <Entrada
+            id={`${id}-monto`}
+            inputMode="decimal"
+            spellCheck={false}
+            className="text-2xl font-bold tabular-nums"
+            aria-describedby={`${id}-monto-ayuda`}
+            value={campos.monto}
+            onChange={(e) => cambiar({ monto: e.target.value })}
+          />
+        </Campo>
+        <div className="flex flex-wrap gap-2">
+          {montosEjemplo.map((x) => {
+            const activo = mismoMonto(campos.monto, x.valor);
+            return (
+              <button
+                key={x.valor}
+                type="button"
+                aria-pressed={activo}
+                onClick={() => cambiar({ monto: x.escrito })}
+                className={`min-h-11 rounded-full border px-4 font-semibold tabular-nums transition-colors duration-150 ${
+                  activo ? "border-verde-texto bg-verde-texto text-marino" : "border-hielo/35 text-hielo hover:border-hielo hover:text-blanco"
+                }`}
+              >
+                {x.etiqueta}
+              </button>
+            );
+          })}
+        </div>
+      </form>
 
-          <Campo id={`${id}-presenta`} etiqueta={t.presenta} ayuda={t.ayudaPresenta}>
-            <Entrada
-              id={`${id}-presenta`}
-              maxLength={60}
-              aria-describedby={`${id}-presenta-ayuda`}
-              value={campos.presenta}
-              onChange={(e) => cambiar({ ...campos, presenta: e.target.value })}
-            />
-          </Campo>
+      {actual === null ? (
+        <p className="text-hielo" aria-busy="true">
+          {TEXTOS.calculando}
+        </p>
+      ) : actual.tipo === "error" ? (
+        <Aviso role="alert" tono="error" titulo={TEXTOS.tituloErrorReclutamiento}>
+          <p>{actual.mensaje}</p>
+        </Aviso>
+      ) : null}
+
+      {m !== null && (
+        <>
+          {/* Resultado grande, en lenguaje simple. */}
+          <section aria-labelledby={`${id}-resultado`} className="superficie flex flex-col gap-1 rounded-2xl border-l-4 border-verde-texto p-5 sm:p-6">
+            <h2 id={`${id}-resultado`} className="text-lg font-semibold text-hielo">
+              {t.tituloResultado}
+            </h2>
+            <p data-testid="cifra-grande" className="text-5xl font-extrabold tracking-tight text-verde-texto tabular-nums">
+              {m.cifra.total}
+            </p>
+            <p className="text-lg">{m.cifra.detalle}</p>
+            {m.mezcla !== null && (
+              <ul className="mt-1 flex flex-col gap-1 text-sm text-hielo">
+                {m.mezcla.map((l) => (
+                  <li key={l.plazo} className="break-words">
+                    {l.plazo}: {l.operacion}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {/* Comparativo por plazos: cada barra es un botón que cambia la cifra grande. */}
+          <section aria-labelledby={`${id}-plazos`} className="flex flex-col gap-3">
+            <div>
+              <h2 id={`${id}-plazos`} className="text-xl font-bold">
+                {t.tituloComparativo}
+              </h2>
+              <p className="text-sm text-hielo-tenue">{t.ayudaComparativo}</p>
+            </div>
+            <ul className="flex flex-col gap-2">
+              {m.comparativo.map((p) => (
+                <li key={p.plazo}>
+                  <button
+                    type="button"
+                    aria-pressed={p.elegido}
+                    onClick={() => cambiar({ plazo: p.plazo })}
+                    className={`flex w-full min-h-11 flex-col gap-1.5 rounded-xl border p-3 text-left transition-colors duration-150 ${
+                      p.elegido ? "border-verde-texto bg-verde-texto/10" : "border-hielo/20 hover:border-hielo/50"
+                    }`}
+                  >
+                    <span className="flex items-baseline justify-between gap-3">
+                      <span className="font-bold">{p.etiqueta}</span>
+                      <span className="text-lg font-extrabold tabular-nums">{p.comision}</span>
+                    </span>
+                    {/* La cifra va en texto: la barra no depende del color. */}
+                    <span aria-hidden="true" className="h-3 w-full rounded-full bg-hielo/15">
+                      <span
+                        className={`block h-full rounded-full ${p.elegido ? "bg-verde-texto" : "bg-verde-texto/50"}`}
+                        style={{ width: `${p.fraccion * 100}%` }}
+                      />
+                    </span>
+                    <span className="break-words text-sm text-hielo">{p.linea}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {m.fraseVeces !== null && <p className="text-lg font-bold">{m.fraseVeces}</p>}
+          </section>
+
+          {/* Escalera de bonos, con la captación de arriba marcada. El aviso de incorporación va solo aquí. */}
+          <section aria-labelledby={`${id}-bonos`} className="flex flex-col gap-3">
+            <h2 id={`${id}-bonos`} className="text-xl font-bold">
+              {t.tituloBonos}
+            </h2>
+            <ol className="flex flex-col gap-2">
+              {m.escalera.map((x, i) => (
+                <li
+                  key={x.texto}
+                  aria-current={x.actual ? "true" : undefined}
+                  className={`rounded-xl border p-3 ${x.actual ? "border-2 border-verde-texto bg-verde-texto/10 font-bold" : "border-hielo/20 text-hielo"}`}
+                  style={{ marginInlineStart: `${i * 0.75}rem` }}
+                >
+                  {x.actual && <span className="mb-0.5 block text-sm text-verde-texto">{t.escalonActual}</span>}
+                  {x.texto}
+                </li>
+              ))}
+            </ol>
+            <p className="text-hielo">{m.avisoIncorporacion}</p>
+          </section>
+        </>
+      )}
+
+      {/* Lo demás, colapsado. <details> se abre con Enter o Espacio sin código extra. */}
+      <details className="superficie rounded-2xl p-5 sm:p-6">
+        <summary className="min-h-11 cursor-pointer content-center text-lg font-bold">{t.personalizar}</summary>
+        <div className="mt-4 flex flex-col gap-5">
+          <fieldset className="flex flex-col gap-3">
+            <legend className="font-bold">{t.tituloMezcla}</legend>
+            <p className="text-sm text-hielo-tenue">{t.ayudaMezcla}</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {plazos.map((p) => (
+                <Campo key={p} id={`${id}-mezcla-${p}`} etiqueta={conMeses(t.montoPlazo, p)}>
+                  <Entrada
+                    id={`${id}-mezcla-${p}`}
+                    inputMode="decimal"
+                    spellCheck={false}
+                    className="tabular-nums"
+                    value={campos.mezcla[String(p)] ?? ""}
+                    onChange={(e) => cambiar({ mezcla: { ...campos.mezcla, [String(p)]: e.target.value } })}
+                  />
+                </Campo>
+              ))}
+            </div>
+          </fieldset>
 
           <Campo id={`${id}-inversiones`} etiqueta={t.inversionesPorPlazo} ayuda={t.ayudaInversionesPorPlazo}>
             <Entrada
@@ -178,140 +309,59 @@ export function Reclutamiento({ textos: t, plazos, inicial, modeloInicial }: Pro
               className="max-w-24 tabular-nums"
               aria-describedby={`${id}-inversiones-ayuda`}
               value={campos.inversionesPorPlazo}
-              onChange={(e) => cambiar({ ...campos, inversionesPorPlazo: e.target.value })}
+              onChange={(e) => cambiar({ inversionesPorPlazo: e.target.value })}
             />
           </Campo>
 
-          {campos.escenarios.map((e, i) => (
-            <fieldset key={i} className="flex flex-col gap-3 rounded-xl border border-hielo/20 p-4">
-              <legend className="px-1 font-bold">{e.nombre.trim() === "" ? `#${i + 1}` : e.nombre}</legend>
-              <Campo id={`${id}-nombre-${i}`} etiqueta={t.nombreEscenario}>
-                <Entrada
-                  id={`${id}-nombre-${i}`}
-                  maxLength={40}
-                  value={e.nombre}
-                  onChange={(ev) => cambiarEscenario(i, { nombre: ev.target.value })}
-                />
-              </Campo>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {plazos.map((p) => (
-                  <Campo key={p} id={`${id}-monto-${i}-${p}`} etiqueta={conMeses(t.montoPlazo, p)}>
-                    <Entrada
-                      id={`${id}-monto-${i}-${p}`}
-                      inputMode="decimal"
-                      spellCheck={false}
-                      className="tabular-nums"
-                      value={e.montos[String(p)] ?? ""}
-                      onChange={(ev) => cambiarEscenario(i, { montos: { ...e.montos, [String(p)]: ev.target.value } })}
-                    />
-                  </Campo>
-                ))}
-              </div>
-            </fieldset>
-          ))}
-        </form>
+          <Campo id={`${id}-presenta`} etiqueta={t.presenta} ayuda={t.ayudaPresenta}>
+            <Entrada
+              id={`${id}-presenta`}
+              maxLength={60}
+              aria-describedby={`${id}-presenta-ayuda`}
+              value={campos.presenta}
+              onChange={(e) => cambiar({ presenta: e.target.value })}
+            />
+          </Campo>
+        </div>
+      </details>
 
-        <section aria-labelledby={`${id}-resultado`} className="flex flex-col gap-5">
-          <h2 id={`${id}-resultado`} className="text-2xl font-bold">
-            {t.tituloResultado}
-          </h2>
+      {m !== null && (
+        <>
+          {/* Avisos fijos y visibles, igual que en el PDF. */}
+          <div className="flex flex-col gap-2 rounded-xl border-2 border-hielo/60 bg-marino-alto/60 p-4 font-semibold">
+            <p>{m.avisoInversiones}</p>
+            <p>{m.aviso}</p>
+            <p>{m.avisoTasas}</p>
+          </div>
 
-          {actual === null ? (
-            <p className="text-hielo" aria-busy="true">
-              {TEXTOS.calculando}
-            </p>
-          ) : actual.tipo === "error" ? (
-            <Aviso role="alert" tono="error" titulo={TEXTOS.tituloErrorReclutamiento}>
-              <p>{actual.mensaje}</p>
-            </Aviso>
-          ) : null}
+          <section aria-labelledby={`${id}-fechas`} className="flex flex-col gap-1 text-sm">
+            <h2 id={`${id}-fechas`} className="font-bold">
+              {t.tituloFechas}
+            </h2>
+            {m.fechas.map((f) => (
+              <p key={f} className="text-hielo">
+                {f}
+              </p>
+            ))}
+          </section>
 
-          {m !== null && (
-            <>
-              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-1">
-                {m.escenarios.map((e, i) => (
-                  <li key={i} className="superficie flex flex-col gap-2 rounded-2xl p-5">
-                    <h3 className="font-bold">{e.nombre}</h3>
-                    <p className="text-sm text-hielo">{t.comisionTotal}</p>
-                    <p className="text-3xl font-extrabold text-verde-texto tabular-nums">{e.total}</p>
-                    <p className="mt-1 text-sm font-semibold text-hielo">{t.desglosePorPlazo}</p>
-                    {e.lineas.length === 0 ? (
-                      <p className="text-sm text-hielo-tenue">{t.sinCaptacion}</p>
-                    ) : (
-                      <ul className="flex flex-col gap-1.5 text-sm">
-                        {e.lineas.map((l) => (
-                          <li key={l.plazo}>
-                            <span className="font-semibold">
-                              {l.plazo}: {l.comision}
-                            </span>
-                            <span className="block text-hielo-tenue break-words">{l.operacion}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
-              </ul>
-
-              <section aria-labelledby={`${id}-grafica`} className="flex flex-col gap-3">
-                <h3 id={`${id}-grafica`} className="text-lg font-bold">
-                  {t.tituloGrafica}
-                </h3>
-                {/* Cada barra lleva su nombre y su cifra en texto: no depende del color. */}
-                <ul className="flex flex-col gap-2">
-                  {m.grafica.map((b, i) => (
-                    <li key={i} className="grid grid-cols-[minmax(0,8rem)_minmax(0,1fr)_auto] items-center gap-3">
-                      <span className="truncate text-sm">{b.nombre}</span>
-                      <span aria-hidden="true" className="h-3 rounded-full bg-hielo/15">
-                        <span className="block h-full rounded-full bg-verde-texto" style={{ width: `${b.fraccion * 100}%` }} />
-                      </span>
-                      <span className="font-bold tabular-nums">{b.total}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-
-              <section aria-labelledby={`${id}-fechas`} className="flex flex-col gap-2">
-                <h3 id={`${id}-fechas`} className="text-lg font-bold">
-                  {t.tituloFechas}
-                </h3>
-                {m.fechas.map((f) => (
-                  <p key={f} className="text-hielo">
-                    {f}
-                  </p>
-                ))}
-              </section>
-
-              {/* Aviso fijo y visible, igual que en el PDF. */}
-              <div className="flex flex-col gap-2 rounded-xl border-2 border-hielo/60 bg-marino-alto/60 p-4 font-semibold">
-                <p>{m.avisoInversiones}</p>
-                <p>{m.aviso}</p>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Boton
-                  className="self-start"
-                  icono={<Download aria-hidden="true" className="size-5" />}
-                  cargando={generando}
-                  onClick={descargarPdf}
-                >
-                  {t.descargarPdf}
-                </Boton>
-                {mensajePdf !== null &&
-                  (mensajePdf.tipo === "error" ? (
-                    <Aviso role="alert" tono="error" titulo={TEXTOS.tituloErrorPdf}>
-                      <p>{mensajePdf.texto}</p>
-                    </Aviso>
-                  ) : (
-                    <p role="status" className="text-hielo">
-                      {mensajePdf.texto}
-                    </p>
-                  ))}
-              </div>
-            </>
-          )}
-        </section>
-      </div>
+          <div className="flex flex-col gap-2">
+            <Boton className="self-start" icono={<Download aria-hidden="true" className="size-5" />} cargando={generando} onClick={descargarPdf}>
+              {t.descargarPdf}
+            </Boton>
+            {mensajePdf !== null &&
+              (mensajePdf.tipo === "error" ? (
+                <Aviso role="alert" tono="error" titulo={TEXTOS.tituloErrorPdf}>
+                  <p>{mensajePdf.texto}</p>
+                </Aviso>
+              ) : (
+                <p role="status" className="text-hielo">
+                  {mensajePdf.texto}
+                </p>
+              ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

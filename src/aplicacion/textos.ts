@@ -23,6 +23,15 @@ export const MARCADORES = [
   "mes",
   "fecha_pago",
   "n",
+  "captacion",
+  "comision",
+  "bono",
+  "meses_mayor",
+  "meses_menor",
+  "veces",
+  "desde",
+  "hasta",
+  "monto_minimo",
 ] as const;
 export type Marcador = (typeof MARCADORES)[number];
 
@@ -50,6 +59,14 @@ export const MARCADORES_POR_CAMPO = {
   "reclutamiento.aviso": ["fecha"],
   "reclutamiento.aviso_inversiones_por_plazo": ["n"],
   "reclutamiento.monto_plazo": ["meses"],
+  "reclutamiento.plazo_meses": ["meses"],
+  "reclutamiento.cifra_detalle": ["captacion", "meses", "comision", "bono"],
+  "reclutamiento.cifra_detalle_mezcla": ["captacion", "comision", "bono"],
+  "reclutamiento.frase_veces": ["meses_mayor", "veces", "meses_menor"],
+  "reclutamiento.escalon_sin_bono": ["desde"],
+  "reclutamiento.escalon_rango": ["desde", "hasta", "bono"],
+  "reclutamiento.escalon_ultimo": ["desde", "bono"],
+  "reclutamiento.frases": ["monto_minimo"],
   "reclutamiento.pdf_presenta": ["presenta"],
   "reclutamiento.fecha_quincena_1": ["dia_corte", "mes", "fecha_pago"],
   "reclutamiento.fecha_quincena_2": ["dia_siguiente", "mes", "fecha_pago"],
@@ -84,71 +101,112 @@ export interface TextosCotizacion {
 }
 
 /**
- * Textos del modo reclutamiento. Se redactan como cálculo ("se ganaría"),
- * nunca como promesa. El aviso con {fecha} es fijo y siempre visible.
+ * Textos del modo reclutamiento (Sprint 5: un solo dato, comparativo por
+ * plazos y escalera de bonos). Se redactan como cálculo ("se ganaría") o
+ * invitación, nunca como promesa. El aviso con {fecha} es fijo y siempre visible.
  */
 export interface TextosReclutamiento {
   readonly tituloPagina: string;
   readonly introduccion: string;
-  readonly presenta: string;
-  readonly ayudaPresenta: string;
-  readonly tituloEscenarios: string;
-  readonly ayudaEscenarios: string;
+  /** "¿Cuánto captarías al mes?": el único dato visible. */
+  readonly preguntaMonto: string;
+  readonly ayudaMonto: string;
+  readonly tituloResultado: string;
+  /** Plantillas de la cifra grande: con {captacion}, {meses}, {comision} y {bono}; la de la mezcla, sin {meses}. */
+  readonly cifraDetalle: string;
+  readonly cifraDetalleMezcla: string;
+  readonly tituloComparativo: string;
+  readonly ayudaComparativo: string;
+  /** Plantilla con {meses}. */
+  readonly plazoMeses: string;
+  /** Plantilla con {meses_mayor}, {veces} y {meses_menor}. */
+  readonly fraseVeces: string;
+  readonly tituloBonos: string;
+  /** Escalones de la escalera de bonos: con {desde}, {hasta} y {bono}. */
+  readonly escalonSinBono: string;
+  readonly escalonRango: string;
+  readonly escalonUltimo: string;
+  /** Marca el escalón de la captación del ejemplo. */
+  readonly escalonActual: string;
+  /** Aviso exacto que va solo debajo de la escalera de bonos. */
+  readonly avisoIncorporacion: string;
+  readonly personalizar: string;
+  readonly tituloMezcla: string;
+  readonly ayudaMezcla: string;
+  /** Plantilla con {meses}. */
+  readonly montoPlazo: string;
   /** Etiqueta y ayuda del campo "Inversiones por plazo" (entero de 1 a 20). */
   readonly inversionesPorPlazo: string;
   readonly ayudaInversionesPorPlazo: string;
-  readonly nombreEscenario: string;
-  /** Plantilla con {meses}. */
-  readonly montoPlazo: string;
-  readonly tituloResultado: string;
-  readonly comisionTotal: string;
-  readonly desglosePorPlazo: string;
-  readonly sinCaptacion: string;
+  readonly presenta: string;
+  readonly ayudaPresenta: string;
   readonly tituloFechas: string;
   /** Plantillas con {dia_corte}/{dia_siguiente}, {mes} y {fecha_pago}. */
   readonly fechaQuincena1: string;
   readonly fechaQuincena2: string;
-  readonly tituloGrafica: string;
-  /** Plantilla con {fecha}: la de las tablas vigentes. */
+  /** Plantilla con {fecha}: la de las tablas vigentes (aprobado por RH). */
   readonly aviso: string;
   /** Plantilla con {n}: cuántas inversiones por plazo se usaron en el cálculo. */
   readonly avisoInversionesPorPlazo: string;
+  readonly avisoTasas: string;
+  /** Aviso interno de la pantalla mientras RH no apruebe las frases (nunca en el PDF). */
+  readonly avisoFrasesRh: string;
   readonly pdfTitulo: string;
   /** Plantilla con {presenta}. */
   readonly pdfPresenta: string;
   readonly pdfFecha: string;
   readonly descargarPdf: string;
-  /** Tres escenarios editables de ejemplo: nombre y monto por plazo ("" = sin captación). */
-  readonly escenariosEjemplo: readonly { readonly nombre: string; readonly montos: Readonly<Record<string, string>> }[];
+  /** Montos de un toque, sin comas ("1000000"). */
+  readonly montosEjemplo: readonly string[];
+  readonly montoPorOmision: string;
+  /** Plazo de la cifra grande por omisión (meses). */
+  readonly plazoPorOmision: number;
+  /** Frases aspiracionales (pendientes de RH); la primera es la que se usa. Admiten {monto_minimo}. */
+  readonly frases: readonly string[];
+  readonly frasesAprobadasPorRh: boolean;
 }
 
-/** Clave del archivo (snake_case) -> clave de TextosReclutamiento (sin los escenarios de ejemplo). */
+/** Clave del archivo (snake_case) -> clave de TextosReclutamiento (solo los textos sueltos). */
 const CLAVES_RECLUTAMIENTO = {
   titulo_pagina: "tituloPagina",
   introduccion: "introduccion",
-  presenta: "presenta",
-  ayuda_presenta: "ayudaPresenta",
-  titulo_escenarios: "tituloEscenarios",
-  ayuda_escenarios: "ayudaEscenarios",
+  pregunta_monto: "preguntaMonto",
+  ayuda_monto: "ayudaMonto",
+  titulo_resultado: "tituloResultado",
+  cifra_detalle: "cifraDetalle",
+  cifra_detalle_mezcla: "cifraDetalleMezcla",
+  titulo_comparativo: "tituloComparativo",
+  ayuda_comparativo: "ayudaComparativo",
+  plazo_meses: "plazoMeses",
+  frase_veces: "fraseVeces",
+  titulo_bonos: "tituloBonos",
+  escalon_sin_bono: "escalonSinBono",
+  escalon_rango: "escalonRango",
+  escalon_ultimo: "escalonUltimo",
+  escalon_actual: "escalonActual",
+  aviso_incorporacion: "avisoIncorporacion",
+  personalizar: "personalizar",
+  titulo_mezcla: "tituloMezcla",
+  ayuda_mezcla: "ayudaMezcla",
+  monto_plazo: "montoPlazo",
   inversiones_por_plazo: "inversionesPorPlazo",
   ayuda_inversiones_por_plazo: "ayudaInversionesPorPlazo",
-  nombre_escenario: "nombreEscenario",
-  monto_plazo: "montoPlazo",
-  titulo_resultado: "tituloResultado",
-  comision_total: "comisionTotal",
-  desglose_por_plazo: "desglosePorPlazo",
-  sin_captacion: "sinCaptacion",
+  presenta: "presenta",
+  ayuda_presenta: "ayudaPresenta",
   titulo_fechas: "tituloFechas",
   fecha_quincena_1: "fechaQuincena1",
   fecha_quincena_2: "fechaQuincena2",
-  titulo_grafica: "tituloGrafica",
   aviso: "aviso",
   aviso_inversiones_por_plazo: "avisoInversionesPorPlazo",
+  aviso_tasas: "avisoTasas",
+  aviso_frases_rh: "avisoFrasesRh",
   pdf_titulo: "pdfTitulo",
   pdf_presenta: "pdfPresenta",
   pdf_fecha: "pdfFecha",
   descargar_pdf: "descargarPdf",
-} as const satisfies Readonly<Record<string, Exclude<keyof TextosReclutamiento, "escenariosEjemplo">>>;
+} as const satisfies Readonly<
+  Record<string, Exclude<keyof TextosReclutamiento, "montosEjemplo" | "montoPorOmision" | "plazoPorOmision" | "frases" | "frasesAprobadasPorRh">>
+>;
 
 type ClaveArchivoReclutamiento = keyof typeof CLAVES_RECLUTAMIENTO;
 
@@ -303,6 +361,11 @@ function texto(campo: string, permitidos: readonly Marcador[] = []) {
     });
 }
 
+/** Monto de ejemplo: sin comas, con máximo 2 decimales y mayor que cero. */
+const montoSinComas = z.string().regex(/^(?!0+(\.0+)?$)\d+(\.\d{1,2})?$/, {
+  error: 'El monto va sin comas, con máximo 2 decimales y mayor que cero (por ejemplo "1000000").',
+});
+
 function claveDesconocida(iss: { code: string; keys?: readonly string[] }): string | undefined {
   if (iss.code !== "unrecognized_keys" || iss.keys === undefined) return undefined;
   return `Clave desconocida: ${iss.keys.map((k) => `"${k}"`).join(", ")}. Revisa que esté bien escrita o quítala.`;
@@ -392,22 +455,11 @@ const esquemaTextos = z
               return [clave, texto(campo, permitidos)];
             }),
           ) as Record<ClaveArchivoReclutamiento, ReturnType<typeof texto>>),
-          escenarios_ejemplo: z
-            .array(
-              z.strictObject(
-                {
-                  nombre: texto("reclutamiento.escenarios_ejemplo.nombre"),
-                  montos: z.record(
-                    z.string().regex(/^[1-9]\d*$/, { error: "La clave debe ser un plazo en meses (por ejemplo \"12\")." }),
-                    z.string().regex(/^(\d+(\.\d{1,2})?)?$/, {
-                      error: 'El monto va sin comas, con máximo 2 decimales (por ejemplo "300000"), o vacío ("") si no hay captación.',
-                    }),
-                  ),
-                },
-                { error: claveDesconocida },
-              ),
-            )
-            .length(3, { error: "Deben ser exactamente tres escenarios de ejemplo." }),
+          montos_ejemplo: z.array(montoSinComas).min(1, { error: "Pon al menos un monto de ejemplo." }),
+          monto_por_omision: montoSinComas,
+          plazo_por_omision: z.string().regex(/^[1-9]\d*$/, { error: 'El plazo va en meses, como texto (por ejemplo "12").' }),
+          frases: z.array(texto("reclutamiento.frases", MARCADORES_POR_CAMPO["reclutamiento.frases"])).min(1, { error: "Pon al menos una frase." }),
+          frases_aprobadas_por_rh: z.boolean({ error: "Debe ser true o false." }),
         },
         { error: claveDesconocida },
       ),
@@ -462,8 +514,12 @@ const esquemaTextos = z
       reclutamiento: {
         ...(Object.fromEntries(
           (Object.entries(CLAVES_RECLUTAMIENTO) as [ClaveArchivoReclutamiento, string][]).map(([archivo, clave]) => [clave, t.reclutamiento[archivo]]),
-        ) as unknown as Omit<TextosReclutamiento, "escenariosEjemplo">),
-        escenariosEjemplo: t.reclutamiento.escenarios_ejemplo,
+        ) as unknown as Omit<TextosReclutamiento, "montosEjemplo" | "montoPorOmision" | "plazoPorOmision" | "frases" | "frasesAprobadasPorRh">),
+        montosEjemplo: t.reclutamiento.montos_ejemplo,
+        montoPorOmision: t.reclutamiento.monto_por_omision,
+        plazoPorOmision: Number(t.reclutamiento.plazo_por_omision),
+        frases: t.reclutamiento.frases,
+        frasesAprobadasPorRh: t.reclutamiento.frases_aprobadas_por_rh,
       },
     }),
   );

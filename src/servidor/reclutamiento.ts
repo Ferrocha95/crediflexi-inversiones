@@ -11,18 +11,16 @@ export const MENSAJE_FORMA_RECLUTAMIENTO =
 
 /**
  * Lo que se toma del navegador (pantalla y PDF). Los topes de largo protegen al
- * servidor; los recortes finos (80 y 40 caracteres) los hace el modelo.
+ * servidor; el recorte fino (60 caracteres) y las reglas los aplica el modelo.
  */
 export const esquemaReclutamiento = z.strictObject({
   presenta: z.string().max(200),
-  escenarios: z
-    .array(
-      z.strictObject({
-        nombre: z.string().max(100),
-        montos: z.record(z.string().max(3), z.string().max(40)).refine((m) => Object.keys(m).length <= 10),
-      }),
-    )
-    .length(3),
+  /** "¿Cuánto captarías al mes?", tal como se escribe. */
+  monto: z.string().max(40),
+  /** Opcional (por omisión, el de los textos); el modelo valida que esté en la tabla. */
+  plazo: z.number().int().min(1).max(600).optional(),
+  /** Opcional: monto por plazo de la mezcla (Personalizar). */
+  mezcla: z.record(z.string().regex(/^\d{1,3}$/), z.string().max(40)).refine((m) => Object.keys(m).length <= 10).optional(),
   /** Opcional (por omisión 1); el modelo valida que sea un entero de 1 a 20. */
   inversionesPorPlazo: z.number().int().min(-1000).max(1000).optional(),
 });

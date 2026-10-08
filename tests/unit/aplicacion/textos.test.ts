@@ -36,9 +36,9 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 }
 
 describe("cargarTextos: el archivo real", () => {
-  it("carga seed/textos_cotizacion.json versión 0.7", () => {
+  it("carga seed/textos_cotizacion.json versión 0.7.1", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.7");
+    expect(t.version).toBe("0.7.1");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente " +
@@ -470,46 +470,101 @@ describe("cargarTextos: el bloque pdf_pagina2", () => {
   });
 });
 
-describe("cargarTextos: el bloque reclutamiento (0.6)", () => {
+/** Lenguaje de promesa del modo reclutamiento (Sprint 5: suma los términos nuevos). */
+const RE_PROMESA_RECLUTAMIENTO =
+  /(?<![\p{L}\p{N}])(garant\p{L}*|asegur\p{L}*|sin riesgo|ingreso fijo|ganar[aá]s|recibir[aá]s|recibes|promesa|oferta|ilimitad\p{L}*|sin l[ií]mites?|dinero f[aá]cil|sin esfuerzo|libertad financiera|millonari\p{L}*)(?![\p{L}\p{N}])/iu;
+
+describe("cargarTextos: el bloque reclutamiento (0.7.1)", () => {
   const AVISO =
     "Ejemplo calculado con las tablas vigentes al {fecha}. Los ingresos dependen de lo que cada persona logre captar; no es una oferta de empleo ni una garantía de ingresos.";
 
-  it("trae el aviso fijo exacto, el título del PDF y los tres escenarios de ejemplo", () => {
+  it("conserva el aviso aprobado por RH y el de inversiones por plazo, y suma el de las tasas y el de incorporación", () => {
     const r = cargarBien(textosJson).reclutamiento;
     expect(r.aviso).toBe(AVISO);
-    expect(r.pdfTitulo).toBe("Propuesta de ingresos");
-    expect(r.inversionesPorPlazo).toBe("Inversiones por plazo");
     expect(r.avisoInversionesPorPlazo).toBe(
       "Cálculo con {n} inversión(es) por plazo: si el mismo monto se reparte en más inversiones, la tasa de cada una puede ser menor.",
     );
-    expect(r.tituloResultado).toBe("Lo que se ganaría en un mes");
-    expect(r.escenariosEjemplo.map((e) => e.nombre)).toEqual(["Escenario 1", "Escenario 2", "Escenario 3"]);
-    expect(r.escenariosEjemplo[2].montos).toEqual({ "6": "300000", "12": "500000", "18": "", "24": "500000" });
+    expect(r.avisoTasas).toBe("Las tasas están sujetas a cambio.");
+    expect(r.avisoIncorporacion).toBe(
+      "Al superar $1,000,000 en ingresos, se podrá evaluar la incorporación a la compañía, en caso de que exista interés por parte del colaborador externo.",
+    );
+  });
+
+  it("un solo dato visible, con montos de ejemplo y 12 meses por omisión", () => {
+    const r = cargarBien(textosJson).reclutamiento;
+    expect(r.preguntaMonto).toBe("¿Cuánto captarías al mes?");
+    expect(r.montosEjemplo).toEqual(["500000", "1000000", "1500000", "2000000", "3000000"]);
+    expect(r.montoPorOmision).toBe("1000000");
+    expect(r.plazoPorOmision).toBe(12);
+    expect(r.cifraDetalle).toBe("{captacion} a {meses} meses: comisión {comision} más bono {bono}");
+    expect(r.fraseVeces).toBe("A {meses_mayor} meses se ganaría {veces} veces lo de {meses_menor} meses.");
+    expect(r.escalonUltimo).toBe("{desde} en adelante: {bono} más la comisión");
+  });
+
+  it("las ocho frases propuestas, pendientes de RH", () => {
+    const r = cargarBien(textosJson).reclutamiento;
+    expect(r.frases).toEqual([
+      "Tu captación, tu ganancia.",
+      "Tú decides cuánto quieres ganar este mes.",
+      "Cada inversión que captas suma a tu comisión.",
+      "Plazos más largos, comisiones más altas.",
+      "Sin meta mensual: tú marcas el ritmo.",
+      "Empieza con tu primera inversión de {monto_minimo}.",
+      "Imagina cuánto podrías ganar este mes.",
+      "Súmate a una marca de inversión que ya opera en el mercado.",
+    ]);
+    expect(r.frasesAprobadasPorRh).toBe(false);
+    expect(r.avisoFrasesRh).toBe("Frases pendientes de aprobación de RH");
   });
 
   it("ningún texto del bloque usa lenguaje de promesa (la garantía y la oferta solo aparecen negadas en el aviso)", () => {
     const r = cargarBien(textosJson).reclutamiento;
-    const todo = Object.entries(r)
-      .filter(([k]) => k !== "escenariosEjemplo")
-      .map(([, v]) => String(v))
-      .join("\n")
-      .replace(AVISO, "");
-    expect(todo).not.toMatch(/(?<![\p{L}\p{N}])(garant\p{L}*|asegur\p{L}*|sin riesgo|ingreso fijo|ganar[aá]s|recibir[aá]s|recibes|promesa|oferta)(?![\p{L}\p{N}])/iu);
+    const todo = JSON.stringify(r).replace(AVISO, "");
+    expect(todo).not.toMatch(RE_PROMESA_RECLUTAMIENTO);
+  });
+
+  it.each([
+    "garantizado",
+    "Ingreso asegurado",
+    "sin riesgo",
+    "ingreso fijo",
+    "ganarás",
+    "ilimitado",
+    "sin límite",
+    "dinero fácil",
+    "sin esfuerzo",
+    "libertad financiera",
+    "millonario",
+  ])("la revisión de lenguaje detecta %s", (t) => {
+    expect(t).toMatch(RE_PROMESA_RECLUTAMIENTO);
   });
 
   it.each([
     ["aviso", "{fecha}"],
     ["aviso_inversiones_por_plazo", "{n}"],
     ["monto_plazo", "{meses}"],
+    ["plazo_meses", "{meses}"],
     ["pdf_presenta", "{presenta}"],
     ["fecha_quincena_1", "{dia_corte} {mes} {fecha_pago}"],
     ["fecha_quincena_2", "{dia_siguiente} {mes} {fecha_pago}"],
+    ["cifra_detalle", "{captacion} {meses} {comision} {bono}"],
+    ["cifra_detalle_mezcla", "{captacion} {comision} {bono}"],
+    ["frase_veces", "{meses_mayor} {veces} {meses_menor}"],
+    ["escalon_sin_bono", "{desde}"],
+    ["escalon_rango", "{desde} {hasta} {bono}"],
+    ["escalon_ultimo", "{desde} {bono}"],
   ])("reclutamiento.%s admite %s y nada más", (clave, marcadores) => {
     const j = copia();
     (j.reclutamiento as Record<string, unknown>)[clave] = `Texto ${marcadores}`;
     expect(cargarBien(j)).toBeDefined();
     (j.reclutamiento as Record<string, unknown>)[clave] = `Texto ${marcadores} {razon_social}`;
     expect(errorDe(j).detalles.join("\n")).toContain(`reclutamiento.${clave}`);
+  });
+
+  it("las frases solo admiten {monto_minimo}", () => {
+    const j = copia();
+    (j.reclutamiento as { frases: string[] }).frases[0] = "Desde {monto_minimo} {razon_social}";
+    expect(errorDe(j).detalles.join("\n")).toContain("reclutamiento.frases.0");
   });
 
   it("un texto sin marcadores no admite ninguno", () => {
@@ -520,14 +575,20 @@ describe("cargarTextos: el bloque reclutamiento (0.6)", () => {
 
   it("un monto de ejemplo con comas se rechaza con su ubicación", () => {
     const j = copia();
-    (j.reclutamiento as { escenarios_ejemplo: { montos: Record<string, string> }[] }).escenarios_ejemplo[0].montos["12"] = "300,000";
-    expect(errorDe(j).detalles.join("\n")).toContain("reclutamiento.escenarios_ejemplo.0.montos.12");
+    (j.reclutamiento as { montos_ejemplo: string[] }).montos_ejemplo[0] = "500,000";
+    expect(errorDe(j).detalles.join("\n")).toContain("reclutamiento.montos_ejemplo.0");
   });
 
-  it("deben ser exactamente tres escenarios de ejemplo", () => {
+  it("frases_aprobadas_por_rh debe ser true o false", () => {
     const j = copia();
-    (j.reclutamiento as { escenarios_ejemplo: unknown[] }).escenarios_ejemplo.pop();
-    expect(errorDe(j).detalles.join("\n")).toContain("reclutamiento.escenarios_ejemplo");
+    (j.reclutamiento as Record<string, unknown>).frases_aprobadas_por_rh = "no";
+    expect(errorDe(j).detalles.join("\n")).toContain("reclutamiento.frases_aprobadas_por_rh");
+  });
+
+  it("los escenarios de ejemplo ya no existen: son una clave desconocida", () => {
+    const j = copia();
+    (j.reclutamiento as Record<string, unknown>).escenarios_ejemplo = [];
+    expect(errorDe(j).detalles.join("\n")).toContain("escenarios_ejemplo");
   });
 
   it("una clave desconocida en el bloque se rechaza", () => {
@@ -535,15 +596,8 @@ describe("cargarTextos: el bloque reclutamiento (0.6)", () => {
     (j.reclutamiento as Record<string, unknown>).ingreso_garantizado = "No";
     expect(errorDe(j).detalles.join("\n")).toContain("ingreso_garantizado");
   });
-});
 
-describe("cargarTextos: revisión de RH aprobada (0.6.2)", () => {
-  it("el bloque reclutamiento ya no trae el aviso interno de revisión", () => {
-    expect(cargarBien(textosJson).reclutamiento).not.toHaveProperty("revisionInterna");
-    expect(textosJson.reclutamiento).not.toHaveProperty("revision_interna");
-  });
-
-  it("revision_interna ahora es una clave desconocida", () => {
+  it("revision_interna sigue siendo una clave desconocida", () => {
     const j = copia();
     (j.reclutamiento as Record<string, unknown>).revision_interna = "Uso interno";
     expect(errorDe(j).detalles.join("\n")).toContain("revision_interna");

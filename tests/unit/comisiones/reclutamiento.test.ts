@@ -14,7 +14,6 @@ vi.mock("../../../src/servidor/sesion", () => ({
   },
 }));
 
-import textosJson from "../../../seed/textos_cotizacion.json";
 import { simularReclutamiento } from "../../../src/app/(app)/comisiones/reclutamiento/acciones";
 import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
 import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
@@ -24,17 +23,18 @@ import { renderizarReclutamiento } from "../../../src/servidor/pdf/renderizar";
 import { MENSAJE_FORMA_RECLUTAMIENTO, type RespuestaReclutamiento } from "../../../src/servidor/reclutamiento";
 import { extraerTexto, imagenesPorPagina } from "../servidor/pdf/extraer";
 
-const ESCENARIOS = textosJson.reclutamiento.escenarios_ejemplo;
-const base = { peticion: 4, presenta: "Persona Sintética Uno", escenarios: ESCENARIOS };
+const base = { peticion: 4, presenta: "Persona Sintética Uno", monto: "1000000" };
 const AHORA = new Date("2026-10-08T12:00:00-06:00");
 const TIEMPO = 60_000;
 
 const AVISO_EXACTO =
   "Ejemplo calculado con las tablas vigentes al 7 de octubre de 2026. Los ingresos dependen de lo que cada persona logre captar; no es una oferta de empleo ni una garantía de ingresos.";
+const AVISO_INCORPORACION =
+  "Al superar $1,000,000 en ingresos, se podrá evaluar la incorporación a la compañía, en caso de que exista interés por parte del colaborador externo.";
 
-/** Lenguaje de promesa. "garantía" y "oferta" solo valen dentro del aviso exacto, que se quita antes de revisar. */
+/** Lenguaje de promesa (Sprint 5). "garantía" y "oferta" solo valen dentro del aviso exacto, que se quita antes de revisar. */
 const RE_PROHIBIDO_RECLUTAMIENTO =
-  /(?<![\p{L}\p{N}])(garant\p{L}*|asegur\p{L}*|sin riesgo|ingreso fijo|ganar[aá]s|recibir[aá]s|recibes|promesa|oferta)(?![\p{L}\p{N}])/iu;
+  /(?<![\p{L}\p{N}])(garant\p{L}*|asegur\p{L}*|sin riesgo|ingreso fijo|ganar[aá]s|recibir[aá]s|recibes|promesa|oferta|ilimitad\p{L}*|sin l[ií]mites?|dinero f[aá]cil|sin esfuerzo|libertad financiera|millonari\p{L}*)(?![\p{L}\p{N}])/iu;
 
 function modelo(r: RespuestaReclutamiento) {
   if (r.resultado.tipo !== "modelo") throw new Error(`Se esperaba el modelo: ${JSON.stringify(r.resultado)}`);
@@ -53,9 +53,16 @@ beforeEach(() => {
 });
 
 describe("acción simularReclutamiento", () => {
-  it("calcula los tres escenarios de ejemplo con la semilla y los textos reales", async () => {
+  it("calcula con la semilla y los textos reales: 1,000,000 a 12 meses -> 28,380.00 más bono 15,000.00", async () => {
     const m = modelo(await simularReclutamiento(base));
-    expect(m.escenarios.map((e) => e.total)).toEqual(["$7,920.00", "$15,930.00", "$45,420.00"]);
+    expect(m.cifra.total).toBe("$43,380.00");
+    expect(m.comparativo.map((c) => c.comision)).toEqual(["$12,900.00", "$28,380.00", "$43,860.00", "$59,340.00"]);
+  });
+
+  it("con plazo y mezcla", async () => {
+    expect(modelo(await simularReclutamiento({ ...base, plazo: 24 })).cifra.total).toBe("$74,340.00");
+    const mezcla = { "6": "500000", "12": "", "18": "", "24": "500000" };
+    expect(modelo(await simularReclutamiento({ ...base, mezcla })).cifra.total).toBe("$49,440.00");
   });
 
   it("sin usuario activo responde el aviso de sesión expirada", async () => {
@@ -70,26 +77,28 @@ describe("acción simularReclutamiento", () => {
   });
 
   it.each([
-    ["dos escenarios", { escenarios: ESCENARIOS.slice(0, 2) }],
+    ["sin monto", { monto: undefined }],
     ["clave de más", { extra: true }],
+    ["los escenarios viejos", { escenarios: [] }],
     ["presenta demasiado largo", { presenta: "P".repeat(201) }],
-    ["monto que no es texto", { escenarios: [{ nombre: "A", montos: { "12": 300000 } }, ...ESCENARIOS.slice(1)] }],
+    ["monto que no es texto", { monto: 1000000 }],
+    ["plazo que no es entero", { plazo: 12.5 }],
+    ["mezcla con un monto que no es texto", { mezcla: { "12": 300000 } }],
   ])("forma inválida (%s)", async (_, cambio) => {
     expect(error(await simularReclutamiento({ ...base, ...cambio })).mensaje).toBe(MENSAJE_FORMA_RECLUTAMIENTO);
   });
 });
 
-/** PDF real con los ejemplos (o los escenarios dados). */
+/** PDF real con 1,000,000 (o lo indicado). */
 async function pdf(cambio: Record<string, unknown> = {}) {
-  const r = await manejarPdfReclutamiento(
+  return manejarPdfReclutamiento(
     new Request("http://localhost:3000/comisiones/reclutamiento/pdf", {
       method: "POST",
       headers: { host: "localhost:3000", "content-type": "application/json" },
-      body: JSON.stringify({ presenta: base.presenta, escenarios: ESCENARIOS, ...cambio }),
+      body: JSON.stringify({ presenta: base.presenta, monto: base.monto, ...cambio }),
     }),
     { leer: () => leerParametrosReclutamiento(), renderizar: renderizarReclutamiento, ahora: () => AHORA },
   );
-  return r;
 }
 
 describe("PDF de reclutamiento (manejador)", () => {
@@ -114,7 +123,7 @@ describe("PDF de reclutamiento (manejador)", () => {
       new Request("http://localhost:3000/comisiones/reclutamiento/pdf", {
         method: "POST",
         headers: { host: "localhost:3000", origin: "https://otro.example.com" },
-        body: JSON.stringify({ presenta: "", escenarios: ESCENARIOS }),
+        body: JSON.stringify({ presenta: "", monto: "1000000" }),
       }),
       { leer: () => leerParametrosReclutamiento(), renderizar: renderizarReclutamiento, ahora: () => AHORA },
     );
@@ -128,39 +137,64 @@ describe("PDF de reclutamiento (manejador)", () => {
     expect((await r.json()).error).toBe(MENSAJE_FORMA_RECLUTAMIENTO);
   });
 
-  it("un monto menor al mínimo: 422 con el mensaje en español", async () => {
-    const r = await pdf({ escenarios: [{ nombre: "A", montos: { "12": "20000" } }, ...ESCENARIOS.slice(1)] });
+  it("una captación menor al mínimo: 422 con el mensaje en español", async () => {
+    const r = await pdf({ monto: "20000" });
     expect(r.status).toBe(422);
-    expect((await r.json()).error).toMatch(/^A, 12 meses: .*\$30,000\.00/);
+    expect((await r.json()).error).toMatch(/\$30,000\.00/);
   });
 });
 
-describe("PDF de reclutamiento (documento real)", () => {
+describe("PDF de reclutamiento (documento real, una página)", () => {
   async function texto(cambio: Record<string, unknown> = {}) {
     const r = await pdf(cambio);
     expect(r.status).toBe(200);
     return extraerTexto(new Uint8Array(await r.arrayBuffer()));
   }
 
-  it("tiene exactamente 1 página con título, presenta, totales, desglose, fechas, gráfica y el aviso exacto", { timeout: TIEMPO }, async () => {
+  it("con 1,000,000: EXACTAMENTE 1 página con la cifra grande, el comparativo por plazos, la escalera y los avisos", { timeout: TIEMPO }, async () => {
     const { paginas, texto: t } = await texto();
     expect(paginas).toBe(1);
     for (const esperado of [
       "Propuesta de ingresos",
       "Presenta: Persona Sintética Uno",
       "08/10/2026",
+      "Tu captación, tu ganancia.",
       "Lo que se ganaría en un mes",
-      "$7,920.00",
-      "$15,930.00",
-      "$45,420.00",
-      "$500,000.00 × 5.658% = $28,290.00",
-      "Lo captado del 1 al 15 de octubre se pagaría el 16/10/2026.",
-      "Lo captado del 16 al fin de octubre se pagaría el 01/11/2026.",
-      "Comparación de escenarios",
+      "$43,380.00",
+      "$1,000,000 a 12 meses: comisión $28,380.00 más bono $15,000.00",
+      "$1,000,000 × 1.29% = $12,900.00",
+      "$1,000,000 × 2.838% = $28,380.00",
+      "$1,000,000 × 4.386% = $43,860.00",
+      "$1,000,000 × 5.934% = $59,340.00",
+      "A 24 meses se ganaría 4.60 veces lo de 6 meses.",
+      "Bono por captación nueva del mes",
+      "Menos de $1,000,000: sin bono",
+      "De $1,000,000 a $1,499,999: $15,000 más la comisión",
+      "De $1,500,000 a $1,999,999: $20,000 más la comisión",
+      "$2,000,000 en adelante: $25,000 más la comisión",
+      "Con esta captación",
+      AVISO_INCORPORACION,
+      "Cálculo con 1 inversión(es) por plazo: si el mismo monto se reparte en más inversiones, la tasa de cada una puede ser menor.",
       AVISO_EXACTO,
+      "Las tasas están sujetas a cambio.",
     ]) {
       expect(t).toContain(esperado);
     }
+  });
+
+  it("el aviso de incorporación va una sola vez, justo debajo de la escalera de bonos", { timeout: TIEMPO }, async () => {
+    const { texto: t } = await texto();
+    expect(t.split(AVISO_INCORPORACION)).toHaveLength(2);
+    const fin = t.indexOf("$2,000,000 en adelante: $25,000 más la comisión");
+    const aviso = t.indexOf(AVISO_INCORPORACION);
+    expect(aviso).toBeGreaterThan(fin);
+    expect(aviso).toBeLessThan(t.indexOf(AVISO_EXACTO));
+  });
+
+  it("sin el aviso interno de las frases ni sueldo base", { timeout: TIEMPO }, async () => {
+    const { texto: t } = await texto();
+    expect(t).not.toContain("Frases pendientes de aprobación de RH");
+    expect(t.toLowerCase()).not.toContain("sueldo base");
   });
 
   it("pasa la revisión de lenguaje prohibido (fuera del aviso exacto)", { timeout: TIEMPO }, async () => {
@@ -169,42 +203,36 @@ describe("PDF de reclutamiento (documento real)", () => {
   });
 
   it("la revisión de lenguaje detecta una variante con promesa (la regla sí muerde)", () => {
-    expect(`Presenta: Ingreso fijo garantizado ${AVISO_EXACTO}`.split(AVISO_EXACTO).join(" ")).toMatch(RE_PROHIBIDO_RECLUTAMIENTO);
+    expect(`Presenta: Dinero fácil y sin límite ${AVISO_EXACTO}`.split(AVISO_EXACTO).join(" ")).toMatch(RE_PROHIBIDO_RECLUTAMIENTO);
   });
 
   it("una promesa en el nombre de quien presenta no llega al PDF: 422 con el mensaje en español", async () => {
-    const r = await pdf({ presenta: "Ingreso fijo garantizado" });
+    const r = await pdf({ presenta: "Libertad financiera" });
     expect(r.status).toBe(422);
     expect((await r.json()).error).toMatch(/quien presenta/);
   });
 
-  it("nunca muestra el sueldo base: el texto no trae \"sueldo base\" ni \"15,000\"", { timeout: TIEMPO }, async () => {
-    const { texto: t } = await texto();
-    expect(t.toLowerCase()).not.toContain("sueldo base");
-    expect(t).not.toContain("15,000");
+  it("con la mezcla de plazos: la cifra lo dice y cada plazo lleva su línea", { timeout: TIEMPO }, async () => {
+    const { paginas, texto: t } = await texto({ mezcla: { "6": "500000", "12": "", "18": "", "24": "500000" } });
+    expect(paginas).toBe(1);
+    expect(t).toContain("$1,000,000 repartidos entre plazos: comisión $34,440.00 más bono $15,000.00");
+    expect(t).toContain("$500,000 × 5.658% = $28,290.00");
   });
 
-  it("con 3 inversiones por plazo: 1 página, el aviso con el número y el reparto en el desglose", { timeout: TIEMPO }, async () => {
+  it("con 3 inversiones por plazo: 1 página, el aviso con el número y el reparto en la línea", { timeout: TIEMPO }, async () => {
     const { paginas, texto: t } = await texto({ inversionesPorPlazo: 3 });
     expect(paginas).toBe(1);
-    expect(t).toContain("Cálculo con 3 inversión(es) por plazo: si el mismo monto se reparte en más inversiones, la tasa de cada una puede ser menor.");
-    // Escenario 3, 24 meses: 500,000 en 3 -> 166,666.68 y 2 de 166,666.66, a 5.52% (primer tramo).
-    expect(t).toContain("1 × ($166,666.68 × 5.52% = $9,200.00) + 2 × ($166,666.66 × 5.52% = $9,200.00) = $27,600.00");
+    expect(t).toContain("Cálculo con 3 inversión(es) por plazo");
+    expect(t).toContain("1 × ($333,333.34 × 2.706% = $9,020.00) + 2 × ($333,333.33 × 2.706% = $9,020.00) = $27,060.00");
   });
 
-  it("con 20 inversiones por plazo y los textos al tope sigue en 1 página", { timeout: TIEMPO }, async () => {
-    const largo = (n: number) => "Nombre largo sintético ".repeat(10).slice(0, n);
-    const escenarios = ESCENARIOS.map(() => ({ nombre: largo(40), montos: { "6": "1000000.19", "12": "1000000.19", "18": "1000000.19", "24": "1000000.19" } }));
-    const { paginas, texto: t } = await texto({ presenta: largo(60), escenarios, inversionesPorPlazo: 20 });
+  it("al tope: 24 meses, captación enorme, mezcla en los cuatro plazos, 20 inversiones por plazo y quien presenta de 60 caracteres: 1 página", { timeout: TIEMPO }, async () => {
+    const largo = "Nombre largo sintético ".repeat(5).slice(0, 60);
+    const mezcla = { "6": "24999999.99", "12": "25000000", "18": "25000000", "24": "25000000" };
+    const { paginas, texto: t } = await texto({ presenta: largo, monto: "99999999.99", plazo: 24, mezcla, inversionesPorPlazo: 20 });
     expect(paginas).toBe(1);
     expect(t).toContain("Cálculo con 20 inversión(es) por plazo");
-  });
-
-  it("con nombres de escenario y quien presenta al tope sigue en 1 página", { timeout: TIEMPO }, async () => {
-    const largo = (n: number) => "Nombre largo sintético ".repeat(10).slice(0, n);
-    const escenarios = ESCENARIOS.map(() => ({ nombre: largo(40), montos: { "6": "300000", "12": "500000", "18": "700000", "24": "1500001" } }));
-    const { paginas } = await texto({ presenta: largo(80), escenarios });
-    expect(paginas).toBe(1);
+    expect(t).toContain(AVISO_INCORPORACION);
   });
 
   it("sin quien presenta no lleva esa línea", { timeout: TIEMPO }, async () => {
@@ -215,12 +243,7 @@ describe("PDF de reclutamiento (documento real)", () => {
 
 describe("PDF de reclutamiento: los dos logos juntos", () => {
   it("lleva una sola imagen en el encabezado: la combinada de 601 × 145 (public/logos-crediflexi-rami-sise.png)", { timeout: TIEMPO }, async () => {
-    const p = await leerParametrosReclutamiento();
-    if (!p.ok) throw new Error(p.error.mensaje);
-    const { modeloReclutamiento } = await import("../../../src/aplicacion/reclutamiento");
-    const m = modeloReclutamiento(p.valor.semilla, p.valor.textos, { presenta: "", escenarios: ESCENARIOS }, AHORA);
-    if (!m.ok) throw new Error(m.error.mensaje);
-    const bytes = await renderizarReclutamiento(m.valor);
-    expect(await imagenesPorPagina(bytes)).toEqual([[{ ancho: 601, alto: 145 }]]);
+    const r = await pdf();
+    expect(await imagenesPorPagina(new Uint8Array(await r.arrayBuffer()))).toEqual([[{ ancho: 601, alto: 145 }]]);
   });
 });

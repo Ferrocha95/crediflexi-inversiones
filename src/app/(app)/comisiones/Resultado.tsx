@@ -212,6 +212,19 @@ export function Resultado({ modelo: m }: { modelo: ModeloComisiones }) {
         </section>
       )}
 
+      {/* Bono de externos: aparte de la comisión; su fecha de pago no está definida y no se muestra. */}
+      {m.perfil === "externo" && m.bono !== null && (
+        <section aria-labelledby="titulo-bono-externo" className="flex flex-col gap-3">
+          <h3 id="titulo-bono-externo" className="text-lg font-bold">
+            {TEXTOS.tituloBonoExterno}
+          </h3>
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Cifra etiqueta={TEXTOS.tituloBonoExterno} valor={m.bono} fuerte />
+          </dl>
+          <p className="text-sm text-hielo-tenue">{TEXTOS.ayudaBonoExterno}</p>
+        </section>
+      )}
+
       {m.perfil === "interno" && (
         <section aria-labelledby="titulo-incentivos" className="flex flex-col gap-3">
           <h3 id="titulo-incentivos" className="text-lg font-bold">

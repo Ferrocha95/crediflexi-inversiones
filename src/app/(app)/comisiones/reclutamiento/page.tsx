@@ -1,7 +1,9 @@
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Info } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
+import { Decimal } from "../../../../domain/comun/decimal";
+import { formatearPesos } from "../../../../domain/comun/formato";
 import { opcionesComisiones } from "../../../../aplicacion/comisiones";
 import { limpiarCampo } from "../../../../aplicacion/campos";
 import { INVERSIONES_POR_PLAZO, modeloReclutamiento, TOPES_RECLUTAMIENTO } from "../../../../aplicacion/reclutamiento";
@@ -47,13 +49,17 @@ export default async function PaginaReclutamiento() {
 
   const { semilla, textos } = p.valor;
   const presenta = limpiarCampo(usuario.nombre, TOPES_RECLUTAMIENTO.presenta);
-  const inicial = { presenta, escenarios: textos.escenariosEjemplo, inversionesPorPlazo: String(INVERSIONES_POR_PLAZO.porOmision) };
-  const modelo = modeloReclutamiento(
-    semilla,
-    textos,
-    { presenta, escenarios: inicial.escenarios, inversionesPorPlazo: INVERSIONES_POR_PLAZO.porOmision },
-    new Date(),
-  );
+  // Montos de un toque: "$1,000,000" en el botón y "1,000,000" en la entrada.
+  const enPesos = (v: string) => formatearPesos(new Decimal(v)).replace(/\.00$/, "");
+  const montosEjemplo = textos.montosEjemplo.map((valor) => ({ valor, etiqueta: enPesos(valor), escrito: enPesos(valor).replace("$", "") }));
+  const inicial = {
+    presenta,
+    monto: enPesos(textos.montoPorOmision).replace("$", ""),
+    plazo: null,
+    mezcla: {},
+    inversionesPorPlazo: String(INVERSIONES_POR_PLAZO.porOmision),
+  };
+  const modelo = modeloReclutamiento(semilla, textos, { presenta, monto: inicial.monto, inversionesPorPlazo: INVERSIONES_POR_PLAZO.porOmision }, new Date());
 
   return (
     <div className="flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">
@@ -66,12 +72,21 @@ export default async function PaginaReclutamiento() {
           {TEXTOS.volverComisiones}
         </Link>
         <h1 className="text-4xl font-extrabold tracking-tight">{textos.tituloPagina}</h1>
+        {modelo.ok && modelo.valor.frases.length > 0 && <p className="text-2xl font-bold text-verde-texto">{modelo.valor.frases[0]}</p>}
         <p className="max-w-prose text-lg text-hielo">{textos.introduccion}</p>
+        {/* Solo para quien presenta: no sale en el PDF. */}
+        {modelo.ok && modelo.valor.avisoFrasesRh !== null && (
+          <p className="inline-flex items-center gap-1.5 self-start rounded-full border border-hielo/30 px-3 py-1 text-sm text-hielo-tenue">
+            <Info aria-hidden="true" className="size-4" />
+            {modelo.valor.avisoFrasesRh}
+          </p>
+        )}
       </header>
 
       <Reclutamiento
         textos={textos}
         plazos={opcionesComisiones(semilla).plazos}
+        montosEjemplo={montosEjemplo}
         inicial={inicial}
         modeloInicial={modelo.ok ? modelo.valor : null}
       />

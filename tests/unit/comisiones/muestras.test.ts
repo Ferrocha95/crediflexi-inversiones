@@ -1,12 +1,11 @@
 // Muestras del PDF "Propuesta de ingresos" para la revisión visual. Solo corre
 // con la variable MUESTRAS_DIR (fuera del repositorio). Datos sintéticos.
 //
-//   PowerShell: $env:MUESTRAS_DIR = "C:\dev\informes\sprint-4"; npx vitest run --project unit comisiones/muestras
+//   PowerShell: $env:MUESTRAS_DIR = "C:\dev\informes\sprint-5"; npx vitest run --project unit comisiones/muestras
 
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import textosJson from "../../../seed/textos_cotizacion.json";
 import { modeloReclutamiento } from "../../../src/aplicacion/reclutamiento";
 import { leerParametrosReclutamiento } from "../../../src/servidor/parametros";
 import { renderizarReclutamiento } from "../../../src/servidor/pdf/renderizar";
@@ -15,7 +14,7 @@ import { extraerTexto, paginaEnPng } from "../servidor/pdf/extraer";
 const DIRECTORIO = process.env.MUESTRAS_DIR;
 
 describe.runIf(DIRECTORIO !== undefined)("muestras del PDF de reclutamiento", () => {
-  it("propuesta de ingresos con los escenarios de ejemplo (1 y 3 inversiones por plazo), a 390 y 1280 px de ancho", { timeout: 120_000 }, async () => {
+  it("propuesta de ingresos con $1,000,000 (1 y 3 inversiones por plazo), a 390 y 1280 px de ancho", { timeout: 120_000 }, async () => {
     const dir = DIRECTORIO!;
     await mkdir(dir, { recursive: true });
     const p = await leerParametrosReclutamiento();
@@ -28,7 +27,7 @@ describe.runIf(DIRECTORIO !== undefined)("muestras del PDF de reclutamiento", ()
       const m = modeloReclutamiento(
         p.valor.semilla,
         p.valor.textos,
-        { presenta: "Persona Sintética Uno", escenarios: textosJson.reclutamiento.escenarios_ejemplo, inversionesPorPlazo: n },
+        { presenta: "Persona Sintética Uno", monto: "1000000", inversionesPorPlazo: n },
         new Date("2026-10-08T12:00:00-06:00"),
       );
       if (!m.ok) throw new Error(m.error.mensaje);

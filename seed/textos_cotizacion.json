@@ -1,5 +1,5 @@
 {
-  "version": "0.7",
+  "version": "0.7.1",
   "pie_base": "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente a 12 meses; la ganancia del plazo corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables son las del contrato que se firme.",
   "pie_aviso_fondo": "Crediflexi, fondo de inversión privado, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R., inscrita en el SIPRES de la CONDUSEF y sujeta a las disposiciones aplicables. Por ser un fondo de inversión privado, para invertir se requiere adquirir una acción de $1,000.00 MXN. Las tasas están sujetas a cambio.",
   "pie_sipres": "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES",
@@ -91,56 +91,59 @@
   "reclutamiento": {
     "titulo_pagina": "Propuesta de ingresos para externos",
     "introduccion": "Calcula, con las tablas vigentes, la comisión que se ganaría en un mes según lo que se capte en cada plazo. Sirve para explicar cómo funciona la comisión de una persona externa.",
-    "presenta": "Quién presenta",
-    "ayuda_presenta": "Sale en el PDF. No se guarda.",
-    "titulo_escenarios": "Escenarios de captación en un mes",
-    "ayuda_escenarios": "Escribe cuánto se captaría en un mes en cada plazo. Cada monto se reparte en partes iguales entre las inversiones por plazo.",
+    "pregunta_monto": "¿Cuánto captarías al mes?",
+    "ayuda_monto": "Escribe un monto o toca uno de los ejemplos.",
+    "montos_ejemplo": [
+      "500000",
+      "1000000",
+      "1500000",
+      "2000000",
+      "3000000"
+    ],
+    "monto_por_omision": "1000000",
+    "plazo_por_omision": "12",
+    "titulo_resultado": "Lo que se ganaría en un mes",
+    "cifra_detalle": "{captacion} a {meses} meses: comisión {comision} más bono {bono}",
+    "cifra_detalle_mezcla": "{captacion} repartidos entre plazos: comisión {comision} más bono {bono}",
+    "titulo_comparativo": "La misma captación en cada plazo",
+    "ayuda_comparativo": "Toca un plazo para ver su cifra arriba.",
+    "plazo_meses": "{meses} meses",
+    "frase_veces": "A {meses_mayor} meses se ganaría {veces} veces lo de {meses_menor} meses.",
+    "titulo_bonos": "Bono por captación nueva del mes",
+    "escalon_sin_bono": "Menos de {desde}: sin bono",
+    "escalon_rango": "De {desde} a {hasta}: {bono} más la comisión",
+    "escalon_ultimo": "{desde} en adelante: {bono} más la comisión",
+    "escalon_actual": "Con esta captación",
+    "aviso_incorporacion": "Al superar $1,000,000 en ingresos, se podrá evaluar la incorporación a la compañía, en caso de que exista interés por parte del colaborador externo.",
+    "personalizar": "Personalizar",
+    "titulo_mezcla": "Mezcla de plazos",
+    "ayuda_mezcla": "Opcional. Reparte la captación entre plazos; los montos deben sumar la captación del mes.",
+    "monto_plazo": "Captación a {meses} meses",
     "inversiones_por_plazo": "Inversiones por plazo",
     "ayuda_inversiones_por_plazo": "Número entero de 1 a 20. Si no se cambia, es 1.",
-    "nombre_escenario": "Nombre del escenario",
-    "monto_plazo": "Captación a {meses} meses",
-    "titulo_resultado": "Lo que se ganaría en un mes",
-    "comision_total": "Comisión total que se ganaría",
-    "desglose_por_plazo": "Desglose por plazo",
-    "sin_captacion": "Sin captación en este escenario.",
+    "presenta": "Quién presenta",
+    "ayuda_presenta": "Sale en el PDF. No se guarda.",
     "titulo_fechas": "Fechas de pago",
     "fecha_quincena_1": "Lo captado del 1 al {dia_corte} de {mes} se pagaría el {fecha_pago}.",
     "fecha_quincena_2": "Lo captado del {dia_siguiente} al fin de {mes} se pagaría el {fecha_pago}.",
-    "titulo_grafica": "Comparación de escenarios",
     "aviso": "Ejemplo calculado con las tablas vigentes al {fecha}. Los ingresos dependen de lo que cada persona logre captar; no es una oferta de empleo ni una garantía de ingresos.",
     "aviso_inversiones_por_plazo": "Cálculo con {n} inversión(es) por plazo: si el mismo monto se reparte en más inversiones, la tasa de cada una puede ser menor.",
+    "aviso_tasas": "Las tasas están sujetas a cambio.",
+    "frases": [
+      "Tu captación, tu ganancia.",
+      "Tú decides cuánto quieres ganar este mes.",
+      "Cada inversión que captas suma a tu comisión.",
+      "Plazos más largos, comisiones más altas.",
+      "Sin meta mensual: tú marcas el ritmo.",
+      "Empieza con tu primera inversión de {monto_minimo}.",
+      "Imagina cuánto podrías ganar este mes.",
+      "Súmate a una marca de inversión que ya opera en el mercado."
+    ],
+    "frases_aprobadas_por_rh": false,
+    "aviso_frases_rh": "Frases pendientes de aprobación de RH",
     "pdf_titulo": "Propuesta de ingresos",
     "pdf_presenta": "Presenta: {presenta}",
     "pdf_fecha": "Fecha",
-    "descargar_pdf": "Descargar PDF",
-    "escenarios_ejemplo": [
-      {
-        "nombre": "Escenario 1",
-        "montos": {
-          "6": "",
-          "12": "300000",
-          "18": "",
-          "24": ""
-        }
-      },
-      {
-        "nombre": "Escenario 2",
-        "montos": {
-          "6": "200000",
-          "12": "500000",
-          "18": "",
-          "24": ""
-        }
-      },
-      {
-        "nombre": "Escenario 3",
-        "montos": {
-          "6": "300000",
-          "12": "500000",
-          "18": "",
-          "24": "500000"
-        }
-      }
-    ]
+    "descargar_pdf": "Descargar PDF"
   }
 }
