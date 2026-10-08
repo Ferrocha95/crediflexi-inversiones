@@ -59,6 +59,7 @@ describe("rutaSinRefresco", () => {
     "/logo-blanco.png",
     "/logo-crediflexi.png",
     "/logo-encabezado-excel.png",
+    "/logos-crediflexi-rami-sise.png",
   ])("%s queda fuera del refresco de sesión", (ruta) => {
     expect(rutaSinRefresco(ruta)).toBe(true);
   });

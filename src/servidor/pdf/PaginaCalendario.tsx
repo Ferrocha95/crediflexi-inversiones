@@ -1,7 +1,7 @@
 import "server-only";
 import { Circle, Image, Line, Path, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import { Fragment } from "react";
-import { LIENZO_BENCHMARK, type BenchmarkPdf } from "../../aplicacion/benchmark";
+import { LIENZO_BENCHMARK, type BarraBenchmark, type BenchmarkPdf, type GrupoBenchmark } from "../../aplicacion/benchmark";
 import {
   LIENZO_FRANJA,
   LIENZO_GRAFICA,
@@ -26,7 +26,7 @@ const ALTO_LOGO = 26;
 /** Proporción del PNG del logo (1834 × 539). */
 const ANCHO_LOGO = (ALTO_LOGO * 1834) / 539;
 /** Alto de cada fila de la tabla y de los renglones de las tarjetas. */
-const ALTO_FILA = 12;
+const ALTO_FILA = 11;
 /** Ancho de cada columna: la mitad del ancho útil (540 pt) menos la separación. */
 const ANCHO_COLUMNA = LIENZO_GRAFICA.ancho;
 /** Alto de cada renglón del comparativo (una línea de 7.5 pt y su barra). */
@@ -138,9 +138,10 @@ const e = StyleSheet.create({
   notaGrafica: { marginTop: 2, fontSize: 6.5, color: COLOR.gris, lineHeight: 1.3 },
 
   benchmark: { width: ANCHO_COLUMNA },
-  benchmarkActualizado: { fontSize: 7.5, color: COLOR.gris },
-  barras: { marginTop: 3, marginBottom: 2 },
-  benchmarkNota: { marginTop: 2, fontSize: 7.5, color: COLOR.gris, lineHeight: 1.25 },
+  notasBenchmark: { marginTop: 6 },
+  benchmarkGrupo: { marginTop: 3, fontSize: 7.5, fontWeight: "bold", color: COLOR.marino },
+  barras: { marginTop: 2, marginBottom: 1 },
+  benchmarkNota: { marginTop: 1.5, fontSize: 7.5, color: COLOR.gris, lineHeight: 1.2 },
 
   /** Empuja el pie al final de la hoja. */
   relleno: { flexGrow: 1, minHeight: 8 },
@@ -300,7 +301,66 @@ function Grafica({ g }: { g: GraficaPdf }) {
   );
 }
 
-/** Comparativo de tasas: barras horizontales de mayor a menor, con notas y fuentes. */
+/** Alto de una fila con su fecha debajo (dos líneas de 7.5 pt). */
+const ALTO_BARRA_CON_FECHA = 18.5;
+const altoFila = (x: BarraBenchmark) => (x.fecha === null && x.periodo === null ? ALTO_BARRA : ALTO_BARRA_CON_FECHA);
+
+/**
+ * Un grupo del comparativo: título y barras de mayor a menor, cada una con su
+ * fecha debajo. El grupo histórico lleva sus avisos aquí mismo; los del grupo
+ * de última tasa van con las notas, en la columna izquierda (NotasBenchmark).
+ */
+function GrupoBarras({ g }: { g: GrupoBenchmark }) {
+  const historico = g.clave === "rendimiento_historico";
+  const alturas = g.barras.map(altoFila);
+  const y0 = alturas.map((_, i) => alturas.slice(0, i).reduce((a, b) => a + b, 0));
+  return (
+    <View wrap={false}>
+      <Text style={e.benchmarkGrupo}>{g.titulo}</Text>
+      {/* En SVG: el texto dentro de filas con flex se mide de más en react-pdf. */}
+      <Svg width={ANCHO_COLUMNA} height={alturas.reduce((a, b) => a + b, 0)} style={e.barras}>
+        {g.barras.map((x, i) => {
+          const y = y0[i];
+          const detalle = [x.fecha, x.periodo].filter((d) => d !== null).join(" · ");
+          return (
+            <Fragment key={x.nombre}>
+              <Text x={0} y={y + 7.5} fill={COLOR.marino} style={textoSvg(7.5, x.tuya ? "bold" : "normal")}>
+                {x.nombre}
+              </Text>
+              {/* Tu tasa: relleno sólido y borde grueso; las demás, contorno fino; el histórico, contorno punteado sobre blanco. */}
+              <Rect
+                x={INICIO_BARRA}
+                y={y + 1.5}
+                width={Math.max(x.ancho, 0.5)}
+                height={LIENZO_BENCHMARK.altoBarra}
+                fill={x.tuya ? COLOR.marino : historico ? COLOR.blanco : COLOR.fondoTenue}
+                stroke={x.tuya ? COLOR.marino : COLOR.gris}
+                strokeWidth={x.tuya ? 1.5 : 0.75}
+                strokeDasharray={historico ? "2 1.5" : undefined}
+              />
+              <Text x={ANCHO_COLUMNA} y={y + 7.5} textAnchor="end" fill={COLOR.marino} style={textoSvg(7.5, x.tuya ? "bold" : "normal")}>
+                {x.tasa}
+              </Text>
+              {detalle !== "" && (
+                <Text x={0} y={y + 17} fill={COLOR.gris} style={textoSvg(7.5)}>
+                  {detalle}
+                </Text>
+              )}
+            </Fragment>
+          );
+        })}
+      </Svg>
+      {historico &&
+        g.leyendas.map((n) => (
+          <Text key={n} style={e.benchmarkNota}>
+            {n}
+          </Text>
+        ))}
+    </View>
+  );
+}
+
+/** Comparativo de tasas, columna derecha: título y los dos grupos de barras. */
 function Benchmark({ b }: { b: BenchmarkPdf }) {
   return (
     <View style={e.benchmark}>
@@ -311,40 +371,30 @@ function Benchmark({ b }: { b: BenchmarkPdf }) {
         <Text style={e.omision}>{b.texto}</Text>
       ) : (
         <>
-          <Text style={e.benchmarkActualizado}>{b.actualizado}</Text>
-          {/* En SVG: el texto dentro de filas con flex se mide de más en react-pdf. */}
-          <Svg width={ANCHO_COLUMNA} height={b.barras.length * ALTO_BARRA} style={e.barras}>
-            {b.barras.map((x, i) => {
-              const y = i * ALTO_BARRA;
-              return (
-                <Fragment key={x.nombre}>
-                  <Text x={0} y={y + 7.5} fill={COLOR.marino} style={textoSvg(7.5, x.tuya ? "bold" : "normal")}>
-                    {x.nombre}
-                  </Text>
-                  {/* Tu tasa: relleno sólido y borde grueso; las demás, contorno fino y relleno claro. */}
-                  <Rect
-                    x={INICIO_BARRA}
-                    y={y + 1.5}
-                    width={Math.max(x.ancho, 0.5)}
-                    height={LIENZO_BENCHMARK.altoBarra}
-                    fill={x.tuya ? COLOR.marino : COLOR.fondoTenue}
-                    stroke={x.tuya ? COLOR.marino : COLOR.gris}
-                    strokeWidth={x.tuya ? 1.5 : 0.75}
-                  />
-                  <Text x={ANCHO_COLUMNA} y={y + 7.5} textAnchor="end" fill={COLOR.marino} style={textoSvg(7.5, x.tuya ? "bold" : "normal")}>
-                    {x.tasa}
-                  </Text>
-                </Fragment>
-              );
-            })}
-          </Svg>
-          {[...b.notas, b.fuentes].map((n) => (
-            <Text key={n} style={e.benchmarkNota}>
-              {n}
-            </Text>
+          {b.grupos.map((g) => (
+            <GrupoBarras key={g.clave} g={g} />
           ))}
         </>
       )}
+    </View>
+  );
+}
+
+/**
+ * Notas del comparativo, columna izquierda (debajo de la tabla, donde sobra
+ * espacio): fecha de actualización, avisos de la última tasa publicada,
+ * asteriscos y fuentes.
+ */
+function NotasBenchmark({ b }: { b: BenchmarkPdf }) {
+  if (b.tipo === "omitido") return null;
+  const vigentes = b.grupos.filter((g) => g.clave !== "rendimiento_historico").flatMap((g) => g.leyendas);
+  return (
+    <View style={e.notasBenchmark}>
+      {[b.actualizado, ...vigentes, ...b.notas, b.fuentes].map((n) => (
+        <Text key={n} style={e.benchmarkNota}>
+          {n}
+        </Text>
+      ))}
     </View>
   );
 }
@@ -374,6 +424,7 @@ export function PaginaCalendario({
         <View style={e.columna}>
           <Tarjeta t={m1} textos={textos} />
           <Text style={e.notaCentavos}>{textos.notaCentavos}</Text>
+          <NotasBenchmark b={modelo.benchmark} />
         </View>
         <View style={e.columna}>
           <Tarjeta t={m2} textos={textos} />

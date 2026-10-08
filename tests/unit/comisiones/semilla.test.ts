@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { cargarSemillaComisiones } from "../../../src/domain/comisiones/semilla";
 import { copiaSemilla, mal, semillaComisiones as s } from "./ayudas";
 
-describe("cargarSemillaComisiones con la semilla 0.8.1", () => {
+describe("cargarSemillaComisiones con la semilla 0.9", () => {
   it("lee la versión, el nivel vigente y los parámetros confirmados", () => {
-    expect(s.version).toBe("0.8.1");
+    expect(s.version).toBe("0.9");
     expect(s.generado).toBe("2026-10-07");
     expect(s.nivelVigente).toBe("N1");
     expect(s.renovacionesPaganComision).toBe(true);
@@ -46,7 +46,7 @@ describe("cargarSemillaComisiones con la semilla 0.8.1", () => {
     expect(s.tablas.renovacion.N3[1].tasas.get(18)?.toString()).toBe("0.0212175");
   });
 
-  it("solo toma los incentivos INTERNOS; los EXTERNOS están descartados", () => {
+  it("lee los incentivos INTERNOS", () => {
     expect(s.incentivosInternos.map((i) => [i.desde.toFixed(0), i.bono.toFixed(0)])).toEqual([
       ["1000000", "0"],
       ["1500000", "5000"],
@@ -54,6 +54,23 @@ describe("cargarSemillaComisiones con la semilla 0.8.1", () => {
     ]);
     expect(s.sueldoBaseInterno.toFixed(0)).toBe("15000");
     expect(s.externos.sueldoBase.toFixed(0)).toBe("0");
+  });
+
+  it("lee los tres rangos de EXTERNOS reactivados (Sprint 5), ordenados y sin tope en el último", () => {
+    expect(s.incentivosExternos.map((i) => [i.desde.toFixed(0), i.hasta?.toFixed(0) ?? null, i.bono.toFixed(0)])).toEqual([
+      ["1000000", "1499999", "15000"],
+      ["1500000", "1999999", "20000"],
+      ["2000000", null, "25000"],
+    ]);
+  });
+
+  it("las filas EXTERNOS ya no llevan la marca DESCARTADA ni la columna de cumplimiento", () => {
+    const externos = copiaSemilla().incentivos_propuesta.filter((f) => f.tipo === "EXTERNOS");
+    expect(externos).toHaveLength(3);
+    for (const f of externos) {
+      expect(f).not.toHaveProperty("cumplimiento");
+      expect(JSON.stringify(f)).not.toMatch(/DESCARTADA/i);
+    }
   });
 });
 
@@ -96,6 +113,27 @@ describe("cargarSemillaComisiones: errores en español con la ubicación", () =>
     const j = copiaSemilla();
     delete (j.incentivos_propuesta[0] as Record<string, unknown>).bono;
     expect(errorDe(j).detalles?.join("\n")).toContain("incentivos_propuesta.0.bono");
+  });
+
+  it("un incentivo EXTERNO sin bono numérico", () => {
+    const j = copiaSemilla();
+    const i = j.incentivos_propuesta.findIndex((f) => f.tipo === "EXTERNOS");
+    delete (j.incentivos_propuesta[i] as Record<string, unknown>).bono;
+    expect(errorDe(j).detalles?.join("\n")).toContain(`incentivos_propuesta.${i}.bono`);
+  });
+
+  it("rangos EXTERNOS que no son contiguos", () => {
+    const j = copiaSemilla();
+    const i = j.incentivos_propuesta.findIndex((f) => f.tipo === "EXTERNOS" && f.desde === 1500000);
+    j.incentivos_propuesta[i].desde = 1500001;
+    expect(errorDe(j).detalles?.join("\n")).toMatch(/incentivos_propuesta.*EXTERNOS.*contigu/);
+  });
+
+  it("el último rango EXTERNO debe quedar sin tope", () => {
+    const j = copiaSemilla();
+    const i = j.incentivos_propuesta.findIndex((f) => f.tipo === "EXTERNOS" && f.desde === 2000000);
+    (j.incentivos_propuesta[i] as Record<string, unknown>).hasta = 2999999;
+    expect(errorDe(j).detalles?.join("\n")).toMatch(/incentivos_propuesta.*EXTERNOS.*sin tope/);
   });
 
   it("el día de pago de la primera quincena debe ser el siguiente al último día", () => {

@@ -37,14 +37,14 @@ describe("leerParametrosCotizacion", () => {
   it("lee la semilla, las razones sociales y los textos reales", async () => {
     const r = await leerParametrosCotizacion();
     if (!r.ok) throw new Error(r.error.mensaje);
-    expect(r.valor.semilla.version).toBe("0.8.1");
+    expect(r.valor.semilla.version).toBe("0.9");
     expect(r.valor.semilla.generado).toBe("2026-10-07");
     expect(r.valor.semilla.entidades).toEqual(["CREDIFLEXI", "RAMI_SISE"]);
     expect(r.valor.razonesSociales.get("CREDIFLEXI")).toBe("CREDIFLEXI, S.A.P.I. DE C.V.");
     expect(r.valor.razonesSociales.get("RAMI_SISE")).toBe("RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R.");
     expect(r.valor.textos.version).toBe("0.6.2");
-    expect(r.valor.benchmark.version).toBe("0.2");
-    expect(r.valor.benchmark.actualizado_al).toBe("2026-10-07");
+    expect(r.valor.benchmark.version).toBe("0.4.1");
+    expect(r.valor.benchmark.actualizado_al).toBe("2026-10-08");
   });
 
   it("si falta el archivo de la semilla, lo dice en español", async () => {
@@ -114,6 +114,6 @@ describe("leerParametrosCotizacion", () => {
     await writeFile(ruta, JSON.stringify({ ...benchmarkJson, version: "9.9" }), "utf8");
     const despues = await leerParametrosCotizacion(rutas);
     if (!antes.ok || !despues.ok) throw new Error("Se esperaba leer bien");
-    expect([antes.valor.benchmark.version, despues.valor.benchmark.version]).toEqual(["0.2", "9.9"]);
+    expect([antes.valor.benchmark.version, despues.valor.benchmark.version]).toEqual(["0.4.1", "9.9"]);
   });
 });

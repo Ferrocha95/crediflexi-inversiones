@@ -74,8 +74,14 @@ const LINEA_SIPRES = textos.pieSipres.RAMI_SISE;
 const RE_PROHIBIDO =
   /(?<![\p{L}\p{N}])(garantiz\p{L}*|asegur\p{L}*|sin riesgo|libre de impuestos|neta|neto|sin comisiones|supervis\p{L}*|promesa|recib(es|ir[aá]s)|CNBV|CONDUSEF|SIPRES|SHCP)(?![\p{L}\p{N}])/iu;
 
-/** El texto sin la línea SIPRES exacta: lo que queda debe pasar la revisión de lenguaje. */
-const sinLineaSipres = (texto: string) => texto.split(LINEA_SIPRES).join(" ");
+/**
+ * Únicas excepciones exactas a la revisión de lenguaje: la línea SIPRES y las
+ * dos negaciones del grupo histórico del comparativo (seed/benchmark.json).
+ */
+const EXCEPCIONES_EXACTAS = [LINEA_SIPRES, "Rendimiento histórico, no garantizado", "Rendimientos pasados no garantizan resultados futuros"];
+
+/** El texto sin las excepciones exactas: lo que queda debe pasar la revisión de lenguaje. */
+const sinLineaSipres = (texto: string) => EXCEPCIONES_EXACTAS.reduce((x, e) => x.split(e).join(" "), texto);
 
 const CASOS = [
   {
@@ -259,6 +265,15 @@ describe("PDF real: la revisión de lenguaje detecta lo prohibido", () => {
     expect(sinLineaSipres(alterada)).toMatch(RE_PROHIBIDO);
     expect(sinLineaSipres(`${LINEA_SIPRES} Supervisada por la CNBV.`)).toMatch(RE_PROHIBIDO);
   });
+
+  it("las negaciones del grupo histórico se perdonan solo exactas; \"garantizado\" en cualquier otro lugar sigue prohibido", () => {
+    expect(sinLineaSipres("Rendimiento histórico, no garantizado")).not.toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres("Rendimientos pasados no garantizan resultados futuros.")).not.toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres("Rendimiento histórico garantizado")).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres("Rendimiento garantizado")).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres("Rendimientos futuros no garantizan nada")).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres("Rendimiento histórico, no garantizado. Tasa garantizada.")).toMatch(RE_PROHIBIDO);
+  });
 });
 
 describe("PDF real: las líneas de cuándo se paga la ganancia llevan el N correcto", () => {
@@ -311,18 +326,35 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
     return sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, OPCIONALES, ahora, datosPagina2(semillaReal, c.solicitud)));
   }
 
-  it("el 7 de octubre trae título, fecha en palabras, barras con su tasa, notas y fuentes en la página 2", { timeout: TIEMPO }, async () => {
-    const { paginas, porPagina } = await render(conFecha(new Date("2026-10-07T18:00:00Z")));
+  it("el 8 de octubre trae los dos grupos, cada barra con su tasa y su fecha, los avisos, los asteriscos y las fuentes", { timeout: TIEMPO }, async () => {
+    const { paginas, porPagina } = await render(conFecha(new Date("2026-10-08T18:00:00Z")));
     expect(paginas).toBe(2);
     const p2 = porPagina[1];
     expect(p2).toContain(P2.benchmarkTitulo);
-    expect(p2).toContain("Actualizado al 7 de octubre de 2026");
-    expect(p2).toContain("Fuentes: Banco de México, Nu México y Mercado Pago");
-    for (const t of ["Tu tasa 19.00%", "CETES 28 días", "6.09%", "Nu · Cajita Turbo (hasta $25,000)*", "13.00%", "Mercado Pago · hasta 12%**"]) {
+    expect(p2).toContain("Fuentes: Cetesdirecto, Mercado Pago, Nu México, Inbursa, BlackRock y State Street (S&P 500)");
+    for (const t of [
+      "Última tasa publicada",
+      "Rendimiento histórico, no garantizado",
+      "Tu tasa 19.00%",
+      "CETES 1 año",
+      "7.44%",
+      "publicada el 8 de octubre de 2026",
+      "Mercado Pago, hasta 12%*",
+      "Nu · Cajita Turbo (hasta $25,000)**",
+      "vigente hasta el 7 de octubre de 2026",
+      "Bancos (pagaré Inbursa)***",
+      "vigente hasta el 14 de enero de 2026",
+      "S&P 500 (10 años anualizado)",
+      "15.51%",
+      "al corte del 30 de junio de 2026",
+      "BlackRock · BLKGUB1 (12 meses)",
+      "al corte del 31 de diciembre de 2025",
+    ]) {
       expect(p2).toContain(t);
     }
-    for (const a of benchmarkReal.avisos) expect(p2).toContain(a);
-    expect(p2).not.toContain("BlackRock");
+    for (const a of [...benchmarkReal.avisos.tasa_vigente, ...benchmarkReal.avisos.rendimiento_historico]) expect(p2).toContain(a);
+    for (const n of ["* Hasta 12% anual", "** Hasta $25,000", "*** Tasa más alta del folleto"]) expect(p2).toContain(n);
+    for (const fuera of ["CETES 28 días", "NASDAQ", "Caja Libertad"]) expect(p2).not.toContain(fuera);
     expect(porPagina[0]).not.toContain(P2.benchmarkTitulo);
   });
 
@@ -331,23 +363,14 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
     expect(porPagina[1]).toContain("Tu tasa 20.00%");
   });
 
-  it("el 8 de octubre a las 00:30 en la Ciudad de México ya no trae Nu", { timeout: TIEMPO }, async () => {
-    const { porPagina } = await render(conFecha(new Date("2026-10-08T00:30:00-06:00")));
-    expect(porPagina[1]).not.toContain("Nu ·");
-    expect(porPagina[1]).toContain("Mercado Pago · hasta 12%*");
-    expect(porPagina[1]).toContain("Fuentes: Banco de México y Mercado Pago");
-  });
-
-  it("con 31 días de antigüedad omite el comparativo completo y lo dice", { timeout: TIEMPO }, async () => {
-    const { paginas, porPagina } = await render(conFecha(new Date("2026-11-07T12:00:00-06:00")));
-    expect(paginas).toBe(2);
-    expect(porPagina[1]).toContain("Comparativo no disponible: datos desactualizados");
-    expect(porPagina[1]).not.toContain("Actualizado al");
-    expect(porPagina[1]).not.toContain("CETES");
+  it("con el archivo tal cual, el 9 de octubre Nu (vigente hasta el 7) se dibuja con su fecha", { timeout: TIEMPO }, async () => {
+    const { porPagina } = await render(conFecha(new Date("2026-10-09T12:00:00-06:00")));
+    expect(porPagina[1]).toContain("Nu · Cajita 24/7");
+    expect(porPagina[1]).toContain("vigente hasta el 7 de octubre de 2026");
   });
 
   it("en dólares lo omite con su nota", { timeout: TIEMPO }, async () => {
-    const { paginas, porPagina } = await render(conFecha(new Date("2026-10-07T18:00:00Z"), "USD"));
+    const { paginas, porPagina } = await render(conFecha(new Date("2026-10-08T18:00:00Z"), "USD"));
     expect(paginas).toBe(2);
     expect(porPagina[1]).toContain(P2.benchmarkSoloPesos);
     expect(porPagina[1]).not.toContain("CETES");

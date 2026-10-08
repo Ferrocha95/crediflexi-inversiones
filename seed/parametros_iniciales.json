@@ -664,30 +664,27 @@
     },
     {
       "tipo": "EXTERNOS",
-      "cumplimiento": "100% META INTERNA",
       "sueldo_base": 0,
+      "bono": 15000,
       "desde": 1000000,
       "hasta": 1499999,
-      "condicion": "$15,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)",
-      "estado": "DESCARTADA (por confirmar)"
+      "condicion": "$15,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)"
     },
     {
       "tipo": "EXTERNOS",
-      "cumplimiento": "150% META INTERNA",
       "sueldo_base": 0,
+      "bono": 20000,
       "desde": 1500000,
       "hasta": 1999999,
-      "condicion": "$20,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)",
-      "estado": "DESCARTADA (por confirmar)"
+      "condicion": "$20,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)"
     },
     {
       "tipo": "EXTERNOS",
-      "cumplimiento": "200% META INTERNA",
       "sueldo_base": 0,
+      "bono": 25000,
       "desde": 2000000,
       "hasta": null,
-      "condicion": "$25,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)",
-      "estado": "DESCARTADA (por confirmar)"
+      "condicion": "$25,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)"
     }
   ],
   "parametros": {
@@ -735,7 +732,8 @@
     "externos": {
       "meta": null,
       "sueldo_base": 0,
-      "bono": null
+      "bono": "por captacion nueva del mes: filas EXTERNOS de incentivos_propuesta, siempre mas la comision (reactivado 2026-10-08)",
+      "fecha_de_pago_del_bono": "por definir (no se muestra)"
     },
     "monto_minimo_comision": 30000,
     "bono_gerente": {
@@ -758,5 +756,5 @@
     "D8 RESUELTA (2026-10-02): Pitagoras es la marca comercial de los servicios financieros; no cambia nada en el calculo ni en el PDF (usa el logo de Crediflexi).",
     "D9 RESUELTA (2026-10-07): la tabla USD se habilita (estatus CONFIRMADA) solo para RAMI_SISE, como en el folleto; sus tramos empiezan en dolares enteros (40,001; 80,001...)."
   ],
-  "version": "0.8.1"
+  "version": "0.9"
 }

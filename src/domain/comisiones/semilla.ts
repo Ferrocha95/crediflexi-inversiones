@@ -28,6 +28,13 @@ export interface IncentivoInterno {
   readonly bono: Decimal;
 }
 
+/** Rango del bono de externos por captación nueva del mes; `hasta` INCLUSIVO, null en el último. */
+export interface IncentivoExterno {
+  readonly desde: Decimal;
+  readonly hasta: Decimal | null;
+  readonly bono: Decimal;
+}
+
 export interface SemillaComisiones {
   readonly version: string;
   /** Fecha de la semilla (AAAA-MM-DD): la de las tablas vigentes. */
@@ -51,6 +58,8 @@ export interface SemillaComisiones {
   /** Ordenados por `desde`; el bono es el de la última fila cuyo `desde` no pasa de la captación. */
   readonly incentivosInternos: readonly IncentivoInterno[];
   readonly sueldoBaseInterno: Decimal;
+  /** Ordenados por `desde`, contiguos; el bono es el de la última fila cuyo `desde` no pasa de la captación. */
+  readonly incentivosExternos: readonly IncentivoExterno[];
   readonly externos: { readonly sueldoBase: Decimal };
   /** Bono de gerente (por confirmar): fracción de la comisión N1 de las inversiones de su equipo. */
   readonly bonoGerente: {
@@ -161,6 +170,28 @@ const incentivoInterno = z.looseObject({
   desde: montoEntero,
   hasta: montoEntero.nullable(),
 });
+const incentivoExterno = z.looseObject({
+  tipo: z.literal("EXTERNOS"),
+  bono: montoEntero,
+  desde: montoEntero,
+  hasta: montoEntero.nullable(),
+});
+
+/** Valida las filas de un tipo con su esquema y reporta cada problema con su índice en incentivos_propuesta. */
+function validarFilas(
+  filas: readonly { tipo: string }[],
+  tipo: string,
+  esquema: z.ZodType,
+  ctx: z.RefinementCtx,
+): void {
+  filas.forEach((f, i) => {
+    if (f.tipo !== tipo) return;
+    const r = esquema.safeParse(f);
+    if (!r.success) {
+      for (const issue of r.error.issues) ctx.addIssue({ code: "custom", path: ["incentivos_propuesta", i, ...issue.path], message: issue.message });
+    }
+  });
+}
 
 const esquemaComisiones = z
   .looseObject({
@@ -171,16 +202,11 @@ const esquemaComisiones = z
     incentivos_propuesta: z.array(incentivo),
   })
   .superRefine((s, ctx) => {
-    const internos = s.incentivos_propuesta.flatMap((f, i) => (f.tipo === "INTERNOS" ? [{ f, i }] : []));
-    if (internos.length === 0) {
+    if (!s.incentivos_propuesta.some((f) => f.tipo === "INTERNOS")) {
       ctx.addIssue({ code: "custom", path: ["incentivos_propuesta"], message: "Falta al menos una fila de incentivos INTERNOS." });
     }
-    for (const { f, i } of internos) {
-      const r = incentivoInterno.safeParse(f);
-      if (!r.success) {
-        for (const issue of r.error.issues) ctx.addIssue({ code: "custom", path: ["incentivos_propuesta", i, ...issue.path], message: issue.message });
-      }
-    }
+    validarFilas(s.incentivos_propuesta, "INTERNOS", incentivoInterno, ctx);
+    validarFilas(s.incentivos_propuesta, "EXTERNOS", incentivoExterno, ctx);
   })
   .transform((s, ctx): SemillaComisiones => {
     const internos = s.incentivos_propuesta
@@ -191,6 +217,26 @@ const esquemaComisiones = z
     if (sueldos.size > 1) {
       ctx.addIssue({ code: "custom", path: ["incentivos_propuesta"], message: "Todas las filas INTERNOS deben tener el mismo sueldo_base." });
       return z.NEVER;
+    }
+    const externos = s.incentivos_propuesta
+      .filter((f) => f.tipo === "EXTERNOS")
+      .map((f) => incentivoExterno.parse(f))
+      .sort((a, b) => a.desde.comparedTo(b.desde));
+    for (const [i, f] of externos.entries()) {
+      const siguiente = externos[i + 1];
+      if (siguiente === undefined) {
+        if (f.hasta !== null) {
+          ctx.addIssue({ code: "custom", path: ["incentivos_propuesta"], message: "El último rango EXTERNOS debe quedar sin tope (hasta = null)." });
+          return z.NEVER;
+        }
+      } else if (f.hasta === null || !siguiente.desde.equals(f.hasta.plus(1))) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["incentivos_propuesta"],
+          message: "Los rangos EXTERNOS deben ser contiguos: cada 'desde' es el 'hasta' del rango anterior más 1.",
+        });
+        return z.NEVER;
+      }
     }
     const p = s.parametros;
     return {
@@ -211,6 +257,7 @@ const esquemaComisiones = z
       },
       incentivosInternos: internos.map((f) => ({ desde: f.desde, bono: f.bono })),
       sueldoBaseInterno: internos[0].sueldo_base,
+      incentivosExternos: externos.map((f) => ({ desde: f.desde, hasta: f.hasta, bono: f.bono })),
       externos: { sueldoBase: p.externos.sueldo_base },
       bonoGerente: {
         porcentaje: p.bono_gerente.porcentaje,

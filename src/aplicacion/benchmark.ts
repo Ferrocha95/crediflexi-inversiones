@@ -7,9 +7,9 @@ import { rellenar } from "./rellenar";
 import { validar, type ResultadoApp } from "./resultado";
 import type { TextosPagina2 } from "./textos";
 
-// Comparativo de tasas de la página 2 del PDF (seed/benchmark.json). Todas las
-// reglas (antigüedad máxima, vigencia, fuente oficial) salen del archivo; aquí
-// solo se aplican y se les da forma de texto y de barras.
+// Comparativo de tasas de la página 2 del PDF (seed/benchmark.json 0.4). Todas
+// las reglas (antigüedad máxima, vigencia, grupos, palabras de la fecha) salen
+// del archivo; aquí solo se aplican y se les da forma de texto y de barras.
 
 const RE_FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
 const fechaIso = z
@@ -20,32 +20,51 @@ const textoNoVacio = z.string().trim().min(1, "No puede ir vacío.");
 /** Tasa anual como fracción decimal en texto ("0.0609" = 6.09%). */
 const tasaDecimal = z.string().regex(/^\d+(\.\d+)?$/, 'Escribe la tasa como fracción decimal en texto, por ejemplo "0.0609".');
 
-const esquemaInstrumento = z.strictObject({
-  id: textoNoVacio,
-  nombre: textoNoVacio,
-  grupo: textoNoVacio,
-  tasa_anual: tasaDecimal,
-  fecha_dato: fechaIso,
-  vigente_hasta: fechaIso.nullable(),
-  condiciones: textoNoVacio,
-  /** Si existe, el nombre lleva asterisco y la nota va debajo del comparativo. */
-  nota_asterisco: textoNoVacio.optional(),
-  fuente: z.strictObject({ nombre: textoNoVacio, nombre_corto: textoNoVacio, url: z.url() }),
-  verificacion: textoNoVacio,
-  incluir_en_pdf: z.boolean(),
-  motivo_si_no_se_incluye: textoNoVacio.optional(),
-});
+export const TIPOS_DATO = ["tasa_vigente", "rendimiento_historico"] as const;
+export type TipoDato = (typeof TIPOS_DATO)[number];
+const FECHA_TIPOS = ["publicacion", "vigencia_hasta", "corte"] as const;
+const porTipoDato = <T extends z.ZodType>(valor: T) => z.strictObject({ tasa_vigente: valor, rendimiento_historico: valor });
+
+const esquemaInstrumento = z
+  .strictObject({
+    id: textoNoVacio,
+    nombre: textoNoVacio,
+    grupo: textoNoVacio,
+    tipo_dato: z.enum(TIPOS_DATO, { error: `Usa uno de: ${TIPOS_DATO.join(", ")}.` }),
+    /** null: sin dato (nunca se dibuja). */
+    tasa_anual: tasaDecimal.nullable(),
+    moneda: z.enum(["MXN", "USD"], { error: "Usa MXN o USD." }),
+    periodo: textoNoVacio.nullable(),
+    fecha_dato: fechaIso.nullable(),
+    fecha_tipo: z.enum(FECHA_TIPOS, { error: `Usa uno de: ${FECHA_TIPOS.join(", ")}.` }).nullable(),
+    condiciones: textoNoVacio,
+    /** Si existe, el nombre lleva asterisco y la nota va debajo del comparativo. */
+    nota_asterisco: textoNoVacio.nullable(),
+    fuente: z.strictObject({ nombre: textoNoVacio, nombre_corto: textoNoVacio, url: z.url() }),
+    verificacion: z.enum(["OFICIAL", "SECUNDARIA", "SIN_DATO"], { error: "Usa OFICIAL, SECUNDARIA o SIN_DATO." }),
+    incluir_en_pdf: z.boolean(),
+    motivo_si_no_se_incluye: textoNoVacio.optional(),
+  })
+  .superRefine((i, ctx) => {
+    // Todo lo que se dibuja lleva su propia fecha junto a la barra.
+    if (!i.incluir_en_pdf || i.tasa_anual === null) return;
+    if (i.fecha_dato === null) ctx.addIssue({ code: "custom", path: ["fecha_dato"], message: "Un instrumento que va en el PDF necesita su fecha." });
+    if (i.fecha_tipo === null) ctx.addIssue({ code: "custom", path: ["fecha_tipo"], message: "Un instrumento que va en el PDF necesita su tipo de fecha." });
+  });
 
 const esquemaBenchmark = z.strictObject({
   version: textoNoVacio,
   actualizado_al: fechaIso,
   tipo_de_dato: textoNoVacio,
   reglas: z.strictObject({
-    dias_maximos_de_antiguedad: z.number().int().nonnegative(),
+    mostrar_fecha_por_instrumento: z.boolean(),
+    /** null: sin tope de antigüedad. */
+    dias_maximos_de_antiguedad: z.number().int().nonnegative().nullable(),
     omitir_si_vigente_hasta_ya_paso: z.boolean(),
-    solo_se_publica_lo_verificado_en_fuente_oficial: z.boolean(),
+    fecha_tipos: z.strictObject({ publicacion: textoNoVacio, vigencia_hasta: textoNoVacio, corte: textoNoVacio }),
+    grupos: porTipoDato(textoNoVacio),
   }),
-  avisos: z.array(textoNoVacio),
+  avisos: porTipoDato(z.array(textoNoVacio)),
   instrumentos: z.array(esquemaInstrumento),
 });
 
@@ -57,9 +76,6 @@ export function cargarBenchmark(json: unknown, archivo: string): ResultadoApp<Be
   return validar(esquemaBenchmark, json, "BENCHMARK_INVALIDO", archivo);
 }
 
-/** Valor de `verificacion` que cuenta como verificado en fuente oficial. */
-const VERIFICACION_OFICIAL = "OFICIAL";
-
 /** Lienzo de las barras, en puntos (columna derecha de la página 2). */
 export const LIENZO_BENCHMARK = { anchoEtiqueta: 128, anchoBarra: 88, altoBarra: 8 } as const;
 
@@ -67,10 +83,24 @@ export interface BarraBenchmark {
   /** Nombre del instrumento con su asterisco, o el rótulo "Tu tasa". */
   readonly nombre: string;
   readonly tasa: string;
-  /** Largo de la barra en puntos, proporcional a la tasa mayor. */
+  /** Largo de la barra en puntos, proporcional a la tasa mayor de los dos grupos. */
   readonly ancho: number;
   /** La tasa cotizada: se distingue por trazo y peso, no solo por color. */
   readonly tuya: boolean;
+  /** "publicada el 8 de octubre de 2026"; null en tu tasa o si el archivo no pide fechas. */
+  readonly fecha: string | null;
+  /** Periodo del rendimiento histórico, tal cual del archivo ("10 años al 30/06/2026"). */
+  readonly periodo: string | null;
+  readonly moneda: Moneda;
+}
+
+export interface GrupoBenchmark {
+  readonly clave: TipoDato;
+  readonly titulo: string;
+  /** De mayor a menor tasa. */
+  readonly barras: readonly BarraBenchmark[];
+  /** Los avisos del archivo para este grupo. */
+  readonly leyendas: readonly string[];
 }
 
 export type BenchmarkPdf =
@@ -78,9 +108,9 @@ export type BenchmarkPdf =
       readonly tipo: "grafica";
       readonly titulo: string;
       readonly actualizado: string;
-      /** De mayor a menor tasa. */
-      readonly barras: readonly BarraBenchmark[];
-      /** Avisos del archivo y, al final, la nota de cada asterisco. */
+      /** Primero la última tasa publicada (con tu tasa), luego el rendimiento histórico; un grupo sin instrumentos no va. */
+      readonly grupos: readonly GrupoBenchmark[];
+      /** La nota de cada asterisco, en el orden del archivo. */
       readonly notas: readonly string[];
       readonly fuentes: string;
     }
@@ -90,11 +120,22 @@ const MS_POR_DIA = 86_400_000;
 const diasEntre = (desde: string, hasta: string) =>
   Math.round((Date.parse(`${hasta}T00:00:00Z`) - Date.parse(`${desde}T00:00:00Z`)) / MS_POR_DIA);
 
+interface Fila {
+  readonly grupo: TipoDato;
+  readonly nombre: string;
+  readonly tasa: Decimal;
+  readonly tuya: boolean;
+  readonly fecha: string | null;
+  readonly periodo: string | null;
+  readonly moneda: Moneda;
+}
 
 /**
- * Comparativo de tu tasa contra los instrumentos publicables del archivo, a
- * la fecha de `ahora` en la Ciudad de México. Se omite completo en dólares,
- * con datos más viejos que la antigüedad máxima o sin instrumentos que mostrar.
+ * Comparativo de tu tasa contra los instrumentos del archivo, a la fecha de
+ * `ahora` en la Ciudad de México. Se dibuja todo instrumento con incluir_en_pdf
+ * verdadero y tasa no nula, con la última tasa publicada aunque ya no esté
+ * vigente, salvo que un interruptor del archivo diga otra cosa. Se omite
+ * completo en dólares (compara contra tasas en pesos) o sin instrumentos.
  */
 export function modeloBenchmark(
   b: Benchmark,
@@ -106,45 +147,75 @@ export function modeloBenchmark(
   if (cotizacion.moneda !== "MXN") return { tipo: "omitido", titulo, texto: t.benchmarkSoloPesos };
 
   const hoy = fechaIsoEnMexico(ahora);
-  const desactualizado = { tipo: "omitido", titulo, texto: t.benchmarkDesactualizado } as const;
-  if (diasEntre(b.actualizado_al, hoy) > b.reglas.dias_maximos_de_antiguedad) return desactualizado;
-
-  const publicables = b.instrumentos.filter(
-    (i) =>
-      i.incluir_en_pdf &&
-      (!b.reglas.solo_se_publica_lo_verificado_en_fuente_oficial || i.verificacion === VERIFICACION_OFICIAL) &&
-      // Comparación de textos AAAA-MM-DD: vale el día completo del vigente_hasta.
-      !(b.reglas.omitir_si_vigente_hasta_ya_paso && i.vigente_hasta !== null && i.vigente_hasta < hoy),
-  );
-  if (publicables.length === 0) return desactualizado;
+  const { reglas } = b;
+  const publicables = b.instrumentos.flatMap((i) => {
+    if (!i.incluir_en_pdf || i.tasa_anual === null || i.fecha_dato === null || i.fecha_tipo === null) return [];
+    // Antigüedad por instrumento, sobre su propia fecha (tope inclusivo); null = sin tope.
+    if (reglas.dias_maximos_de_antiguedad !== null && diasEntre(i.fecha_dato, hoy) > reglas.dias_maximos_de_antiguedad) return [];
+    // Comparación de textos AAAA-MM-DD: vale el día completo de la vigencia.
+    if (reglas.omitir_si_vigente_hasta_ya_paso && i.fecha_tipo === "vigencia_hasta" && i.fecha_dato < hoy) return [];
+    return [{ ...i, tasa_anual: i.tasa_anual, fecha_dato: i.fecha_dato, fecha_tipo: i.fecha_tipo }];
+  });
+  if (publicables.length === 0) return { tipo: "omitido", titulo, texto: t.benchmarkDesactualizado };
 
   // Asteriscos en el orden del archivo: "*", "**", ...
   const asteriscos = new Map<string, string>();
-  for (const i of publicables) if (i.nota_asterisco !== undefined) asteriscos.set(i.id, "*".repeat(asteriscos.size + 1));
+  for (const i of publicables) if (i.nota_asterisco !== null) asteriscos.set(i.id, "*".repeat(asteriscos.size + 1));
 
-  const filas = [
-    { nombre: t.benchmarkTuTasa, tasa: new Decimal(cotizacion.tasa), tuya: true },
-    ...publicables.map((i) => ({ nombre: `${i.nombre}${asteriscos.get(i.id) ?? ""}`, tasa: new Decimal(i.tasa_anual), tuya: false })),
+  const tuya: Fila = {
+    grupo: "tasa_vigente",
+    nombre: t.benchmarkTuTasa,
+    tasa: new Decimal(cotizacion.tasa),
+    tuya: true,
+    fecha: null,
+    periodo: null,
+    moneda: cotizacion.moneda,
+  };
+  const filas: Fila[] = [
+    tuya,
+    ...publicables.map((i) => ({
+      grupo: i.tipo_dato,
+      nombre: `${i.nombre}${asteriscos.get(i.id) ?? ""}`,
+      tasa: new Decimal(i.tasa_anual),
+      tuya: false,
+      fecha: reglas.mostrar_fecha_por_instrumento ? `${reglas.fecha_tipos[i.fecha_tipo]} ${fechaLarga(i.fecha_dato)}` : null,
+      periodo: i.periodo,
+      moneda: i.moneda,
+    })),
   ];
-  // sort es estable: con la misma tasa, tu tasa queda primero y los demás en el orden del archivo.
-  filas.sort((x, y) => y.tasa.comparedTo(x.tasa));
-  const mayor = filas[0].tasa;
+  // Una sola escala para los dos grupos.
+  const mayor = filas.reduce((m, f) => (f.tasa.greaterThan(m) ? f.tasa : m), new Decimal(0));
+
+  const grupos = TIPOS_DATO.flatMap((clave): GrupoBenchmark[] => {
+    const delGrupo = filas.filter((f) => f.grupo === clave);
+    if (!delGrupo.some((f) => !f.tuya)) return [];
+    // sort es estable: con la misma tasa, tu tasa queda primero y los demás en el orden del archivo.
+    delGrupo.sort((x, y) => y.tasa.comparedTo(x.tasa));
+    return [
+      {
+        clave,
+        titulo: reglas.grupos[clave],
+        barras: delGrupo.map((f) => ({
+          nombre: f.nombre,
+          tasa: formatearPorcentaje(f.tasa),
+          // Coordenada de dibujo (no es dinero): número.
+          ancho: mayor.isZero() ? 0 : f.tasa.div(mayor).times(LIENZO_BENCHMARK.anchoBarra).toNumber(),
+          tuya: f.tuya,
+          fecha: f.fecha,
+          periodo: f.periodo,
+          moneda: f.moneda,
+        })),
+        leyendas: b.avisos[clave],
+      },
+    ];
+  });
 
   return {
     tipo: "grafica",
     titulo,
     actualizado: rellenar(t.benchmarkActualizado, { fecha: fechaLarga(b.actualizado_al) }),
-    barras: filas.map((f) => ({
-      nombre: f.nombre,
-      tasa: formatearPorcentaje(f.tasa),
-      // Coordenada de dibujo (no es dinero): número.
-      ancho: mayor.isZero() ? 0 : f.tasa.div(mayor).times(LIENZO_BENCHMARK.anchoBarra).toNumber(),
-      tuya: f.tuya,
-    })),
-    notas: [
-      ...b.avisos,
-      ...publicables.flatMap((i) => (i.nota_asterisco === undefined ? [] : [`${asteriscos.get(i.id)} ${i.nota_asterisco}`])),
-    ],
+    grupos,
+    notas: publicables.flatMap((i) => (i.nota_asterisco === null ? [] : [`${asteriscos.get(i.id)} ${i.nota_asterisco}`])),
     fuentes: rellenar(t.benchmarkFuentes, { fuentes: listaEnEspanol([...new Set(publicables.map((i) => i.fuente.nombre_corto))]) }),
   };
 }

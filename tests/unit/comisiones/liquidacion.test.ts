@@ -137,8 +137,31 @@ describe("liquidarMes: externo", () => {
     expect(l.desbloqueo).toBeNull();
     expect(pesos(l.comisionPagable)).toBe("13530.00");
     expect(pesos(l.comisionBloqueada)).toBe("0.00");
-    expect(l.bono).toBeNull();
+    // Menos de 1,000,000 de captación nueva: sin bono.
+    expect(pesos(l.bono)).toBe("0.00");
     expect(pesos(l.sueldoBase)).toBe("0.00");
+  });
+
+  it("bono de externos aparte de la comisión: nuevas 600,000 + 400,000 = 1,000,000 -> bono 15,000.00", () => {
+    const l = externo([nueva("600000", 12), nueva("400000", 6, "2026-10-20")]);
+    // 600,000 × 2.706% = 16,236.00; 400,000 × 1.23% = 4,920.00.
+    expect(pesos(l.comisionPagable)).toBe("21156.00");
+    expect(pesos(l.bono)).toBe("15000.00");
+    // El bono no entra en los pagos por quincena: su fecha de pago no está definida.
+    expect(l.pagos.reduce((a, p) => a + Number(p.monto.toFixed(2)), 0)).toBe(21156);
+  });
+
+  it("solo la captación NUEVA cuenta para el bono: 1,500,000 nuevas + 1,000,000 de renovación -> 20,000.00", () => {
+    const l = externo([nueva("1500000", 12), renovacion("1000000", 12)]);
+    expect(pesos(l.bono)).toBe("20000.00");
+  });
+
+  it("solo renovaciones por 2,500,000: sin bono", () => {
+    expect(pesos(externo([renovacion("2500000", 12)]).bono)).toBe("0.00");
+  });
+
+  it("captación nueva de 2,000,000 en adelante: bono 25,000.00", () => {
+    expect(pesos(externo([nueva("2000000", 24)]).bono)).toBe("25000.00");
   });
 
   it("renovación 500,000 a 12 -> 6,765.00 pagable", () => {

@@ -153,7 +153,8 @@ describe("modeloComisiones: externo", () => {
     expect(m.pagos).toEqual([{ fecha: "01/11/2026", monto: "$13,530.00", inversiones: [1] }]);
     // El sueldo base solo se muestra al perfil interno con rol EJECUTIVO.
     expect(m.sueldoBase).toBeNull();
-    expect(m.bono).toBeNull();
+    // Bono de externos (Sprint 5): 500,000 de captación nueva no llega a 1,000,000.
+    expect(m.bono).toBe("$0.00");
     expect(m.bonoGerente).toBeNull();
   });
 });

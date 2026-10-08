@@ -1,4 +1,5 @@
 import { Decimal } from "../comun/decimal";
+import { bonoDeExterno } from "./bonoExterno";
 import { comisionDeInversion, type ComisionInversion } from "./comision";
 import { exitoComision, falloComision, type ResultadoComision } from "./errores";
 import { leerFecha, pagoDeFecha, pagoDeQuincena2, textoDeFecha, type FechaCivil } from "./fechas";
@@ -53,7 +54,11 @@ export interface Liquidacion {
   readonly comisionBloqueada: Decimal;
   /** Qué pasa con lo bloqueado al cierre del mes (parámetro, por confirmar); null si no hay bloqueo. */
   readonly notaBloqueo: string | null;
-  /** null si no aplica (GERENTE y externos, hasta definirlo). */
+  /**
+   * Bono por captación, aparte de la comisión (no entra en los pagos por
+   * quincena). EJECUTIVO: filas INTERNOS; externos: filas EXTERNOS, sobre la
+   * captación nueva del mes. null en GERENTE, hasta definirlo.
+   */
   readonly bono: Decimal | null;
   readonly sueldoBase: Decimal | null;
   readonly pagos: readonly PagoComision[];
@@ -115,6 +120,7 @@ export function liquidarMes(s: SemillaComisiones, e: EntradaLiquidacion): Result
   const captacionParaMeta = sumar(lineas.filter((l) => l.cuentaParaMeta).map((l) => l.monto));
 
   if (e.perfil === "externo") {
+    const captacionNueva = sumar(lineas.filter((l) => l.tipo === "nueva").map((l) => l.monto));
     return exitoComision({
       perfil: "externo",
       lineas,
@@ -124,7 +130,7 @@ export function liquidarMes(s: SemillaComisiones, e: EntradaLiquidacion): Result
       comisionPagable: comisionBruta,
       comisionBloqueada: CERO,
       notaBloqueo: null,
-      bono: null,
+      bono: bonoDeExterno(s, captacionNueva).bono,
       sueldoBase: s.externos.sueldoBase,
       pagos: agrupar(lineas, (i) => textoDeFecha(pagoDeFecha(s.pago, fechas[i]))),
     });
