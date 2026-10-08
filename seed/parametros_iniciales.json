@@ -639,6 +639,7 @@
       "tipo": "INTERNOS",
       "cumplimiento": "100% META",
       "sueldo_base": 15000,
+      "bono": 0,
       "desde": 1000000,
       "hasta": 1499999,
       "condicion": "$0 + Comisión de lo ingresado en el mes; < $1,000,000 se evaluará su estadía en la compañía"
@@ -647,6 +648,7 @@
       "tipo": "INTERNOS",
       "cumplimiento": "150% META",
       "sueldo_base": 15000,
+      "bono": 5000,
       "desde": 1500000,
       "hasta": 1999999,
       "condicion": "$5,000 + Comisión de lo ingresado en el mes; < $1,000,000 se evaluará su estadía en la compañía"
@@ -655,6 +657,7 @@
       "tipo": "INTERNOS",
       "cumplimiento": "200% META",
       "sueldo_base": 15000,
+      "bono": 10000,
       "desde": 2000000,
       "hasta": null,
       "condicion": "$10,000 + Comisión de lo ingresado en el mes; < $1,000,000 se evaluará su estadía en la compañía"
@@ -665,7 +668,8 @@
       "sueldo_base": 0,
       "desde": 1000000,
       "hasta": 1499999,
-      "condicion": "$15,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)"
+      "condicion": "$15,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)",
+      "estado": "DESCARTADA (por confirmar)"
     },
     {
       "tipo": "EXTERNOS",
@@ -673,7 +677,8 @@
       "sueldo_base": 0,
       "desde": 1500000,
       "hasta": 1999999,
-      "condicion": "$20,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)"
+      "condicion": "$20,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)",
+      "estado": "DESCARTADA (por confirmar)"
     },
     {
       "tipo": "EXTERNOS",
@@ -681,11 +686,16 @@
       "sueldo_base": 0,
       "desde": 2000000,
       "hasta": null,
-      "condicion": "$25,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)"
+      "condicion": "$25,000 + Comisión de lo ingresado en el mes; > $1,000,000 se evaluará su incorporación a la compañía (En caso que al externo le interese)",
+      "estado": "DESCARTADA (por confirmar)"
     }
   ],
   "parametros": {
-    "umbral_desbloqueo": "0.80",
+    "desbloqueo": {
+      "umbral": "0.80",
+      "base": "captacion nueva del mes, sin renovaciones",
+      "alcance": "toda la captacion del mes, nuevas y renovaciones"
+    },
     "porcentaje_sobre_red_externa": "0.30",
     "metas_mensuales": {
       "EJECUTIVO": 1000000,
@@ -698,8 +708,37 @@
       "incremento_de_capital"
     ],
     "renovaciones_cuentan_para_meta": false,
-    "renovaciones_pagan_comision": "POR_CONFIRMAR (editable)",
-    "comision_bloqueada_al_cierre_de_mes": "se_pierde (POR_CONFIRMAR, editable)"
+    "renovaciones_pagan_comision": true,
+    "renovaciones_pagan_comision_estado": "CONFIRMADA 2026-10-07",
+    "precision_tasas_comision": "completa, sin redondear",
+    "precision_tasas_comision_estado": "CONFIRMADA",
+    "comision_bloqueada_al_cierre_de_mes": "se_pierde (POR_CONFIRMAR, editable)",
+    "nivel_vigente": "N1",
+    "niveles_sin_uso": {
+      "N2": "sin uso (por confirmar)",
+      "N3": "sin uso (por confirmar)"
+    },
+    "pago_comisiones": {
+      "quincena_1": {
+        "desde_dia": 1,
+        "hasta_dia": 15,
+        "dia_de_pago": 16,
+        "mes_de_pago": "MISMO"
+      },
+      "quincena_2": {
+        "desde_dia": 16,
+        "hasta_dia": "FIN_DE_MES",
+        "dia_de_pago": 1,
+        "mes_de_pago": "SIGUIENTE"
+      }
+    },
+    "evento_de_captacion": "fecha de inicio de la inversion (por confirmar)",
+    "externos": {
+      "meta": null,
+      "sueldo_base": 0,
+      "bono": null
+    },
+    "monto_minimo_comision": 30000
   },
   "discrepancias_abiertas": [
     "D1 RESUELTA (2026-10-02): limites de tramo. Un monto exacto de $200,000 paga el tramo 30,000-200,000; el tramo siguiente empieza en $200,001 (pesos enteros, como la tabla). El pptx se equivocaba; coincide con el folleto y el Excel.",
@@ -712,5 +751,5 @@
     "D8 RESUELTA (2026-10-02): Pitagoras es la marca comercial de los servicios financieros; no cambia nada en el calculo ni en el PDF (usa el logo de Crediflexi).",
     "D9 RESUELTA (2026-10-07): la tabla USD se habilita (estatus CONFIRMADA) solo para RAMI_SISE, como en el folleto; sus tramos empiezan en dolares enteros (40,001; 80,001...)."
   ],
-  "version": "0.7"
+  "version": "0.8"
 }

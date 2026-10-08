@@ -31,7 +31,7 @@ describe("cargarSemilla: semilla real 0.7", () => {
   const semilla = cargarBien(semillaJson);
 
   it("conserva versión y fecha de la semilla", () => {
-    expect(semilla.version).toBe("0.7");
+    expect(semilla.version).toBe("0.8");
     expect(semilla.generado).toBe("2026-10-07");
   });
 

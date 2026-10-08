@@ -37,7 +37,7 @@ describe("leerParametrosCotizacion", () => {
   it("lee la semilla, las razones sociales y los textos reales", async () => {
     const r = await leerParametrosCotizacion();
     if (!r.ok) throw new Error(r.error.mensaje);
-    expect(r.valor.semilla.version).toBe("0.7");
+    expect(r.valor.semilla.version).toBe("0.8");
     expect(r.valor.semilla.generado).toBe("2026-10-07");
     expect(r.valor.semilla.entidades).toEqual(["CREDIFLEXI", "RAMI_SISE"]);
     expect(r.valor.razonesSociales.get("CREDIFLEXI")).toBe("CREDIFLEXI, S.A.P.I. DE C.V.");
