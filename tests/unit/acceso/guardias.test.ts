@@ -29,6 +29,7 @@ function funcionesExportadas(codigo: string): { nombre: string; cuerpo: string }
 describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => {
   it("encuentra las páginas, rutas y acciones esperadas", () => {
     expect(paginas.map(relativo).sort()).toEqual([
+      "src/app/(app)/comisiones/page.tsx",
       "src/app/(app)/cotizador/page.tsx",
       "src/app/(app)/diseno/page.tsx",
       "src/app/(app)/page.tsx",
@@ -39,7 +40,11 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
       "src/app/(app)/pipeline/excel/route.ts",
       "src/app/(app)/pipeline/importar/route.ts",
     ]);
-    expect(acciones.map(relativo).sort()).toEqual(["src/app/(app)/cotizador/acciones.ts", "src/app/(app)/pipeline/acciones.ts"]);
+    expect(acciones.map(relativo).sort()).toEqual([
+      "src/app/(app)/comisiones/acciones.ts",
+      "src/app/(app)/cotizador/acciones.ts",
+      "src/app/(app)/pipeline/acciones.ts",
+    ]);
   });
 
   it.each(paginas.map(relativo))("%s llama a exigirUsuario()", (f) => {

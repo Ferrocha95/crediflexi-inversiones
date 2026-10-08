@@ -1,4 +1,4 @@
-import { CalendarDays, Calculator, Kanban, Library, Target, TrendingUp, Wallet, type LucideIcon } from "lucide-react";
+import { CalendarDays, Calculator, HandCoins, Kanban, Library, Target, TrendingUp, Wallet, type LucideIcon } from "lucide-react";
 
 export interface Destino {
   readonly ruta: string;
@@ -10,10 +10,11 @@ export interface Destino {
   readonly disponible: boolean;
 }
 
-/** Destinos del menú, en orden. Hoy existen el cotizador y el pipeline. */
+/** Destinos del menú, en orden. Hoy existen el cotizador, el pipeline y las comisiones. */
 export const DESTINOS: readonly Destino[] = [
   { ruta: "/cotizador", etiqueta: "Cotizador", corta: "Cotizador", Icono: Calculator, disponible: true },
   { ruta: "/pipeline", etiqueta: "Pipeline", corta: "Pipeline", Icono: Kanban, disponible: true },
+  { ruta: "/comisiones", etiqueta: "Comisiones", corta: "Comisiones", Icono: HandCoins, disponible: true },
   { ruta: "/plan-semanal", etiqueta: "Plan semanal", corta: "Plan", Icono: CalendarDays, disponible: false },
   { ruta: "/proyeccion", etiqueta: "Proyección", corta: "Proyección", Icono: TrendingUp, disponible: false },
   { ruta: "/metas", etiqueta: "Metas", corta: "Metas", Icono: Target, disponible: false },

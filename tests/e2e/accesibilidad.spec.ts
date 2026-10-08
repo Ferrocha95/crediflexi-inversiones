@@ -52,7 +52,7 @@ test.describe("2. teclado en el menú", () => {
     await expect(page.locator(":focus")).toHaveAccessibleName("Crediflexi, ir al inicio");
 
     const menu = page.getByRole("navigation", { name: "Navegación principal" }).first();
-    const esperados = ["Cotizador", "Pipeline", "Plan semanal", "Proyección", "Metas", "Cartera", "Biblioteca"];
+    const esperados = ["Cotizador", "Pipeline", "Comisiones", "Plan semanal", "Proyección", "Metas", "Cartera", "Biblioteca"];
     for (const nombre of esperados) {
       await page.keyboard.press("Tab");
       const enfocado = page.locator(":focus");
@@ -63,8 +63,9 @@ test.describe("2. teclado en el menú", () => {
     const cotizador = menu.getByRole("link", { name: "Cotizador" });
     await expect(cotizador).toHaveAttribute("aria-current", "page");
     await expect(menu.getByRole("link", { name: "Pipeline" })).toHaveAttribute("href", "/pipeline");
+    await expect(menu.getByRole("link", { name: "Comisiones" })).toHaveAttribute("href", "/comisiones");
 
-    for (const nombre of esperados.slice(2)) {
+    for (const nombre of esperados.slice(3)) {
       const b = menu.getByRole("button", { name: new RegExp(nombre) });
       await expect(b).toHaveAttribute("aria-disabled", "true");
       await expect(b).toContainText("Próximamente");

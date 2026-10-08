@@ -5,6 +5,7 @@ import { cargarBenchmark, type Benchmark } from "../aplicacion/benchmark";
 import { cargarRazonesSociales } from "../aplicacion/entidades";
 import { error, ok, type ResultadoApp } from "../aplicacion/resultado";
 import { cargarTextos, type TextosCotizacion } from "../aplicacion/textos";
+import { cargarSemillaComisiones, type SemillaComisiones } from "../domain/comisiones/semilla";
 import { cargarSemilla } from "../domain/tasas/semilla";
 import type { Semilla } from "../domain/tasas/semilla.esquema";
 
@@ -94,4 +95,17 @@ export async function leerParametrosCotizacion(
   if (!benchmark.ok) return benchmark;
 
   return ok({ semilla: semilla.valor, razonesSociales: razonesSociales.valor, textos: textos.valor, benchmark: benchmark.valor });
+}
+
+/**
+ * Lee en cada llamada la parte de comisiones de la semilla (tablas, parámetros
+ * e incentivos). Va aparte de leerParametrosCotizacion: un error en las tablas
+ * de comisión no detiene al cotizador.
+ */
+export async function leerSemillaComisiones(ruta: string = RUTA_SEMILLA): Promise<ResultadoApp<SemillaComisiones>> {
+  const json = await leerJson(ruta);
+  if (!json.ok) return json;
+  const s = cargarSemillaComisiones(json.valor);
+  if (!s.ok) return error("SEMILLA_INVALIDA", `${nombreVisible(ruta)}: ${s.error.mensaje}`, s.error.detalles);
+  return ok(s.valor);
 }
