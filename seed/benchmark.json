@@ -1,5 +1,5 @@
 {
-  "version": "0.4.1",
+  "version": "0.4.2",
   "actualizado_al": "2026-10-08",
   "tipo_de_dato": "Última tasa o rendimiento publicado de cada instrumento; la fecha de cada uno se muestra junto a él",
   "reglas": {
@@ -190,6 +190,47 @@
         "url": "https://autoexpressinbursa.com/sites/gfi/document/folleto-pagare.pdf"
       },
       "verificacion": "SECUNDARIA",
+      "incluir_en_pdf": false,
+      "motivo_si_no_se_incluye": "El dueño pidió comparar con BBVA y Santander, a un año (8 de octubre de 2026)"
+    },
+    {
+      "id": "bbva_pagare_360",
+      "nombre": "BBVA · Pagaré 360 días",
+      "grupo": "Bancos",
+      "tipo_dato": "tasa_vigente",
+      "tasa_anual": "0.0340",
+      "moneda": "MXN",
+      "periodo": null,
+      "fecha_dato": "2026-10-01",
+      "fecha_tipo": "publicacion",
+      "condiciones": "Pagaré Tradicional a 360 días, más de $1 millón: tasa anual fija 3.40% antes de impuestos; GAT calculada el 01/10/2026, vigente hasta el 03/11/2026; tasas revisables diariamente",
+      "nota_asterisco": "Pagaré Tradicional a 360 días, para montos de más de $1,000,000.",
+      "fuente": {
+        "nombre": "BBVA México, GAT nominal y real de inversiones (cálculo del 01/10/2026)",
+        "nombre_corto": "BBVA",
+        "url": "https://portal.bbva.mx/siabinternet/Repositorio/import/doctos/analisis/00018907.pdf"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "santander_super_cete_360",
+      "nombre": "Santander · Pagaré 360 días",
+      "grupo": "Bancos",
+      "tipo_dato": "tasa_vigente",
+      "tasa_anual": "0.0575",
+      "moneda": "MXN",
+      "periodo": null,
+      "fecha_dato": "2026-09-08",
+      "fecha_tipo": "publicacion",
+      "condiciones": "Pagaré Súper CETE a 360 días, oferta exclusiva para dinero nuevo, desde $50,000: tasa bruta 5.75%; tasas variables ligadas a CETES 28; calculadas el 08/09/2026, vigentes al 08/03/2027",
+      "nota_asterisco": "Pagaré Súper CETE a 360 días: solo para dinero nuevo y desde $50,000; tasa variable ligada a CETES 28.",
+      "fuente": {
+        "nombre": "Santander México, GAT nominal y real de inversiones (calculadas el 08/09/2026)",
+        "nombre_corto": "Santander",
+        "url": "https://www.santander.com.mx/personas/inversiones/gats-inversiones"
+      },
+      "verificacion": "OFICIAL",
       "incluir_en_pdf": true
     },
     {
@@ -199,7 +240,7 @@
       "tipo_dato": "rendimiento_historico",
       "tasa_anual": "0.0817",
       "moneda": "MXN",
-      "periodo": "12 meses al 31/12/2025",
+      "periodo": "12 meses",
       "fecha_dato": "2025-12-31",
       "fecha_tipo": "corte",
       "condiciones": "Fondo de deuda gubernamental; rendimiento de 12 meses al 31/12/2025; capital en riesgo",
@@ -219,7 +260,7 @@
       "tipo_dato": "rendimiento_historico",
       "tasa_anual": "0.1551",
       "moneda": "USD",
-      "periodo": "10 años al 30/06/2026",
+      "periodo": "10 años",
       "fecha_dato": "2026-06-30",
       "fecha_tipo": "corte",
       "condiciones": "Rendimiento total anualizado a 10 años del índice, con dividendos reinvertidos, en dólares",
@@ -234,24 +275,23 @@
     },
     {
       "id": "nasdaq",
-      "nombre": "NASDAQ",
+      "nombre": "Nasdaq-100 (10 años anualizado)",
       "grupo": "NASDAQ",
       "tipo_dato": "rendimiento_historico",
-      "tasa_anual": null,
+      "tasa_anual": "0.2116",
       "moneda": "USD",
-      "periodo": null,
-      "fecha_dato": null,
-      "fecha_tipo": null,
-      "condiciones": "Por definir si es NASDAQ Composite o Nasdaq-100",
-      "nota_asterisco": null,
+      "periodo": "10 años",
+      "fecha_dato": "2026-09-29",
+      "fecha_tipo": "corte",
+      "condiciones": "Rendimiento anualizado a 10 años del índice Nasdaq-100, en dólares, con corte al 29/09/2026 (renglón NASDAQ-100® Index de la página de desempeño de Invesco QQQ)",
+      "nota_asterisco": "Rendimiento anual con interés compuesto, en dólares; renta variable con riesgo más alto y más volátil.",
       "fuente": {
-        "nombre": "Por definir",
-        "nombre_corto": "Por definir",
-        "url": "https://www.nasdaq.com/"
+        "nombre": "Invesco, desempeño de QQQ, renglón NASDAQ-100® Index (al 29/09/2026)",
+        "nombre_corto": "Invesco (Nasdaq-100)",
+        "url": "https://www.invesco.com/qqq-etf/en/performance.html"
       },
-      "verificacion": "SIN_DATO",
-      "incluir_en_pdf": false,
-      "motivo_si_no_se_incluye": "Solo encontré cifras de fuentes secundarias sin una fecha confiable y falta decidir qué índice; no puedo confirmar esto"
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
     },
     {
       "id": "caja_libertad",

@@ -25,7 +25,7 @@ import { FAMILIA } from "./fuente";
 
 const ALTO_LOGO = 26;
 /** Alto de cada fila de la tabla y de los renglones de las tarjetas. */
-const ALTO_FILA = 11;
+const ALTO_FILA = 10.5;
 /** Ancho de cada columna: la mitad del ancho útil (540 pt) menos la separación. */
 const ANCHO_COLUMNA = LIENZO_GRAFICA.ancho;
 /** Alto de cada renglón del comparativo (una línea de 7.5 pt y su barra). */
@@ -139,7 +139,7 @@ const e = StyleSheet.create({
   notaGrafica: { marginTop: 2, fontSize: 6.5, color: COLOR.gris, lineHeight: 1.3 },
 
   benchmark: { width: ANCHO_COLUMNA },
-  notasBenchmark: { marginTop: 6 },
+  notasBenchmark: { marginTop: 2 },
   benchmarkGrupo: { marginTop: 3, fontSize: 7.5, fontWeight: "bold", color: COLOR.marino },
   barras: { marginTop: 2, marginBottom: 1 },
   benchmarkNota: { marginTop: 1.5, fontSize: 7.5, color: COLOR.gris, lineHeight: 1.2 },
@@ -303,7 +303,7 @@ function Grafica({ g }: { g: GraficaPdf }) {
 }
 
 /** Alto de una fila con su fecha debajo (dos líneas de 7.5 pt). */
-const ALTO_BARRA_CON_FECHA = 20;
+const ALTO_BARRA_CON_FECHA = 18.5;
 const altoFila = (x: BarraBenchmark) => (x.detalle === null ? ALTO_BARRA : ALTO_BARRA_CON_FECHA);
 
 /**
@@ -342,7 +342,7 @@ function GrupoBarras({ g }: { g: GrupoBenchmark }) {
                 {x.tasa}
               </Text>
               {x.detalle !== null && (
-                <Text x={0} y={y + 17.5} fill={COLOR.gris} style={textoSvg(7.5)}>
+                <Text x={0} y={y + 16.5} fill={COLOR.gris} style={textoSvg(7.5)}>
                   {x.detalle}
                 </Text>
               )}

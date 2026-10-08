@@ -376,7 +376,7 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
     expect(p2).toContain(
       "Última tasa publicada de cada instrumento; la fecha de cada uno se indica junto a su barra. Actualizado al 8 de octubre de 2026.",
     );
-    expect(p2).toContain("Fuentes: Cetesdirecto, Mercado Pago, Nu México, Inbursa, BlackRock y State Street (S&P 500)");
+    expect(p2).toContain("Fuentes: Cetesdirecto, Mercado Pago, Nu México, BBVA, Santander, BlackRock, State Street (S&P 500) y Invesco (Nasdaq-100)");
     expect(p2).toContain("en dólares (USD)");
     for (const t of [
       "Última tasa publicada",
@@ -385,11 +385,18 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
       "CETES 1 año",
       "7.44%",
       "publicada el 8 de octubre de 2026",
-      "Mercado Pago, hasta 12%*",
-      "Nu · Cajita Turbo (hasta $25,000)**",
+      "Mercado Pago, hasta 12% (1)",
+      "Nu · Cajita Turbo (hasta $25,000) (2)",
       "vigente hasta el 7 de octubre de 2026",
-      "Bancos (pagaré Inbursa)***",
-      "vigente hasta el 14 de enero de 2026",
+      "BBVA · Pagaré 360 días (3)",
+      "3.40%",
+      "publicada el 1 de octubre de 2026",
+      "Santander · Pagaré 360 días (4)",
+      "5.75%",
+      "publicada el 8 de septiembre de 2026",
+      "Nasdaq-100 (10 años anualizado) (5)",
+      "21.16%",
+      "al corte del 29 de septiembre de 2026",
       "S&P 500 (10 años anualizado)",
       "15.51%",
       "al corte del 30 de junio de 2026",
@@ -399,8 +406,16 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
       expect(p2).toContain(t);
     }
     for (const a of [...benchmarkReal.avisos.tasa_vigente, ...benchmarkReal.avisos.rendimiento_historico]) expect(p2).toContain(a);
-    for (const n of ["* Hasta 12% anual", "** Hasta $25,000", "*** Tasa más alta del folleto"]) expect(p2).toContain(n);
-    for (const fuera of ["CETES 28 días", "NASDAQ", "Caja Libertad"]) expect(p2).not.toContain(fuera);
+    for (const n of [
+      "(1) Hasta 12% anual",
+      "(2) Hasta $25,000",
+      "(3) Pagaré Tradicional a 360 días",
+      "(4) Pagaré Súper CETE a 360 días",
+      "(5) Rendimiento anual con interés compuesto, en dólares; renta variable con riesgo más alto y más volátil.",
+    ]) {
+      expect(p2).toContain(n);
+    }
+    for (const fuera of ["CETES 28 días", "Inbursa", "Caja Libertad"]) expect(p2).not.toContain(fuera);
     expect(porPagina[0]).not.toContain(P2.benchmarkTitulo);
   });
 

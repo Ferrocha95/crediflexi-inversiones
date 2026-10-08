@@ -43,7 +43,7 @@ describe("leerParametrosCotizacion", () => {
     expect(r.valor.razonesSociales.get("CREDIFLEXI")).toBe("CREDIFLEXI, S.A.P.I. DE C.V.");
     expect(r.valor.razonesSociales.get("RAMI_SISE")).toBe("RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R.");
     expect(r.valor.textos.version).toBe("0.7.1");
-    expect(r.valor.benchmark.version).toBe("0.4.1");
+    expect(r.valor.benchmark.version).toBe("0.4.2");
     expect(r.valor.benchmark.actualizado_al).toBe("2026-10-08");
   });
 
@@ -114,6 +114,6 @@ describe("leerParametrosCotizacion", () => {
     await writeFile(ruta, JSON.stringify({ ...benchmarkJson, version: "9.9" }), "utf8");
     const despues = await leerParametrosCotizacion(rutas);
     if (!antes.ok || !despues.ok) throw new Error("Se esperaba leer bien");
-    expect([antes.valor.benchmark.version, despues.valor.benchmark.version]).toEqual(["0.4.1", "9.9"]);
+    expect([antes.valor.benchmark.version, despues.valor.benchmark.version]).toEqual(["0.4.2", "9.9"]);
   });
 });

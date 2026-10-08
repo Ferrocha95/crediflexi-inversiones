@@ -38,7 +38,7 @@ const esquemaInstrumento = z
     fecha_dato: fechaIso.nullable(),
     fecha_tipo: z.enum(FECHA_TIPOS, { error: `Usa uno de: ${FECHA_TIPOS.join(", ")}.` }).nullable(),
     condiciones: textoNoVacio,
-    /** Si existe, el nombre lleva asterisco y la nota va debajo del comparativo. */
+    /** Si existe, el nombre lleva su número de nota ("(1)") y la nota va debajo del comparativo. */
     nota_asterisco: textoNoVacio.nullable(),
     fuente: z.strictObject({ nombre: textoNoVacio, nombre_corto: textoNoVacio, url: z.url() }),
     verificacion: z.enum(["OFICIAL", "SECUNDARIA", "SIN_DATO"], { error: "Usa OFICIAL, SECUNDARIA o SIN_DATO." }),
@@ -77,10 +77,10 @@ export function cargarBenchmark(json: unknown, archivo: string): ResultadoApp<Be
 }
 
 /** Lienzo de las barras, en puntos (columna derecha de la página 2). */
-export const LIENZO_BENCHMARK = { anchoEtiqueta: 128, anchoBarra: 88, altoBarra: 8 } as const;
+export const LIENZO_BENCHMARK = { anchoEtiqueta: 128, anchoBarra: 88, altoBarra: 7 } as const;
 
 export interface BarraBenchmark {
-  /** Nombre del instrumento con su asterisco, o el rótulo "Tu tasa". */
+  /** Nombre del instrumento con su número de nota, o el rótulo "Tu tasa". */
   readonly nombre: string;
   readonly tasa: string;
   /** Largo de la barra en puntos, proporcional a la tasa mayor de los dos grupos. */
@@ -112,7 +112,7 @@ export type BenchmarkPdf =
       readonly actualizado: string;
       /** Primero la última tasa publicada (con tu tasa), luego el rendimiento histórico; un grupo sin instrumentos no va. */
       readonly grupos: readonly GrupoBenchmark[];
-      /** La nota de cada asterisco, en el orden del archivo. */
+      /** Las notas numeradas, en el orden del archivo. */
       readonly notas: readonly string[];
       readonly fuentes: string;
     }
@@ -160,9 +160,9 @@ export function modeloBenchmark(
   });
   if (publicables.length === 0) return { tipo: "omitido", titulo, texto: t.benchmarkDesactualizado };
 
-  // Asteriscos en el orden del archivo: "*", "**", ...
-  const asteriscos = new Map<string, string>();
-  for (const i of publicables) if (i.nota_asterisco !== null) asteriscos.set(i.id, "*".repeat(asteriscos.size + 1));
+  // Notas numeradas en el orden del archivo: "(1)", "(2)", ... (con cinco notas, los asteriscos ya no se leían bien).
+  const marcas = new Map<string, string>();
+  for (const i of publicables) if (i.nota_asterisco !== null) marcas.set(i.id, `(${marcas.size + 1})`);
 
   const tuya: Fila = {
     grupo: "tasa_vigente",
@@ -177,7 +177,7 @@ export function modeloBenchmark(
     tuya,
     ...publicables.map((i) => ({
       grupo: i.tipo_dato,
-      nombre: `${i.nombre}${asteriscos.get(i.id) ?? ""}`,
+      nombre: marcas.has(i.id) ? `${i.nombre} ${marcas.get(i.id)}` : i.nombre,
       tasa: new Decimal(i.tasa_anual),
       tuya: false,
       fecha: reglas.mostrar_fecha_por_instrumento ? `${reglas.fecha_tipos[i.fecha_tipo]} ${fechaLarga(i.fecha_dato)}` : null,
@@ -218,7 +218,7 @@ export function modeloBenchmark(
     titulo,
     actualizado: rellenar(t.benchmarkActualizado, { fecha: fechaLarga(b.actualizado_al) }),
     grupos,
-    notas: publicables.flatMap((i) => (i.nota_asterisco === null ? [] : [`${asteriscos.get(i.id)} ${i.nota_asterisco}`])),
+    notas: publicables.flatMap((i) => (i.nota_asterisco === null ? [] : [`${marcas.get(i.id)} ${i.nota_asterisco}`])),
     fuentes: rellenar(t.benchmarkFuentes, { fuentes: listaEnEspanol([...new Set(publicables.map((i) => i.fuente.nombre_corto))]) }),
   };
 }
