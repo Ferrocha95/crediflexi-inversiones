@@ -66,7 +66,7 @@ const esquemaCuerpo = z.object({
     .optional(),
 });
 
-function json(status: number, mensaje: string, detalles?: readonly string[]): Response {
+export function json(status: number, mensaje: string, detalles?: readonly string[]): Response {
   const cuerpo = detalles === undefined || detalles.length === 0 ? { error: mensaje } : { error: mensaje, detalles };
   return new Response(JSON.stringify(cuerpo), {
     status,
@@ -75,7 +75,7 @@ function json(status: number, mensaje: string, detalles?: readonly string[]): Re
 }
 
 /** El Origin, si viene, debe ser el mismo Host de la petición. */
-function origenCoincide(origin: string | null, host: string): boolean {
+export function origenCoincide(origin: string | null, host: string): boolean {
   if (origin === null) return true;
   try {
     return new URL(origin).host.toLowerCase() === host.toLowerCase();
@@ -84,7 +84,7 @@ function origenCoincide(origin: string | null, host: string): boolean {
   }
 }
 
-async function leerCuerpo(request: Request): Promise<unknown> {
+export async function leerCuerpo(request: Request): Promise<unknown> {
   try {
     return await request.json();
   } catch {

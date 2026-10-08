@@ -4,7 +4,7 @@ import path from "node:path";
 import { cargarBenchmark, type Benchmark } from "../aplicacion/benchmark";
 import { cargarRazonesSociales } from "../aplicacion/entidades";
 import { error, ok, type ResultadoApp } from "../aplicacion/resultado";
-import { cargarTextos, type TextosCotizacion } from "../aplicacion/textos";
+import { cargarTextos, type TextosCotizacion, type TextosReclutamiento } from "../aplicacion/textos";
 import { cargarSemillaComisiones, type SemillaComisiones } from "../domain/comisiones/semilla";
 import { cargarSemilla } from "../domain/tasas/semilla";
 import type { Semilla } from "../domain/tasas/semilla.esquema";
@@ -108,4 +108,21 @@ export async function leerSemillaComisiones(ruta: string = RUTA_SEMILLA): Promis
   const s = cargarSemillaComisiones(json.valor);
   if (!s.ok) return error("SEMILLA_INVALIDA", `${nombreVisible(ruta)}: ${s.error.mensaje}`, s.error.detalles);
   return ok(s.valor);
+}
+
+export interface ParametrosReclutamiento {
+  readonly semilla: SemillaComisiones;
+  readonly textos: TextosReclutamiento;
+}
+
+/** Lee en cada llamada la semilla de comisiones y los textos del modo reclutamiento. */
+export async function leerParametrosReclutamiento(
+  rutas: { readonly semilla: string; readonly textos: string } = { semilla: RUTA_SEMILLA, textos: RUTA_TEXTOS },
+): Promise<ResultadoApp<ParametrosReclutamiento>> {
+  const [semilla, jsonTextos] = await Promise.all([leerSemillaComisiones(rutas.semilla), leerJson(rutas.textos)]);
+  if (!semilla.ok) return semilla;
+  if (!jsonTextos.ok) return jsonTextos;
+  const textos = cargarTextos(jsonTextos.valor, nombreVisible(rutas.textos));
+  if (!textos.ok) return textos;
+  return ok({ semilla: semilla.valor, textos: textos.valor.reclutamiento });
 }

@@ -18,7 +18,7 @@ import { cotizarConAjuste, type Ajuste } from "../../../../src/domain/interes/aj
 import type { Esquema } from "../../../../src/domain/tasas/semilla.esquema";
 import { renderizarPdf } from "../../../../src/servidor/pdf/renderizar";
 import { semillaReal } from "../../oro/ayudas";
-import { extraerTexto } from "./extraer";
+import { extraerTexto, paginaEnPng } from "./extraer";
 import { benchmarkReal } from "../../benchmarkReal";
 
 const DIRECTORIO = process.env.MUESTRAS_DIR;
@@ -61,27 +61,6 @@ const MUESTRAS: readonly Muestra[] = [
   { archivo: "e-ramisise-final-500000-24m", entidad: "RAMI_SISE", moneda: "MXN", esquema: "final_del_plazo", monto: "500000", plazo: 24, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
   { archivo: "f-crediflexi-mensual-30000-6m", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "30000", plazo: 6, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
 ];
-
-/** Dibuja una página del PDF en PNG con pdfjs-dist y @napi-rs/canvas (ya instalados para pruebas). */
-async function paginaEnPng(bytes: Uint8Array, numero: number, escala: number): Promise<Buffer> {
-  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const { createCanvas } = await import("@napi-rs/canvas");
-  const tarea = getDocument({ data: new Uint8Array(bytes), verbosity: 0 });
-  const pdf = await tarea.promise;
-  const pagina = await pdf.getPage(numero);
-  const vista = pagina.getViewport({ scale: escala });
-  const lienzo = createCanvas(Math.ceil(vista.width), Math.ceil(vista.height));
-  const contexto = lienzo.getContext("2d");
-  contexto.fillStyle = "#FFFFFF";
-  contexto.fillRect(0, 0, lienzo.width, lienzo.height);
-  await pagina.render({
-    canvasContext: contexto as unknown as CanvasRenderingContext2D,
-    canvas: lienzo as unknown as HTMLCanvasElement,
-    viewport: vista,
-  }).promise;
-  await tarea.destroy();
-  return lienzo.encode("png");
-}
 
 describe.runIf(DIRECTORIO !== undefined)("muestras de la página 2 para revisión visual", () => {
   for (const m of MUESTRAS) {

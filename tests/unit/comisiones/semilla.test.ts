@@ -5,6 +5,7 @@ import { copiaSemilla, mal, semillaComisiones as s } from "./ayudas";
 describe("cargarSemillaComisiones con la semilla 0.8", () => {
   it("lee la versión, el nivel vigente y los parámetros confirmados", () => {
     expect(s.version).toBe("0.8");
+    expect(s.generado).toBe("2026-10-07");
     expect(s.nivelVigente).toBe("N1");
     expect(s.renovacionesPaganComision).toBe(true);
     expect(s.renovacionesCuentanParaMeta).toBe(false);

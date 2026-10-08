@@ -27,3 +27,24 @@ export async function extraerTexto(bytes: Uint8Array): Promise<TextoPdf> {
   await tarea.destroy();
   return { paginas, texto: juntar(porPagina.map((p) => `${p} `)), porPagina };
 }
+
+/** Dibuja una página del PDF en PNG con pdfjs-dist y @napi-rs/canvas (ya instalados para pruebas). */
+export async function paginaEnPng(bytes: Uint8Array, numero: number, escala: number): Promise<Buffer> {
+  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const { createCanvas } = await import("@napi-rs/canvas");
+  const tarea = getDocument({ data: new Uint8Array(bytes), verbosity: 0 });
+  const pdf = await tarea.promise;
+  const pagina = await pdf.getPage(numero);
+  const vista = pagina.getViewport({ scale: escala });
+  const lienzo = createCanvas(Math.ceil(vista.width), Math.ceil(vista.height));
+  const contexto = lienzo.getContext("2d");
+  contexto.fillStyle = "#FFFFFF";
+  contexto.fillRect(0, 0, lienzo.width, lienzo.height);
+  await pagina.render({
+    canvasContext: contexto as unknown as CanvasRenderingContext2D,
+    canvas: lienzo as unknown as HTMLCanvasElement,
+    viewport: vista,
+  }).promise;
+  await tarea.destroy();
+  return lienzo.encode("png");
+}

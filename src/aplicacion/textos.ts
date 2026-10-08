@@ -17,6 +17,11 @@ export const MARCADORES = [
   "meses",
   "fecha",
   "fuentes",
+  "presenta",
+  "dia_corte",
+  "dia_siguiente",
+  "mes",
+  "fecha_pago",
 ] as const;
 export type Marcador = (typeof MARCADORES)[number];
 
@@ -36,6 +41,11 @@ export const MARCADORES_POR_CAMPO = {
   "pdf_pagina2.capital_vencimiento": ["meses"],
   "pdf_pagina2.benchmark_actualizado": ["fecha"],
   "pdf_pagina2.benchmark_fuentes": ["fuentes"],
+  "reclutamiento.aviso": ["fecha"],
+  "reclutamiento.monto_plazo": ["meses"],
+  "reclutamiento.pdf_presenta": ["presenta"],
+  "reclutamiento.fecha_quincena_1": ["dia_corte", "mes", "fecha_pago"],
+  "reclutamiento.fecha_quincena_2": ["dia_siguiente", "mes", "fecha_pago"],
 } as const satisfies Readonly<Record<string, readonly Marcador[]>>;
 
 export interface TextosCotizacion {
@@ -60,7 +70,73 @@ export interface TextosCotizacion {
   readonly pdf: TextosPdf;
   /** Textos fijos de la página 2 del PDF (calendario, gráficas y escenario). */
   readonly pdfPagina2: TextosPagina2;
+  /** Modo reclutamiento (/comisiones/reclutamiento y su PDF "Propuesta de ingresos"). */
+  readonly reclutamiento: TextosReclutamiento;
 }
+
+/**
+ * Textos del modo reclutamiento. Se redactan como cálculo ("se ganaría"),
+ * nunca como promesa. El aviso con {fecha} es fijo y siempre visible.
+ */
+export interface TextosReclutamiento {
+  readonly tituloPagina: string;
+  readonly introduccion: string;
+  /** Solo en pantalla: recordatorio de la revisión de RH o legal. */
+  readonly revisionInterna: string;
+  readonly presenta: string;
+  readonly ayudaPresenta: string;
+  readonly tituloEscenarios: string;
+  readonly ayudaEscenarios: string;
+  readonly nombreEscenario: string;
+  /** Plantilla con {meses}. */
+  readonly montoPlazo: string;
+  readonly tituloResultado: string;
+  readonly comisionTotal: string;
+  readonly desglosePorPlazo: string;
+  readonly sinCaptacion: string;
+  readonly tituloFechas: string;
+  /** Plantillas con {dia_corte}/{dia_siguiente}, {mes} y {fecha_pago}. */
+  readonly fechaQuincena1: string;
+  readonly fechaQuincena2: string;
+  readonly tituloGrafica: string;
+  /** Plantilla con {fecha}: la de las tablas vigentes. */
+  readonly aviso: string;
+  readonly pdfTitulo: string;
+  /** Plantilla con {presenta}. */
+  readonly pdfPresenta: string;
+  readonly pdfFecha: string;
+  readonly descargarPdf: string;
+  /** Tres escenarios editables de ejemplo: nombre y monto por plazo ("" = sin captación). */
+  readonly escenariosEjemplo: readonly { readonly nombre: string; readonly montos: Readonly<Record<string, string>> }[];
+}
+
+/** Clave del archivo (snake_case) -> clave de TextosReclutamiento (sin los escenarios de ejemplo). */
+const CLAVES_RECLUTAMIENTO = {
+  titulo_pagina: "tituloPagina",
+  introduccion: "introduccion",
+  revision_interna: "revisionInterna",
+  presenta: "presenta",
+  ayuda_presenta: "ayudaPresenta",
+  titulo_escenarios: "tituloEscenarios",
+  ayuda_escenarios: "ayudaEscenarios",
+  nombre_escenario: "nombreEscenario",
+  monto_plazo: "montoPlazo",
+  titulo_resultado: "tituloResultado",
+  comision_total: "comisionTotal",
+  desglose_por_plazo: "desglosePorPlazo",
+  sin_captacion: "sinCaptacion",
+  titulo_fechas: "tituloFechas",
+  fecha_quincena_1: "fechaQuincena1",
+  fecha_quincena_2: "fechaQuincena2",
+  titulo_grafica: "tituloGrafica",
+  aviso: "aviso",
+  pdf_titulo: "pdfTitulo",
+  pdf_presenta: "pdfPresenta",
+  pdf_fecha: "pdfFecha",
+  descargar_pdf: "descargarPdf",
+} as const satisfies Readonly<Record<string, Exclude<keyof TextosReclutamiento, "escenariosEjemplo">>>;
+
+type ClaveArchivoReclutamiento = keyof typeof CLAVES_RECLUTAMIENTO;
 
 export interface TextosPdf {
   readonly titulo: string;
@@ -279,6 +355,34 @@ const esquemaTextos = z
         },
         { error: claveDesconocida },
       ),
+      reclutamiento: z.strictObject(
+        {
+          ...(Object.fromEntries(
+            Object.keys(CLAVES_RECLUTAMIENTO).map((clave) => {
+              const campo = `reclutamiento.${clave}`;
+              const permitidos = (MARCADORES_POR_CAMPO as Readonly<Record<string, readonly Marcador[]>>)[campo] ?? [];
+              return [clave, texto(campo, permitidos)];
+            }),
+          ) as Record<ClaveArchivoReclutamiento, ReturnType<typeof texto>>),
+          escenarios_ejemplo: z
+            .array(
+              z.strictObject(
+                {
+                  nombre: texto("reclutamiento.escenarios_ejemplo.nombre"),
+                  montos: z.record(
+                    z.string().regex(/^[1-9]\d*$/, { error: "La clave debe ser un plazo en meses (por ejemplo \"12\")." }),
+                    z.string().regex(/^(\d+(\.\d{1,2})?)?$/, {
+                      error: 'El monto va sin comas, con máximo 2 decimales (por ejemplo "300000"), o vacío ("") si no hay captación.',
+                    }),
+                  ),
+                },
+                { error: claveDesconocida },
+              ),
+            )
+            .length(3, { error: "Deben ser exactamente tres escenarios de ejemplo." }),
+        },
+        { error: claveDesconocida },
+      ),
       pdf_pagina2: z.strictObject(
         Object.fromEntries(
           Object.keys(CLAVES_PAGINA2).map((clave) => {
@@ -326,6 +430,12 @@ const esquemaTextos = z
           t.pdf_pagina2[archivo],
         ]),
       ) as unknown as TextosPagina2,
+      reclutamiento: {
+        ...(Object.fromEntries(
+          (Object.entries(CLAVES_RECLUTAMIENTO) as [ClaveArchivoReclutamiento, string][]).map(([archivo, clave]) => [clave, t.reclutamiento[archivo]]),
+        ) as unknown as Omit<TextosReclutamiento, "escenariosEjemplo">),
+        escenariosEjemplo: t.reclutamiento.escenarios_ejemplo,
+      },
     }),
   );
 

@@ -30,6 +30,8 @@ export interface IncentivoInterno {
 
 export interface SemillaComisiones {
   readonly version: string;
+  /** Fecha de la semilla (AAAA-MM-DD): la de las tablas vigentes. */
+  readonly generado: string;
   readonly tablas: Readonly<Record<TipoInversion, Readonly<Record<Nivel, readonly TramoComision[]>>>>;
   readonly nivelVigente: Nivel;
   readonly montoMinimo: Decimal;
@@ -154,6 +156,7 @@ const incentivoInterno = z.looseObject({
 const esquemaComisiones = z
   .looseObject({
     version: z.string().min(1),
+    generado: z.iso.date({ error: "La fecha 'generado' debe tener el formato AAAA-MM-DD." }),
     comisiones: z.looseObject({ nuevos: tablasPorNivel, renovaciones: tablasPorNivel }),
     parametros,
     incentivos_propuesta: z.array(incentivo),
@@ -183,6 +186,7 @@ const esquemaComisiones = z
     const p = s.parametros;
     return {
       version: s.version,
+      generado: s.generado,
       tablas: { nueva: s.comisiones.nuevos, renovacion: s.comisiones.renovaciones },
       nivelVigente: p.nivel_vigente,
       montoMinimo: p.monto_minimo_comision,

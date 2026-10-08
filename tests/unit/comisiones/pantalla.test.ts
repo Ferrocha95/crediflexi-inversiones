@@ -10,6 +10,7 @@ const CLIENTE = [
   "src/app/(app)/comisiones/Simulador.tsx",
   "src/app/(app)/comisiones/Resultado.tsx",
   "src/app/(app)/comisiones/textosPantalla.ts",
+  "src/app/(app)/comisiones/reclutamiento/Reclutamiento.tsx",
 ];
 const leer = (f: string) => readFileSync(path.join(process.cwd(), f), "utf8");
 
@@ -21,8 +22,8 @@ function importacionesDeValor(codigo: string): string[] {
 const RE_PROMESA = /(?<![\p{L}\p{N}])(garantiz\p{L}*|asegur\p{L}*|sin riesgo|ingreso fijo|ganar[aá]s|recibir[aá]s|promesa)(?![\p{L}\p{N}])/iu;
 
 describe("archivos del navegador de /comisiones", () => {
-  it("Simulador.tsx y Resultado.tsx son componentes de cliente", () => {
-    for (const f of CLIENTE.slice(0, 2)) expect(leer(f).startsWith('"use client";')).toBe(true);
+  it("Simulador.tsx, Resultado.tsx y Reclutamiento.tsx son componentes de cliente", () => {
+    for (const f of [...CLIENTE.slice(0, 2), CLIENTE[3]]) expect(leer(f).startsWith('"use client";')).toBe(true);
   });
 
   it.each(CLIENTE)("%s no importa valores del dominio, de la aplicación, del servidor, de decimal.js ni de la semilla", (f) => {
@@ -35,7 +36,13 @@ describe("archivos del navegador de /comisiones", () => {
   });
 
   it("la acción y el módulo del servidor no registran en la consola", () => {
-    for (const f of ["src/app/(app)/comisiones/acciones.ts", "src/servidor/comisiones.ts"]) expect(leer(f)).not.toMatch(/console\./);
+    for (const f of [
+      "src/app/(app)/comisiones/acciones.ts",
+      "src/servidor/comisiones.ts",
+      "src/app/(app)/comisiones/reclutamiento/acciones.ts",
+      "src/servidor/reclutamiento.ts",
+      "src/servidor/pdf/manejadorReclutamiento.ts",
+    ]) expect(leer(f)).not.toMatch(/console\./);
   });
 
   it("los textos de la pantalla no usan lenguaje de promesa", () => {

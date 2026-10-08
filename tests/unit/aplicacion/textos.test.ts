@@ -36,9 +36,9 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 }
 
 describe("cargarTextos: el archivo real", () => {
-  it("carga seed/textos_cotizacion.json versión 0.5", () => {
+  it("carga seed/textos_cotizacion.json versión 0.6", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.5");
+    expect(t.version).toBe("0.6");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente " +
@@ -103,7 +103,9 @@ describe("cargarTextos: textos nuevos de la versión 0.5", () => {
   });
 
   it("el archivo no menciona la reinversión ni el escenario ilustrativo", () => {
-    expect(JSON.stringify(textosJson).toLowerCase()).not.toMatch(/reinver|escenario/);
+    expect(JSON.stringify(textosJson).toLowerCase()).not.toMatch(/reinver/);
+    // Los "escenarios" del modo reclutamiento son otra cosa (escenarios de captación).
+    expect(JSON.stringify({ ...textosJson, reclutamiento: null }).toLowerCase()).not.toMatch(/escenario/);
   });
 
   it("pie_sipres rechaza un texto vacío", () => {
@@ -443,5 +445,67 @@ describe("cargarTextos: el bloque pdf_pagina2", () => {
     const j: Record<string, unknown> = copia();
     delete j.pdf_pagina2;
     expect(errorDe(j).detalles.join("\n")).toContain("pdf_pagina2");
+  });
+});
+
+describe("cargarTextos: el bloque reclutamiento (0.6)", () => {
+  const AVISO =
+    "Ejemplo calculado con las tablas vigentes al {fecha}. Los ingresos dependen de lo que cada persona logre captar; no es una oferta de empleo ni una garantía de ingresos.";
+
+  it("trae el aviso fijo exacto, el título del PDF y los tres escenarios de ejemplo", () => {
+    const r = cargarBien(textosJson).reclutamiento;
+    expect(r.aviso).toBe(AVISO);
+    expect(r.pdfTitulo).toBe("Propuesta de ingresos");
+    expect(r.tituloResultado).toBe("Lo que se ganaría en un mes");
+    expect(r.escenariosEjemplo.map((e) => e.nombre)).toEqual(["Escenario 1", "Escenario 2", "Escenario 3"]);
+    expect(r.escenariosEjemplo[2].montos).toEqual({ "6": "300000", "12": "500000", "18": "", "24": "500000" });
+  });
+
+  it("ningún texto del bloque usa lenguaje de promesa (la garantía y la oferta solo aparecen negadas en el aviso)", () => {
+    const r = cargarBien(textosJson).reclutamiento;
+    const todo = Object.entries(r)
+      .filter(([k]) => k !== "escenariosEjemplo")
+      .map(([, v]) => String(v))
+      .join("\n")
+      .replace(AVISO, "");
+    expect(todo).not.toMatch(/(?<![\p{L}\p{N}])(garant\p{L}*|asegur\p{L}*|sin riesgo|ingreso fijo|ganar[aá]s|recibir[aá]s|recibes|promesa|oferta)(?![\p{L}\p{N}])/iu);
+  });
+
+  it.each([
+    ["aviso", "{fecha}"],
+    ["monto_plazo", "{meses}"],
+    ["pdf_presenta", "{presenta}"],
+    ["fecha_quincena_1", "{dia_corte} {mes} {fecha_pago}"],
+    ["fecha_quincena_2", "{dia_siguiente} {mes} {fecha_pago}"],
+  ])("reclutamiento.%s admite %s y nada más", (clave, marcadores) => {
+    const j = copia();
+    (j.reclutamiento as Record<string, unknown>)[clave] = `Texto ${marcadores}`;
+    expect(cargarBien(j)).toBeDefined();
+    (j.reclutamiento as Record<string, unknown>)[clave] = `Texto ${marcadores} {razon_social}`;
+    expect(errorDe(j).detalles.join("\n")).toContain(`reclutamiento.${clave}`);
+  });
+
+  it("un texto sin marcadores no admite ninguno", () => {
+    const j = copia();
+    (j.reclutamiento as Record<string, unknown>).titulo_resultado = "Lo que se ganaría {fecha}";
+    expect(errorDe(j).detalles.join("\n")).toMatch(/reclutamiento\.titulo_resultado[\s\S]*ningún marcador/);
+  });
+
+  it("un monto de ejemplo con comas se rechaza con su ubicación", () => {
+    const j = copia();
+    (j.reclutamiento as { escenarios_ejemplo: { montos: Record<string, string> }[] }).escenarios_ejemplo[0].montos["12"] = "300,000";
+    expect(errorDe(j).detalles.join("\n")).toContain("reclutamiento.escenarios_ejemplo.0.montos.12");
+  });
+
+  it("deben ser exactamente tres escenarios de ejemplo", () => {
+    const j = copia();
+    (j.reclutamiento as { escenarios_ejemplo: unknown[] }).escenarios_ejemplo.pop();
+    expect(errorDe(j).detalles.join("\n")).toContain("reclutamiento.escenarios_ejemplo");
+  });
+
+  it("una clave desconocida en el bloque se rechaza", () => {
+    const j = copia();
+    (j.reclutamiento as Record<string, unknown>).ingreso_garantizado = "No";
+    expect(errorDe(j).detalles.join("\n")).toContain("ingreso_garantizado");
   });
 });

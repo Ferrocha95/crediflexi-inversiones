@@ -87,4 +87,15 @@ export const TEXTOS = {
   pagoDe: (inversiones: string) => `Inversiones ${inversiones}`,
   pagoDeUna: (n: number) => `Inversión ${n}`,
   simulador: "Simulación con las tablas vigentes; no es un estado de cuenta.",
+
+  // Modo reclutamiento: solo mensajes de la operación de la pantalla. Lo que ve
+  // el candidato (y el PDF) sale de seed/textos_cotizacion.json, bloque reclutamiento.
+  irReclutamiento: "Modo reclutamiento",
+  ayudaIrReclutamiento: "Para mostrar a candidatos a externos lo que se ganaría en un mes.",
+  volverComisiones: "Volver a comisiones",
+  tituloErrorReclutamiento: "No se pudo calcular la propuesta",
+  generandoPdf: "Generando el PDF…",
+  pdfListo: "Listo: el PDF se descargó.",
+  tituloErrorPdf: "No se pudo generar el PDF",
+  nombrePdfPorOmision: "propuesta-de-ingresos.pdf",
 } as const;

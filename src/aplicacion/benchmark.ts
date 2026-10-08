@@ -2,7 +2,7 @@ import * as z from "zod";
 import { Decimal } from "../domain/comun/decimal";
 import { formatearPorcentaje, listaEnEspanol } from "../domain/comun/formato";
 import type { Moneda } from "../domain/tasas/semilla.esquema";
-import { fechaIsoEnMexico } from "./fecha";
+import { fechaIsoEnMexico, fechaLarga } from "./fecha";
 import { rellenar } from "./rellenar";
 import { validar, type ResultadoApp } from "./resultado";
 import type { TextosPagina2 } from "./textos";
@@ -90,9 +90,6 @@ const MS_POR_DIA = 86_400_000;
 const diasEntre = (desde: string, hasta: string) =>
   Math.round((Date.parse(`${hasta}T00:00:00Z`) - Date.parse(`${desde}T00:00:00Z`)) / MS_POR_DIA);
 
-const formatoFechaLarga = new Intl.DateTimeFormat("es-MX", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
-/** "2026-10-07" -> "7 de octubre de 2026" (la fecha ya es un día, sin hora: no pasa por la zona horaria). */
-const fechaLarga = (iso: string) => formatoFechaLarga.format(new Date(`${iso}T00:00:00Z`));
 
 /**
  * Comparativo de tu tasa contra los instrumentos publicables del archivo, a

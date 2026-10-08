@@ -1,5 +1,5 @@
 {
-  "version": "0.5",
+  "version": "0.6",
   "pie_base": "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente a 12 meses; la ganancia del plazo corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables son las del contrato que se firme.",
   "pie_aviso_fondo": "Fondo de inversión privado: para invertir se requiere adquirir una acción de $1,000.00 MXN.",
   "pie_sipres": {
@@ -84,5 +84,58 @@
     "benchmark_solo_pesos": "Comparativo no disponible en dólares: las opciones comparadas son en pesos (MXN).",
     "pagina": "Página",
     "pagina_de": "de"
+  },
+  "reclutamiento": {
+    "titulo_pagina": "Propuesta de ingresos para externos",
+    "introduccion": "Calcula, con las tablas vigentes, la comisión que se ganaría en un mes según lo que se capte en cada plazo. Sirve para explicar cómo funciona la comisión de una persona externa.",
+    "revision_interna": "Uso interno: este texto debe revisarlo RH o el área legal antes de mostrarlo a candidatos.",
+    "presenta": "Quién presenta",
+    "ayuda_presenta": "Sale en el PDF. No se guarda.",
+    "titulo_escenarios": "Escenarios de captación en un mes",
+    "ayuda_escenarios": "Escribe cuánto se captaría en un mes en cada plazo. Cada monto se calcula como una sola inversión nueva.",
+    "nombre_escenario": "Nombre del escenario",
+    "monto_plazo": "Captación a {meses} meses",
+    "titulo_resultado": "Lo que se ganaría en un mes",
+    "comision_total": "Comisión total que se ganaría",
+    "desglose_por_plazo": "Desglose por plazo",
+    "sin_captacion": "Sin captación en este escenario.",
+    "titulo_fechas": "Fechas de pago",
+    "fecha_quincena_1": "Lo captado del 1 al {dia_corte} de {mes} se pagaría el {fecha_pago}.",
+    "fecha_quincena_2": "Lo captado del {dia_siguiente} al fin de {mes} se pagaría el {fecha_pago}.",
+    "titulo_grafica": "Comparación de escenarios",
+    "aviso": "Ejemplo calculado con las tablas vigentes al {fecha}. Los ingresos dependen de lo que cada persona logre captar; no es una oferta de empleo ni una garantía de ingresos.",
+    "pdf_titulo": "Propuesta de ingresos",
+    "pdf_presenta": "Presenta: {presenta}",
+    "pdf_fecha": "Fecha",
+    "descargar_pdf": "Descargar PDF",
+    "escenarios_ejemplo": [
+      {
+        "nombre": "Escenario 1",
+        "montos": {
+          "6": "",
+          "12": "300000",
+          "18": "",
+          "24": ""
+        }
+      },
+      {
+        "nombre": "Escenario 2",
+        "montos": {
+          "6": "200000",
+          "12": "500000",
+          "18": "",
+          "24": ""
+        }
+      },
+      {
+        "nombre": "Escenario 3",
+        "montos": {
+          "6": "300000",
+          "12": "500000",
+          "18": "",
+          "24": "500000"
+        }
+      }
+    ]
   }
 }

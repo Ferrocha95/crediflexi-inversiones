@@ -1,4 +1,4 @@
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Megaphone } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -40,6 +40,16 @@ export default async function PaginaComisiones() {
         </Link>
         <h1 className="text-4xl font-extrabold tracking-tight">{TEXTOS.tituloPagina}</h1>
         <p className="max-w-prose text-lg text-hielo">{TEXTOS.introduccion}</p>
+        <p className="flex flex-wrap items-center gap-x-2 text-hielo">
+          <Link
+            href="/comisiones/reclutamiento"
+            className="inline-flex min-h-11 items-center gap-1.5 font-bold text-blanco underline underline-offset-4"
+          >
+            <Megaphone aria-hidden="true" className="size-4" />
+            {TEXTOS.irReclutamiento}
+          </Link>
+          <span className="text-sm text-hielo-tenue">{TEXTOS.ayudaIrReclutamiento}</span>
+        </p>
       </header>
 
       {semilla.ok ? (
