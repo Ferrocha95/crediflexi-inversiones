@@ -36,9 +36,9 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 }
 
 describe("cargarTextos: el archivo real", () => {
-  it("carga seed/textos_cotizacion.json versión 0.6.1", () => {
+  it("carga seed/textos_cotizacion.json versión 0.6.2", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.6.1");
+    expect(t.version).toBe("0.6.2");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente " +
@@ -512,5 +512,18 @@ describe("cargarTextos: el bloque reclutamiento (0.6)", () => {
     const j = copia();
     (j.reclutamiento as Record<string, unknown>).ingreso_garantizado = "No";
     expect(errorDe(j).detalles.join("\n")).toContain("ingreso_garantizado");
+  });
+});
+
+describe("cargarTextos: revisión de RH aprobada (0.6.2)", () => {
+  it("el bloque reclutamiento ya no trae el aviso interno de revisión", () => {
+    expect(cargarBien(textosJson).reclutamiento).not.toHaveProperty("revisionInterna");
+    expect(textosJson.reclutamiento).not.toHaveProperty("revision_interna");
+  });
+
+  it("revision_interna ahora es una clave desconocida", () => {
+    const j = copia();
+    (j.reclutamiento as Record<string, unknown>).revision_interna = "Uso interno";
+    expect(errorDe(j).detalles.join("\n")).toContain("revision_interna");
   });
 });

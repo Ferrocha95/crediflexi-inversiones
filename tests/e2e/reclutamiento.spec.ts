@@ -25,6 +25,8 @@ test.describe("modo reclutamiento", () => {
     await page.getByRole("link", { name: "Modo reclutamiento" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Propuesta de ingresos para externos" })).toBeVisible();
     await expect(page.getByText(AVISO)).toBeVisible();
+    // RH ya aprobó el texto: sin el aviso interno de revisión.
+    await expect(page.getByText(/Uso interno/)).toHaveCount(0);
     for (const total of ["$7,920.00", "$15,930.00", "$45,420.00"]) {
       await expect(page.getByRole("listitem").filter({ hasText: "Comisión total que se ganaría" }).getByText(total, { exact: true })).toBeVisible();
     }

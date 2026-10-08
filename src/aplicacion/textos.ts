@@ -83,8 +83,6 @@ export interface TextosCotizacion {
 export interface TextosReclutamiento {
   readonly tituloPagina: string;
   readonly introduccion: string;
-  /** Solo en pantalla: recordatorio de la revisión de RH o legal. */
-  readonly revisionInterna: string;
   readonly presenta: string;
   readonly ayudaPresenta: string;
   readonly tituloEscenarios: string;
@@ -121,7 +119,6 @@ export interface TextosReclutamiento {
 const CLAVES_RECLUTAMIENTO = {
   titulo_pagina: "tituloPagina",
   introduccion: "introduccion",
-  revision_interna: "revisionInterna",
   presenta: "presenta",
   ayuda_presenta: "ayudaPresenta",
   titulo_escenarios: "tituloEscenarios",

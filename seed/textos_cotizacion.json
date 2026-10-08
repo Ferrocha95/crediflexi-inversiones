@@ -1,5 +1,5 @@
 {
-  "version": "0.6.1",
+  "version": "0.6.2",
   "pie_base": "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente a 12 meses; la ganancia del plazo corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables son las del contrato que se firme.",
   "pie_aviso_fondo": "Fondo de inversión privado: para invertir se requiere adquirir una acción de $1,000.00 MXN.",
   "pie_sipres": {
@@ -88,7 +88,6 @@
   "reclutamiento": {
     "titulo_pagina": "Propuesta de ingresos para externos",
     "introduccion": "Calcula, con las tablas vigentes, la comisión que se ganaría en un mes según lo que se capte en cada plazo. Sirve para explicar cómo funciona la comisión de una persona externa.",
-    "revision_interna": "Uso interno: este texto debe revisarlo RH o el área legal antes de mostrarlo a candidatos.",
     "presenta": "Quién presenta",
     "ayuda_presenta": "Sale en el PDF. No se guarda.",
     "titulo_escenarios": "Escenarios de captación en un mes",

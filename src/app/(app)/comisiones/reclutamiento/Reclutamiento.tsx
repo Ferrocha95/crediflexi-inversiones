@@ -146,7 +146,6 @@ export function Reclutamiento({ textos: t, plazos, inicial, modeloInicial }: Pro
 
   return (
     <div className="flex flex-col gap-6">
-      <Aviso tono="info" titulo={t.revisionInterna} />
       {sesionExpirada && <AvisoSesionExpirada siguiente="/comisiones/reclutamiento" />}
 
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:gap-8">

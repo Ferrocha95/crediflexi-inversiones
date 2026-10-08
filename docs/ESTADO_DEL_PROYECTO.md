@@ -43,9 +43,9 @@ Respaldo: se hizo un bundle de git (`C:\dev\respaldos\crediflexi-sprint0a.bundle
 
 **Sprint 4** (rama `sprint-4`): terminado; falta la revisión de Fernando y decidir cuándo se fusiona a `main` y se sube. Informe: `C:\dev\informes\paso59-4.md`. Capturas y PDF de muestra: `C:\dev\informes\sprint-4`. Puntos por confirmar con él (también en `PENDIENTES_TECNICOS.md`, (qqq) a (zzz)):
 - en el modo reclutamiento, el monto de cada plazo se reparte en "inversiones por plazo" (1 a 20) con su aviso; el nombre de quien presenta se limpia, se corta a 60 caracteres y no admite lenguaje de promesa;
-- la red externa ya no suma a la meta (decisión de Fernando, semilla 0.8.1); el gerente tiene un bono de 30% de la comisión N1 de su equipo, por confirmar, y falta confirmar si su meta se mide sobre su captación o la del equipo;
+- la red externa ya no suma a la meta (decisión de Fernando, semilla 0.8.1); el gerente tiene un bono de 30% de la comisión N1 de su equipo, por confirmar; su meta se mide sobre su propia captación (confirmado);
 - sueldo base de $15,000 como "Sueldo base (propuesta)", solo para el Ejecutivo interno y nunca en reclutamiento;
-- el texto del modo reclutamiento debe revisarlo RH o el área legal antes de usarse con candidatos.
+- el texto del modo reclutamiento ya lo revisó y aprobó RH (confirmado el 8 de octubre de 2026; se quitó el aviso interno, textos 0.6.2).
 
 **Sprint 2b, etapa E** (Envío del viernes, Inicio, respaldo y documentación): no se ha hecho.
 
@@ -82,7 +82,7 @@ Hecho: 2a, 2b (etapas A a D), 3a y 4 (simulador de comisiones, sin guardar inver
 - **Cálculo:** interés simple. Salidas: pago mensual (monto × tasa ÷ 12), rendimiento anual equivalente (monto × tasa) y ganancia total del plazo (monto × tasa × meses ÷ 12). Cada cifra se redondea una sola vez desde su valor exacto. El anual es un equivalente a 12 meses, no lo que recibe el cliente en plazos menores a 12.
 - **Archivos de datos** (en la rama `sprint-4`):
   - `seed/parametros_iniciales.json` **v0.8.1**: tasas, tramos, comisiones N1 a N3, incentivos con bono numérico, parámetros de comisión y bono de gerente (sin la red externa).
-  - `seed/textos_cotizacion.json` **v0.6.1**: bloques `pdf_pagina2` (con el comparativo) y `reclutamiento` (con el aviso de inversiones por plazo).
+  - `seed/textos_cotizacion.json` **v0.6.2**: bloques `pdf_pagina2` (con el comparativo) y `reclutamiento` (con el aviso de inversiones por plazo; sin el aviso interno de revisión).
   - `seed/benchmark.json` **v0.2**.
   - `tests/golden/rendimientos_pptx.json` **v0.5** (168 celdas; el nombre quedó por historia, ya no trae datos del pptx) y `tests/golden/rendimientos_usd.json` (128 celdas).
 - **Entidades:** CREDIFLEXI, S.A.P.I. DE C.V. y RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R. Hoy usan la misma tabla de tasas en pesos. Logo del PDF: siempre Crediflexi (el de Rami Sise falta). Pitágoras es la marca comercial de los servicios financieros.
@@ -115,11 +115,10 @@ Detalle exacto (anchos, celdas combinadas, formatos, colores) en `docs/FORMATOS_
 - Reglas de comisión aún por confirmar:
   - el nivel de cada persona (N2 y N3 sin uso);
   - qué pasa con la comisión bloqueada si el mes cierra por debajo del 80% (hoy "se pierde", por confirmar);
-  - el bono de gerente (30% de la comisión N1 del equipo) y si la meta del gerente se mide sobre su equipo;
+  - el bono de gerente (30% de la comisión N1 del equipo) y si requiere que el equipo desbloquee (la meta del gerente se mide sobre su propia captación: confirmado el 8 de octubre de 2026);
   - fecha de pago del sueldo base y del bono;
   - bono del Gerente.
 - Cuándo cuenta una inversión como captada: hoy se supone la fecha de inicio de la inversión, por confirmar.
-- Revisión de RH o del área legal del texto del modo reclutamiento.
 - Dónde vive la app para que otros la usen. Hoy corre solo en su computadora. Hechos verificados: Vercel Hobby no sirve para uso comercial según sus términos; Supabase gratuito no incluye respaldos automáticos, pausa tras una semana sin uso y da 1 GB de archivos; Supabase Pro cuesta desde 25 USD al mes; GitHub gratuito permite repositorios privados ilimitados. Otros hostings: sin verificar. El agente IA se cobra por uso (precio de Claude Haiku 4.5 según fuentes de terceros: 1 USD y 5 USD por millón de tokens, sin confirmar en la página oficial).
 - Quién sube a la Biblioteca y si entran las cuentas bancarias de la empresa (recomendado que no).
 - **Verificación en dos pasos de su cuenta de GitHub:** sin confirmar, con el repositorio ya en internet.
