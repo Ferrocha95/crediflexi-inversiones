@@ -1,9 +1,9 @@
 // Muestras para la revisión visual de la página 2. Solo corre si existe la
-// variable MUESTRAS_DIR (por ejemplo C:\dev\informes\calendario-pdf, fuera del
+// variable MUESTRAS_DIR (por ejemplo C:\dev\informes\sprint-3a, fuera del
 // repositorio). Escribe cada PDF, la página 2 en PNG y su texto extraído.
 // Datos sintéticos.
 //
-//   PowerShell: $env:MUESTRAS_DIR = "C:\dev\informes\calendario-pdf"; npx vitest run --project unit muestras
+//   PowerShell: $env:MUESTRAS_DIR = "C:\dev\informes\sprint-3a"; npx vitest run --project unit muestras
 
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -14,9 +14,10 @@ import { cargarRazonesSociales } from "../../../../src/aplicacion/entidades";
 import { modeloPdf, type EntradaPdf } from "../../../../src/aplicacion/modelo";
 import { datosPagina2 } from "../../../../src/aplicacion/pagina2";
 import { cargarTextos } from "../../../../src/aplicacion/textos";
+import { cotizarConAjuste, type Ajuste } from "../../../../src/domain/interes/ajustes";
 import type { Esquema } from "../../../../src/domain/tasas/semilla.esquema";
 import { renderizarPdf } from "../../../../src/servidor/pdf/renderizar";
-import { cotizarBien, semillaReal } from "../../oro/ayudas";
+import { semillaReal } from "../../oro/ayudas";
 import { extraerTexto } from "./extraer";
 import { benchmarkReal } from "../../benchmarkReal";
 
@@ -36,13 +37,29 @@ const OPCIONALES: EntradaPdf = {
   vigencia: "15 días naturales",
 };
 
-const MUESTRAS: readonly { archivo: string; entidad: string; esquema: Esquema; monto: string; plazo: number }[] = [
-  { archivo: "a-crediflexi-mensual-1500000-12m", entidad: "CREDIFLEXI", esquema: "mensual", monto: "1500000", plazo: 12 },
-  { archivo: "b-ramisise-final-500000-24m", entidad: "RAMI_SISE", esquema: "final_del_plazo", monto: "500000", plazo: 24 },
-  { archivo: "c-crediflexi-mensual-55000-6m", entidad: "CREDIFLEXI", esquema: "mensual", monto: "55000", plazo: 6 },
-  { archivo: "d-crediflexi-mensual-950000-12m", entidad: "CREDIFLEXI", esquema: "mensual", monto: "950000", plazo: 12 },
-  { archivo: "e-crediflexi-final-580000-12m", entidad: "CREDIFLEXI", esquema: "final_del_plazo", monto: "580000", plazo: 12 },
-  { archivo: "f-crediflexi-mensual-1000000-6m", entidad: "CREDIFLEXI", esquema: "mensual", monto: "1000000", plazo: 6 },
+interface Muestra {
+  readonly archivo: string;
+  readonly entidad: string;
+  readonly moneda: "MXN" | "USD";
+  readonly esquema: Esquema;
+  readonly monto: string;
+  readonly plazo: number;
+  readonly ajuste: Ajuste;
+  /** Fecha del PDF (inyectada): decide qué entra al comparativo. */
+  readonly ahora: Date;
+}
+
+const SIN_AJUSTE: Ajuste = { tipo: "tabla", puntos: "0" };
+const DIA_DE_LOS_DATOS = new Date("2026-10-07T12:00:00-06:00");
+
+const MUESTRAS: readonly Muestra[] = [
+  { archivo: "a-crediflexi-mensual-1500000-12m-mas1", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1500000", plazo: 12, ajuste: { tipo: "tabla", puntos: "1.0" }, ahora: DIA_DE_LOS_DATOS },
+  { archivo: "b-ramisise-usd-mensual-10000-12m", entidad: "RAMI_SISE", moneda: "USD", esquema: "mensual", monto: "10000", plazo: 12, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
+  { archivo: "c-crediflexi-especial-100000-9m", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "100000", plazo: 9, ajuste: { tipo: "especial", plazo: 9, tasas: { mensual: "17", final_del_plazo: "19" } }, ahora: DIA_DE_LOS_DATOS },
+  // 31 días después de actualizado_al: el comparativo se omite por antigüedad.
+  { archivo: "d-crediflexi-mensual-1500000-12m-benchmark-viejo", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1500000", plazo: 12, ajuste: SIN_AJUSTE, ahora: new Date("2026-11-07T12:00:00-06:00") },
+  { archivo: "e-ramisise-final-500000-24m", entidad: "RAMI_SISE", moneda: "MXN", esquema: "final_del_plazo", monto: "500000", plazo: 24, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
+  { archivo: "f-crediflexi-mensual-30000-6m", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "30000", plazo: 6, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
 ];
 
 /** Dibuja una página del PDF en PNG con pdfjs-dist y @napi-rs/canvas (ya instalados para pruebas). */
@@ -71,9 +88,11 @@ describe.runIf(DIRECTORIO !== undefined)("muestras de la página 2 para revisió
     it(m.archivo, { timeout: 120_000 }, async () => {
       const dir = DIRECTORIO!;
       await mkdir(dir, { recursive: true });
-      const c = cotizarBien({ entidad: m.entidad, esquema: m.esquema, monto: m.monto, plazo: m.plazo });
+      const { entidad, moneda, esquema, monto, plazo, ajuste } = m;
+      const c = cotizarConAjuste(semillaReal, { entidad, moneda, esquema, monto, plazo }, ajuste);
+      if (!c.ok) throw new Error(c.error.mensaje);
       const modelo = sinError(
-        modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, OPCIONALES, new Date(), datosPagina2(semillaReal, c.solicitud)),
+        modeloPdf(c.valor, { razonesSociales, textos, benchmark: benchmarkReal }, OPCIONALES, m.ahora, datosPagina2(semillaReal, c.valor.solicitud, ajuste)),
       );
       const bytes = await renderizarPdf(modelo);
       const { paginas, porPagina } = await extraerTexto(bytes);
