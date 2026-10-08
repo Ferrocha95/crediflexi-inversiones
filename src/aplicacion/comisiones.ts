@@ -1,5 +1,7 @@
 import { Decimal, ROUND_HALF_UP } from "../domain/comun/decimal";
 import { formatearPesos } from "../domain/comun/formato";
+import { bonoDeGerente } from "../domain/comisiones/bonoGerente";
+import type { SolicitudComision } from "../domain/comisiones/comision";
 import { liquidarMes, type InversionDelMes, type Liquidacion } from "../domain/comisiones/liquidacion";
 import type { RolConMeta, SemillaComisiones, TipoInversion } from "../domain/comisiones/semilla";
 import { fechaDeTextoIso } from "./fecha";
@@ -7,7 +9,8 @@ import { normalizarMonto } from "./monto";
 import { error, ok, type ResultadoApp } from "./resultado";
 
 // Pantalla /comisiones: convierte lo escrito en la entrada del motor y el
-// resultado en texto. No calcula: las cifras salen de liquidarMes.
+// resultado en texto. No calcula: las cifras salen de liquidarMes y, para el
+// gerente, de bonoDeGerente.
 
 /** Lo que manda la pantalla: montos tal como se escriben ("1,500,000"). */
 export interface CamposComisiones {
@@ -20,8 +23,12 @@ export interface CamposComisiones {
     /** AAAA-MM-DD (el valor de un <input type="date">). */
     readonly fecha: string;
   }[];
-  /** "" si no se captura. */
-  readonly captacionRedExterna: string;
+  /** Solo GERENTE: inversiones de su equipo para el bono de gerente (por confirmar). Sin fecha. */
+  readonly equipo: readonly {
+    readonly tipo: TipoInversion;
+    readonly monto: string;
+    readonly plazo: number | null;
+  }[];
 }
 
 export interface LineaComisionModelo {
@@ -47,8 +54,6 @@ export interface ModeloComisiones {
     readonly comisionPagable: string;
     readonly comisionBloqueada: string;
     readonly captacionParaMeta: string;
-    /** Aporte de la red externa a la meta; null si no hay (o si es externo). */
-    readonly aporteRed: string | null;
   };
   /** Solo internos. */
   readonly avance: {
@@ -68,7 +73,24 @@ export interface ModeloComisiones {
   /** Qué pasa con la comisión bloqueada al cierre del mes (parámetro, por confirmar). */
   readonly notaBloqueo: string | null;
   readonly bono: string | null;
+  /** Solo perfil interno con rol EJECUTIVO (propuesta); null en los demás casos. */
   readonly sueldoBase: string | null;
+  /** Solo GERENTE con inversiones del equipo; aparte de su comisión y de su meta. */
+  readonly bonoGerente: {
+    readonly base: string;
+    readonly porcentaje: string;
+    readonly bono: string;
+    /** "30% × $25,215.00 = $7,564.50". */
+    readonly operacion: string;
+    readonly lineas: readonly {
+      readonly numero: number;
+      readonly tipo: TipoInversion;
+      readonly monto: string;
+      readonly plazo: string;
+      readonly tasa: string;
+      readonly comision: string;
+    }[];
+  } | null;
   readonly pagos: readonly { readonly fecha: string; readonly monto: string; readonly inversiones: readonly number[] }[];
   /** Días del calendario de pago, para escribir la regla en pantalla. */
   readonly regla: SemillaComisiones["pago"];
@@ -85,15 +107,13 @@ export function plazosDeComision(s: SemillaComisiones): number[] {
   return [...(s.tablas.nueva[s.nivelVigente][0]?.tasas.keys() ?? [])];
 }
 
-/** Lo que la pantalla necesita antes de simular: los plazos y el porcentaje de la red. */
+/** Lo que la pantalla necesita antes de simular: los plazos. */
 export interface OpcionesComisiones {
   readonly plazos: readonly number[];
-  /** "30%": cuánto de la captación de la red externa cuenta para la meta. */
-  readonly porcentajeRed: string;
 }
 
 export function opcionesComisiones(s: SemillaComisiones): OpcionesComisiones {
-  return { plazos: plazosDeComision(s), porcentajeRed: porcentajeEntero(s.porcentajeRedExterna) };
+  return { plazos: plazosDeComision(s) };
 }
 
 const pesos = (d: Decimal) => formatearPesos(d);
@@ -134,24 +154,48 @@ export function modeloComisiones(s: SemillaComisiones, c: CamposComisiones): Res
     inversiones.push({ tipo: inv.tipo, monto: monto.valor, plazo: inv.plazo, fecha: inv.fecha });
   }
 
-  let red: string | undefined;
-  if (c.perfil === "interno" && c.captacionRedExterna.trim() !== "") {
-    const r = normalizarMonto(c.captacionRedExterna);
-    if (!r.ok && r.error.codigo !== "MONTO_CERO") {
-      return error("COMISION_INVALIDA", `Captación de red externa: ${r.error.mensaje}`);
-    }
-    red = r.ok ? r.valor : undefined;
+  const gerente = c.perfil === "interno" && c.rol === "GERENTE";
+  if (!gerente && c.equipo.length > 0) {
+    return error("COMISION_INVALIDA", "Las inversiones del equipo solo aplican al rol Gerente. Quítalas o cambia el rol.");
+  }
+  const equipo: SolicitudComision[] = [];
+  for (const [i, inv] of c.equipo.entries()) {
+    const prefijo = `Inversión del equipo ${i + 1}: `;
+    const monto = normalizarMonto(inv.monto);
+    if (!monto.ok) return error("COMISION_INVALIDA", prefijo + monto.error.mensaje);
+    if (inv.plazo === null) return error("COMISION_INVALIDA", `${prefijo}elige el plazo.`);
+    equipo.push({ tipo: inv.tipo, monto: monto.valor, plazo: inv.plazo });
   }
 
   const l = liquidarMes(s, {
     perfil: c.perfil,
     ...(c.perfil === "interno" && c.rol !== null ? { rol: c.rol } : {}),
     inversiones,
-    ...(red === undefined ? {} : { captacionRedExterna: red }),
   });
   if (!l.ok) return error("COMISION_INVALIDA", l.error.mensaje, l.error.detalles);
   const v = l.valor;
   const pagoDe = fechasDePago(v);
+
+  let bonoGerente: ModeloComisiones["bonoGerente"] = null;
+  if (gerente && equipo.length > 0) {
+    const b = bonoDeGerente(s, equipo);
+    if (!b.ok) return error("COMISION_INVALIDA", b.error.mensaje, b.error.detalles);
+    const porcentaje = porcentajeEntero(b.valor.porcentaje);
+    bonoGerente = {
+      base: pesos(b.valor.base),
+      porcentaje,
+      bono: pesos(b.valor.bono),
+      operacion: `${porcentaje} × ${pesos(b.valor.base)} = ${pesos(b.valor.bono)}`,
+      lineas: b.valor.lineas.map((x, i) => ({
+        numero: i + 1,
+        tipo: x.tipo,
+        monto: pesos(x.monto),
+        plazo: `${x.plazo} meses`,
+        tasa: porcentajeComision(x.tasa),
+        comision: pesos(x.comision),
+      })),
+    };
+  }
 
   return ok({
     perfil: v.perfil,
@@ -175,13 +219,14 @@ export function modeloComisiones(s: SemillaComisiones, c: CamposComisiones): Res
       comisionPagable: pesos(v.comisionPagable),
       comisionBloqueada: pesos(v.comisionBloqueada),
       captacionParaMeta: pesos(v.captacionParaMeta),
-      aporteRed: v.aporteRed.isZero() ? null : pesos(v.aporteRed),
     },
     avance: avanceDe(v),
     // El parámetro viene como clave ("se_pierde (...)"): se muestra con espacios.
     notaBloqueo: v.notaBloqueo === null ? null : v.notaBloqueo.replace(/^([a-z]+)_([a-z]+)/, "$1 $2"),
     bono: pesosONulo(v.bono),
-    sueldoBase: pesosONulo(v.sueldoBase),
+    // El sueldo base (propuesta) solo se muestra al perfil interno con rol EJECUTIVO.
+    sueldoBase: c.perfil === "interno" && c.rol === "EJECUTIVO" ? pesosONulo(v.sueldoBase) : null,
+    bonoGerente,
     pagos: v.pagos.map((p) => ({ fecha: fechaDeTextoIso(p.fecha), monto: pesos(p.monto), inversiones: p.lineas.map((i) => i + 1) })),
     regla: s.pago,
   });

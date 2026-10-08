@@ -169,9 +169,36 @@ describe("PDF de reclutamiento (documento real)", () => {
     expect(t.split(AVISO_EXACTO).join(" ")).not.toMatch(RE_PROHIBIDO_RECLUTAMIENTO);
   });
 
-  it("la revisión de lenguaje sí detecta una promesa escrita por quien presenta", { timeout: TIEMPO }, async () => {
-    const { texto: t } = await texto({ presenta: "Ingreso fijo garantizado" });
-    expect(t.split(AVISO_EXACTO).join(" ")).toMatch(RE_PROHIBIDO_RECLUTAMIENTO);
+  it("la revisión de lenguaje detecta una variante con promesa (la regla sí muerde)", () => {
+    expect(`Presenta: Ingreso fijo garantizado ${AVISO_EXACTO}`.split(AVISO_EXACTO).join(" ")).toMatch(RE_PROHIBIDO_RECLUTAMIENTO);
+  });
+
+  it("una promesa en el nombre de quien presenta no llega al PDF: 422 con el mensaje en español", async () => {
+    const r = await pdf({ presenta: "Ingreso fijo garantizado" });
+    expect(r.status).toBe(422);
+    expect((await r.json()).error).toMatch(/quien presenta/);
+  });
+
+  it("nunca muestra el sueldo base: el texto no trae \"sueldo base\" ni \"15,000\"", { timeout: TIEMPO }, async () => {
+    const { texto: t } = await texto();
+    expect(t.toLowerCase()).not.toContain("sueldo base");
+    expect(t).not.toContain("15,000");
+  });
+
+  it("con 3 inversiones por plazo: 1 página, el aviso con el número y el reparto en el desglose", { timeout: TIEMPO }, async () => {
+    const { paginas, texto: t } = await texto({ inversionesPorPlazo: 3 });
+    expect(paginas).toBe(1);
+    expect(t).toContain("Cálculo con 3 inversión(es) por plazo: si el mismo monto se reparte en más inversiones, la tasa de cada una puede ser menor.");
+    // Escenario 3, 24 meses: 500,000 en 3 -> 166,666.68 y 2 de 166,666.66, a 5.52% (primer tramo).
+    expect(t).toContain("1 × ($166,666.68 × 5.52% = $9,200.00) + 2 × ($166,666.66 × 5.52% = $9,200.00) = $27,600.00");
+  });
+
+  it("con 20 inversiones por plazo y los textos al tope sigue en 1 página", { timeout: TIEMPO }, async () => {
+    const largo = (n: number) => "Nombre largo sintético ".repeat(10).slice(0, n);
+    const escenarios = ESCENARIOS.map(() => ({ nombre: largo(40), montos: { "6": "1000000.19", "12": "1000000.19", "18": "1000000.19", "24": "1000000.19" } }));
+    const { paginas, texto: t } = await texto({ presenta: largo(60), escenarios, inversionesPorPlazo: 20 });
+    expect(paginas).toBe(1);
+    expect(t).toContain("Cálculo con 20 inversión(es) por plazo");
   });
 
   it("con nombres de escenario y quien presenta al tope sigue en 1 página", { timeout: TIEMPO }, async () => {

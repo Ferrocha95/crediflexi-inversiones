@@ -26,7 +26,16 @@ interface Escenario {
 interface Campos {
   readonly presenta: string;
   readonly escenarios: readonly Escenario[];
+  /** Tal como se escribe; el servidor valida que sea un entero de 1 a 20. */
+  readonly inversionesPorPlazo: string;
 }
+
+/** Lo que se manda al servidor: inversiones por plazo como número (0 si no es un entero: el servidor lo rechaza). */
+const paraServidor = (c: Campos) => ({
+  presenta: c.presenta,
+  escenarios: c.escenarios,
+  inversionesPorPlazo: /^\d{1,3}$/.test(c.inversionesPorPlazo.trim()) ? Number(c.inversionesPorPlazo.trim()) : 0,
+});
 
 export interface PropsReclutamiento {
   readonly textos: TextosReclutamiento;
@@ -70,7 +79,7 @@ export function Reclutamiento({ textos: t, plazos, inicial, modeloInicial }: Pro
     const temporizador = setTimeout(async () => {
       let r: RespuestaReclutamiento;
       try {
-        r = await simularReclutamiento({ ...campos, peticion: version });
+        r = await simularReclutamiento({ ...paraServidor(campos), peticion: version });
       } catch (e) {
         if (errorEsSesionExpirada(e)) setSesionExpirada(true);
         r = { peticion: version, resultado: { tipo: "error", mensaje: TEXTOS.errorConexion, detalles: [] } };
@@ -106,7 +115,7 @@ export function Reclutamiento({ textos: t, plazos, inicial, modeloInicial }: Pro
         method: "POST",
         headers: { "content-type": "application/json" },
         cache: "no-store",
-        body: JSON.stringify(campos),
+        body: JSON.stringify(paraServidor(campos)),
       });
       const clase = clasificarRespuestaPdf(r.status, r.headers.get("content-type"));
       if (clase === "sesion_expirada") {
@@ -155,10 +164,22 @@ export function Reclutamiento({ textos: t, plazos, inicial, modeloInicial }: Pro
           <Campo id={`${id}-presenta`} etiqueta={t.presenta} ayuda={t.ayudaPresenta}>
             <Entrada
               id={`${id}-presenta`}
-              maxLength={80}
+              maxLength={60}
               aria-describedby={`${id}-presenta-ayuda`}
               value={campos.presenta}
               onChange={(e) => cambiar({ ...campos, presenta: e.target.value })}
+            />
+          </Campo>
+
+          <Campo id={`${id}-inversiones`} etiqueta={t.inversionesPorPlazo} ayuda={t.ayudaInversionesPorPlazo}>
+            <Entrada
+              id={`${id}-inversiones`}
+              inputMode="numeric"
+              maxLength={2}
+              className="max-w-24 tabular-nums"
+              aria-describedby={`${id}-inversiones-ayuda`}
+              value={campos.inversionesPorPlazo}
+              onChange={(e) => cambiar({ ...campos, inversionesPorPlazo: e.target.value })}
             />
           </Campo>
 
@@ -263,7 +284,10 @@ export function Reclutamiento({ textos: t, plazos, inicial, modeloInicial }: Pro
               </section>
 
               {/* Aviso fijo y visible, igual que en el PDF. */}
-              <p className="rounded-xl border-2 border-hielo/60 bg-marino-alto/60 p-4 font-semibold">{m.aviso}</p>
+              <div className="flex flex-col gap-2 rounded-xl border-2 border-hielo/60 bg-marino-alto/60 p-4 font-semibold">
+                <p>{m.avisoInversiones}</p>
+                <p>{m.aviso}</p>
+              </div>
 
               <div className="flex flex-col gap-2">
                 <Boton

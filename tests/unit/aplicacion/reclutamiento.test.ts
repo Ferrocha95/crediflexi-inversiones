@@ -18,7 +18,7 @@ const t = (() => {
 
 const OCTUBRE = new Date("2026-10-08T12:00:00-06:00");
 
-const EJEMPLO: CamposReclutamiento = { presenta: "Persona Sintética Uno", escenarios: t.escenariosEjemplo };
+const EJEMPLO: CamposReclutamiento = { presenta: "Persona Sintética Uno", escenarios: t.escenariosEjemplo, inversionesPorPlazo: 1 };
 
 function modelo(c: Partial<CamposReclutamiento> = {}, ahora = OCTUBRE) {
   const r = modeloReclutamiento(s, t, { ...EJEMPLO, ...c }, ahora);
@@ -123,5 +123,71 @@ describe("modeloReclutamiento con lo que captura quien presenta", () => {
   it("los nombres se limpian y se cortan a 40 caracteres", () => {
     const m = modelo({ escenarios: [escenario("N".repeat(60), {}), escenario("B", {}), escenario("C", {})] });
     expect(m.escenarios[0].nombre).toHaveLength(40);
+  });
+});
+
+describe("modeloReclutamiento: inversiones por plazo (decisión de Fernando)", () => {
+  // Valores de referencia calculados aparte: $1,000,000 a 12 meses.
+  const unMillon = (n: number) =>
+    modelo({ inversionesPorPlazo: n, escenarios: [{ nombre: "A", montos: { "12": "1000000" } }, { nombre: "B", montos: {} }, { nombre: "C", montos: {} }] })
+      .escenarios[0];
+
+  it("por omisión 1 inversión: 1,000,000 a 2.838% = 28,380.00", () => {
+    const e = modelo({ escenarios: [{ nombre: "A", montos: { "12": "1000000" } }, { nombre: "B", montos: {} }, { nombre: "C", montos: {} }] }).escenarios[0];
+    expect([e.lineas[0].tasa, e.lineas[0].comision, e.total]).toEqual(["2.838%", "$28,380.00", "$28,380.00"]);
+  });
+
+  it("2 inversiones de 500,000 a 2.706%: 27,060.00", () => {
+    const e = unMillon(2);
+    expect(e.total).toBe("$27,060.00");
+    expect(e.lineas[0].operacion).toBe("2 × ($500,000.00 × 2.706% = $13,530.00) = $27,060.00");
+  });
+
+  it("3 inversiones: 333,333.34 (el sobrante de centavos va a la primera) y 2 de 333,333.33, a 9,020.00 cada una: 27,060.00", () => {
+    const e = unMillon(3);
+    expect(e.total).toBe("$27,060.00");
+    expect(e.lineas[0].operacion).toBe("1 × ($333,333.34 × 2.706% = $9,020.00) + 2 × ($333,333.33 × 2.706% = $9,020.00) = $27,060.00");
+  });
+
+  it("5 inversiones de 200,000 a 2.64%: 26,400.00", () => {
+    expect(unMillon(5).total).toBe("$26,400.00");
+  });
+
+  it("cada parte usa su propio tramo: 600,000.01 en 2 da 300,000.01 (2.706%) y 300,000.00 (2.64%)", () => {
+    const e = modelo({ inversionesPorPlazo: 2, escenarios: [{ nombre: "A", montos: { "12": "600000.01" } }, { nombre: "B", montos: {} }, { nombre: "C", montos: {} }] })
+      .escenarios[0];
+    // 300,000.01 × 0.02706 = 8,118.0002706 -> 8,118.00; 300,000.00 × 0.0264 = 7,920.00
+    expect(e.lineas[0].tasa).toBe("2.706% y 2.64%");
+    expect(e.total).toBe("$16,038.00");
+  });
+
+  it("si una parte queda por debajo del mínimo, lo dice con el escenario y el plazo", () => {
+    const e = error({ inversionesPorPlazo: 5, escenarios: [{ nombre: "A", montos: { "6": "100000" } }, { nombre: "B", montos: {} }, { nombre: "C", montos: {} }] });
+    expect(e.mensaje).toMatch(/^A, 6 meses: .*\$20,000\.00.*\$30,000\.00/);
+  });
+
+  it.each([0, 21, 2.5, -1])("inversiones por plazo %s: se rechaza (entero de 1 a 20)", (n) => {
+    expect(error({ inversionesPorPlazo: n }).mensaje).toMatch(/1 a 20/);
+  });
+
+  it("el aviso de las inversiones por plazo va siempre, con el número", () => {
+    expect(modelo().avisoInversiones).toBe(
+      "Cálculo con 1 inversión(es) por plazo: si el mismo monto se reparte en más inversiones, la tasa de cada una puede ser menor.",
+    );
+    expect(modelo({ inversionesPorPlazo: 3 }).avisoInversiones).toMatch(/^Cálculo con 3 inversión\(es\) por plazo:/);
+  });
+});
+
+describe("modeloReclutamiento: nombre de quien presenta (decisión de Fernando)", () => {
+  it("se corta a 60 caracteres", () => {
+    expect(modelo({ presenta: "P".repeat(80) }).presenta).toBe(`Presenta: ${"P".repeat(60)}`);
+  });
+
+  it("sin caracteres de control ni invisibles", () => {
+    expect(modelo({ presenta: "Persona\u0007\u202E Uno\u2060" }).presenta).toBe("Presenta: Persona Uno");
+  });
+
+  it.each(["Ingreso fijo asegurado", "Ganancia garantizada", "Ganarás mucho", "Sin riesgo"])("rechaza lenguaje de promesa: %s", (presenta) => {
+    expect(error({ presenta }).mensaje).toMatch(/quien presenta/);
   });
 });

@@ -9,7 +9,9 @@ import { semillaComisiones as s } from "../comisiones/ayudas";
 type Inversion = CamposComisiones["inversiones"][number];
 const nueva = (monto: string, plazo: number | null, fecha = "2026-10-07"): Inversion => ({ tipo: "nueva", monto, plazo, fecha });
 
-const INTERNO: CamposComisiones = { perfil: "interno", rol: "EJECUTIVO", inversiones: [], captacionRedExterna: "" };
+const INTERNO: CamposComisiones = { perfil: "interno", rol: "EJECUTIVO", inversiones: [], equipo: [] };
+type DelEquipo = CamposComisiones["equipo"][number];
+const delEquipo = (tipo: DelEquipo["tipo"], monto: string, plazo: number | null): DelEquipo => ({ tipo, monto, plazo });
 
 function modelo(c: Partial<CamposComisiones>) {
   const r = modeloComisiones(s, { ...INTERNO, ...c });
@@ -49,7 +51,6 @@ describe("modeloComisiones: interno", () => {
       comisionPagable: "$18,450.00",
       comisionBloqueada: "$0.00",
       captacionParaMeta: "$900,000.00",
-      aporteRed: null,
     });
     expect(m.avance).toMatchObject({
       meta: "$1,000,000.00",
@@ -91,17 +92,52 @@ describe("modeloComisiones: interno", () => {
     expect(m.bono).toBe("$10,000.00");
   });
 
-  it("red externa: muestra el aporte del 30%", () => {
-    const m = modelo({ inversiones: [nueva("650000", 12)], captacionRedExterna: "500,000" });
-    expect(m.totales.aporteRed).toBe("$150,000.00");
-    expect(m.totales.captacionParaMeta).toBe("$800,000.00");
+  it("la red externa ya no existe en el modelo (0.8.1)", () => {
+    const m = modelo({ inversiones: [nueva("650000", 12)] });
+    expect(m.totales).not.toHaveProperty("aporteRed");
+    expect(m.totales.captacionParaMeta).toBe("$650,000.00");
   });
 
-  it("GERENTE: sin bono ni sueldo base", () => {
+  it("GERENTE: sin bono por captación ni sueldo base; la meta es sobre su propia captación", () => {
     const m = modelo({ rol: "GERENTE", inversiones: [nueva("500000", 12)] });
     expect(m.bono).toBeNull();
     expect(m.sueldoBase).toBeNull();
     expect(m.avance!.meta).toBe("$2,000,000.00");
+    expect(m.totales.captacionParaMeta).toBe("$500,000.00");
+    expect(m.bonoGerente).toBeNull();
+  });
+
+  it("GERENTE con inversiones del equipo: bono de gerente aparte (base 25,215.00, bono 7,564.50)", () => {
+    const m = modelo({
+      rol: "GERENTE",
+      inversiones: [nueva("500000", 12)],
+      equipo: [delEquipo("nueva", "500,000", 12), delEquipo("nueva", "400000", 6), delEquipo("renovacion", "500000", 12)],
+    });
+    expect(m.bonoGerente).toEqual({
+      base: "$25,215.00",
+      porcentaje: "30%",
+      bono: "$7,564.50",
+      lineas: [
+        { numero: 1, tipo: "nueva", monto: "$500,000.00", plazo: "12 meses", tasa: "2.706%", comision: "$13,530.00" },
+        { numero: 2, tipo: "nueva", monto: "$400,000.00", plazo: "6 meses", tasa: "1.23%", comision: "$4,920.00" },
+        { numero: 3, tipo: "renovacion", monto: "$500,000.00", plazo: "12 meses", tasa: "1.353%", comision: "$6,765.00" },
+      ],
+      operacion: "30% × $25,215.00 = $7,564.50",
+    });
+    // El bono del equipo no cambia la meta ni la comisión propia del gerente.
+    expect(m.totales.captacionParaMeta).toBe("$500,000.00");
+    expect(m.totales.comisionBruta).toBe("$13,530.00");
+  });
+
+  it("GERENTE con una sola nueva del equipo de 300,001 a 6 meses: bono 1,107.00", () => {
+    const m = modelo({ rol: "GERENTE", equipo: [delEquipo("nueva", "300001", 6)] });
+    expect(m.bonoGerente).toMatchObject({ base: "$3,690.01", bono: "$1,107.00" });
+  });
+
+  it("EJECUTIVO: el sueldo base de la propuesta aparece; el bono de gerente no", () => {
+    const m = modelo({ inversiones: [nueva("500000", 12)] });
+    expect(m.sueldoBase).toBe("$15,000.00");
+    expect(m.bonoGerente).toBeNull();
   });
 
   it("trae la regla de pago de la semilla para escribirla en pantalla", () => {
@@ -115,12 +151,10 @@ describe("modeloComisiones: externo", () => {
     expect(m.avance).toBeNull();
     expect(m.totales.comisionPagable).toBe("$13,530.00");
     expect(m.pagos).toEqual([{ fecha: "01/11/2026", monto: "$13,530.00", inversiones: [1] }]);
-    expect(m.sueldoBase).toBe("$0.00");
-  });
-
-  it("la red externa se ignora en externos (el campo solo existe para internos)", () => {
-    const m = modelo({ perfil: "externo", rol: null, inversiones: [nueva("500000", 12)], captacionRedExterna: "100000" });
-    expect(m.totales.aporteRed).toBeNull();
+    // El sueldo base solo se muestra al perfil interno con rol EJECUTIVO.
+    expect(m.sueldoBase).toBeNull();
+    expect(m.bono).toBeNull();
+    expect(m.bonoGerente).toBeNull();
   });
 });
 
@@ -145,8 +179,17 @@ describe("modeloComisiones: errores en español que dicen qué inversión", () =
     expect(error({ rol: null }).mensaje).toMatch(/rol/);
   });
 
-  it("captación de red ilegible", () => {
-    expect(error({ captacionRedExterna: "mucho" }).mensaje).toMatch(/red externa/i);
+  it("inversiones del equipo con un rol que no es GERENTE", () => {
+    expect(error({ rol: "EJECUTIVO", equipo: [delEquipo("nueva", "500000", 12)] }).mensaje).toMatch(/Gerente/);
+    expect(error({ perfil: "externo", rol: null, equipo: [delEquipo("nueva", "500000", 12)] }).mensaje).toMatch(/Gerente/);
+  });
+
+  it("una inversión del equipo ilegible, sin plazo o menor al mínimo dice cuál es", () => {
+    expect(error({ rol: "GERENTE", equipo: [delEquipo("nueva", "abc", 12)] }).mensaje).toMatch(/^Inversión del equipo 1: /);
+    expect(error({ rol: "GERENTE", equipo: [delEquipo("nueva", "500000", 12), delEquipo("nueva", "500000", null)] }).mensaje).toBe(
+      "Inversión del equipo 2: elige el plazo.",
+    );
+    expect(error({ rol: "GERENTE", equipo: [delEquipo("nueva", "20,000", 12)] }).mensaje).toMatch(/^Inversión del equipo 1: .*\$30,000\.00/);
   });
 });
 
@@ -157,7 +200,7 @@ describe("plazosDeComision", () => {
 });
 
 describe("opcionesComisiones", () => {
-  it("los plazos y el porcentaje de la red salen de la semilla", () => {
-    expect(opcionesComisiones(s)).toEqual({ plazos: [6, 12, 18, 24], porcentajeRed: "30%" });
+  it("los plazos salen de la semilla (ya sin el porcentaje de la red)", () => {
+    expect(opcionesComisiones(s)).toEqual({ plazos: [6, 12, 18, 24] });
   });
 });

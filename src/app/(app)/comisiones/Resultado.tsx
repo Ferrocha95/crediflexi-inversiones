@@ -53,7 +53,7 @@ function BarraAvance({ avance, captacion }: { avance: NonNullable<ModeloComision
 }
 
 /** Resultado del simulador: muestra el modelo tal como llega del servidor; aquí no se calcula nada. */
-export function Resultado({ modelo: m, porcentajeRed }: { modelo: ModeloComisiones; porcentajeRed: string }) {
+export function Resultado({ modelo: m }: { modelo: ModeloComisiones }) {
   const etiquetaTipo = (t: "nueva" | "renovacion") => (t === "nueva" ? TEXTOS.nueva : TEXTOS.renovacion);
   const pago = (f: string | null) => f ?? TEXTOS.sinPago;
 
@@ -70,7 +70,6 @@ export function Resultado({ modelo: m, porcentajeRed }: { modelo: ModeloComision
         </dl>
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Cifra etiqueta={TEXTOS.captacionParaMeta} valor={m.totales.captacionParaMeta} />
-          {m.totales.aporteRed !== null && <Cifra etiqueta={TEXTOS.aporteRed(porcentajeRed)} valor={m.totales.aporteRed} />}
         </dl>
       </section>
 
@@ -187,7 +186,33 @@ export function Resultado({ modelo: m, porcentajeRed }: { modelo: ModeloComision
         )}
       </section>
 
-      {(m.sueldoBase !== null || m.perfil === "interno") && (
+      {m.bonoGerente !== null && (
+        <section aria-labelledby="titulo-bono-gerente" className="superficie flex flex-col gap-3 rounded-2xl p-5">
+          <h3 id="titulo-bono-gerente" className="text-lg font-bold">
+            {TEXTOS.tituloBonoGerente}
+          </h3>
+          <p className="text-sm text-hielo">{TEXTOS.ayudaBonoGerente}</p>
+          <ol className="flex flex-col gap-1 text-sm">
+            {m.bonoGerente.lineas.map((l) => (
+              <li key={l.numero} className="flex flex-wrap justify-between gap-x-3">
+                <span>
+                  {TEXTOS.inversionEquipo(l.numero)} · {etiquetaTipo(l.tipo)} · {l.monto} · {l.plazo} · {l.tasa}
+                </span>
+                <span className="font-semibold tabular-nums">{l.comision}</span>
+              </li>
+            ))}
+          </ol>
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Cifra etiqueta={TEXTOS.baseBonoGerente} valor={m.bonoGerente.base} />
+            <Cifra etiqueta={TEXTOS.bonoGerente} valor={m.bonoGerente.bono} fuerte />
+          </dl>
+          <p className="text-sm text-hielo-tenue">
+            {TEXTOS.calculo}: {m.bonoGerente.operacion}
+          </p>
+        </section>
+      )}
+
+      {m.perfil === "interno" && (
         <section aria-labelledby="titulo-incentivos" className="flex flex-col gap-3">
           <h3 id="titulo-incentivos" className="text-lg font-bold">
             {TEXTOS.tituloIncentivos}
@@ -198,7 +223,7 @@ export function Resultado({ modelo: m, porcentajeRed }: { modelo: ModeloComision
               {m.bono !== null && <Cifra etiqueta={TEXTOS.bono} valor={m.bono} />}
             </dl>
           ) : null}
-          {m.perfil === "interno" && m.bono === null && <p className="text-hielo">{TEXTOS.sinBono}</p>}
+          {m.bono === null && <p className="text-hielo">{TEXTOS.sinBono}</p>}
           <p className="text-sm text-hielo-tenue">{TEXTOS.fechaIncentivosPorConfirmar}</p>
         </section>
       )}

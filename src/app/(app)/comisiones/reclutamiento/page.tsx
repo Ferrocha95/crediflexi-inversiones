@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { opcionesComisiones } from "../../../../aplicacion/comisiones";
-import { modeloReclutamiento } from "../../../../aplicacion/reclutamiento";
+import { limpiarCampo } from "../../../../aplicacion/campos";
+import { INVERSIONES_POR_PLAZO, modeloReclutamiento, TOPES_RECLUTAMIENTO } from "../../../../aplicacion/reclutamiento";
 import { Aviso } from "../../../../componentes/ui/Aviso";
 import { leerParametrosReclutamiento } from "../../../../servidor/parametros";
 import { exigirUsuario } from "../../../../servidor/sesion";
@@ -45,8 +46,14 @@ export default async function PaginaReclutamiento() {
   }
 
   const { semilla, textos } = p.valor;
-  const inicial = { presenta: usuario.nombre, escenarios: textos.escenariosEjemplo };
-  const modelo = modeloReclutamiento(semilla, textos, inicial, new Date());
+  const presenta = limpiarCampo(usuario.nombre, TOPES_RECLUTAMIENTO.presenta);
+  const inicial = { presenta, escenarios: textos.escenariosEjemplo, inversionesPorPlazo: String(INVERSIONES_POR_PLAZO.porOmision) };
+  const modelo = modeloReclutamiento(
+    semilla,
+    textos,
+    { presenta, escenarios: inicial.escenarios, inversionesPorPlazo: INVERSIONES_POR_PLAZO.porOmision },
+    new Date(),
+  );
 
   return (
     <div className="flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">

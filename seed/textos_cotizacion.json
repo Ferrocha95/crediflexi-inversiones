@@ -1,5 +1,5 @@
 {
-  "version": "0.6",
+  "version": "0.6.1",
   "pie_base": "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente a 12 meses; la ganancia del plazo corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables son las del contrato que se firme.",
   "pie_aviso_fondo": "Fondo de inversión privado: para invertir se requiere adquirir una acción de $1,000.00 MXN.",
   "pie_sipres": {
@@ -92,7 +92,9 @@
     "presenta": "Quién presenta",
     "ayuda_presenta": "Sale en el PDF. No se guarda.",
     "titulo_escenarios": "Escenarios de captación en un mes",
-    "ayuda_escenarios": "Escribe cuánto se captaría en un mes en cada plazo. Cada monto se calcula como una sola inversión nueva.",
+    "ayuda_escenarios": "Escribe cuánto se captaría en un mes en cada plazo. Cada monto se reparte en partes iguales entre las inversiones por plazo.",
+    "inversiones_por_plazo": "Inversiones por plazo",
+    "ayuda_inversiones_por_plazo": "Número entero de 1 a 20. Si no se cambia, es 1.",
     "nombre_escenario": "Nombre del escenario",
     "monto_plazo": "Captación a {meses} meses",
     "titulo_resultado": "Lo que se ganaría en un mes",
@@ -104,6 +106,7 @@
     "fecha_quincena_2": "Lo captado del {dia_siguiente} al fin de {mes} se pagaría el {fecha_pago}.",
     "titulo_grafica": "Comparación de escenarios",
     "aviso": "Ejemplo calculado con las tablas vigentes al {fecha}. Los ingresos dependen de lo que cada persona logre captar; no es una oferta de empleo ni una garantía de ingresos.",
+    "aviso_inversiones_por_plazo": "Cálculo con {n} inversión(es) por plazo: si el mismo monto se reparte en más inversiones, la tasa de cada una puede ser menor.",
     "pdf_titulo": "Propuesta de ingresos",
     "pdf_presenta": "Presenta: {presenta}",
     "pdf_fecha": "Fecha",

@@ -42,10 +42,9 @@ Respaldo: se hizo un bundle de git (`C:\dev\respaldos\crediflexi-sprint0a.bundle
 ## 3. Qué está en curso
 
 **Sprint 4** (rama `sprint-4`): terminado; falta la revisión de Fernando y decidir cuándo se fusiona a `main` y se sube. Informe: `C:\dev\informes\paso59-4.md`. Capturas y PDF de muestra: `C:\dev\informes\sprint-4`. Puntos por confirmar con él (también en `PENDIENTES_TECNICOS.md`, (qqq) a (zzz)):
-- en el modo reclutamiento, cada monto por plazo se calcula como una sola inversión;
-- el nombre de quien presenta se imprime tal cual en el PDF;
-- la red externa cuenta al cierre del mes y solo para la meta (sin el 30% de comisión que menciona `BLUEPRINT.md`);
-- sueldo base del Ejecutivo con captación menor a $1,000,000: se supuso $15,000;
+- en el modo reclutamiento, el monto de cada plazo se reparte en "inversiones por plazo" (1 a 20) con su aviso; el nombre de quien presenta se limpia, se corta a 60 caracteres y no admite lenguaje de promesa;
+- la red externa ya no suma a la meta (decisión de Fernando, semilla 0.8.1); el gerente tiene un bono de 30% de la comisión N1 de su equipo, por confirmar, y falta confirmar si su meta se mide sobre su captación o la del equipo;
+- sueldo base de $15,000 como "Sueldo base (propuesta)", solo para el Ejecutivo interno y nunca en reclutamiento;
 - el texto del modo reclutamiento debe revisarlo RH o el área legal antes de usarse con candidatos.
 
 **Sprint 2b, etapa E** (Envío del viernes, Inicio, respaldo y documentación): no se ha hecho.
@@ -72,7 +71,7 @@ Hecho: 2a, 2b (etapas A a D), 3a y 4 (simulador de comisiones, sin guardar inver
 - **Proyección:** fecha, ejecutivo, cantidad, % de cierre, inversionista (tomado del pipeline). Total simple (el del Excel) y total ponderado (solo en pantalla).
 - **Cartera (mini CRM):** cliente (nombre, teléfono, correo opcional, ejecutivo, origen, fecha de alta) e inversiones (entidad, monto, plazo, esquema, tasa congelada, inicio, vencimiento, tipo, estado). Lista con filtros, ficha por cliente, alertas de vencimientos. Guardia contra texto que parezca CLABE, RFC o CURP en notas. El vencimiento se calcula como inicio + plazo y se puede corregir.
 - **Biblioteca:** documentos públicos o internos de la empresa (registros, constancias públicas, contratos modelo en blanco, material comercial, capacitación, marca, formatos en blanco). Categorías editables, versiones, vigencia con alertas, casilla "sin datos personales", tope 25 MB, almacenamiento privado, bitácora, suben directores y gerentes. Se excluyen por defecto las cuentas bancarias de la empresa.
-- **Metas y comisiones:** meta mensual (1,000,000 ejecutivo; 2,000,000 gerente), comisión que se acumula pero queda **bloqueada hasta el 80%** de la meta (solo con captación nueva), después se paga todo lo del mes, nuevas y renovaciones; red (30% de su captación cuenta para la meta). **Hoy es un simulador en `/comisiones`** (Sprint 4): nada se guarda. Tabla N1 con tasas completas; pago por quincena (del 1 al 15, el 16; del 16 a fin de mes, el 1 del siguiente). Modo reclutamiento para candidatos a externos en `/comisiones/reclutamiento`.
+- **Metas y comisiones:** meta mensual (1,000,000 ejecutivo; 2,000,000 gerente), comisión que se acumula pero queda **bloqueada hasta el 80%** de la meta (solo con captación nueva), después se paga todo lo del mes, nuevas y renovaciones. La red externa ya no cuenta para la meta; el gerente tiene un bono de 30% de la comisión N1 de su equipo (por confirmar). **Hoy es un simulador en `/comisiones`** (Sprint 4): nada se guarda. Tabla N1 con tasas completas; pago por quincena (del 1 al 15, el 16; del 16 a fin de mes, el 1 del siguiente). Modo reclutamiento para candidatos a externos en `/comisiones/reclutamiento`.
 - **Red de externos, checklist de alta, parámetros, agente IA:** como se describe en la sección 4.
 
 ## 6. Cotizador: reglas y datos vigentes
@@ -82,8 +81,8 @@ Hecho: 2a, 2b (etapas A a D), 3a y 4 (simulador de comisiones, sin guardar inver
 - **Ajustes de tasa (Sprint 3a):** puntos extra de 0 a 5.0 en pasos de 0.5 sobre la tasa de tabla de las dos modalidades, con desglose "Tasa de tabla X% + Y puntos extra = Z%"; plazo especial de 1 a 24 meses con tasa acordada por modalidad (aviso no bloqueante si pasa de la máxima de la tabla más 5 puntos). Esos umbrales siguen en código (pendiente (ooo)).
 - **Cálculo:** interés simple. Salidas: pago mensual (monto × tasa ÷ 12), rendimiento anual equivalente (monto × tasa) y ganancia total del plazo (monto × tasa × meses ÷ 12). Cada cifra se redondea una sola vez desde su valor exacto. El anual es un equivalente a 12 meses, no lo que recibe el cliente en plazos menores a 12.
 - **Archivos de datos** (en la rama `sprint-4`):
-  - `seed/parametros_iniciales.json` **v0.8**: tasas, tramos, comisiones N1 a N3, incentivos con bono numérico y parámetros de comisión.
-  - `seed/textos_cotizacion.json` **v0.6**: bloques `pdf_pagina2` (con el comparativo) y `reclutamiento`.
+  - `seed/parametros_iniciales.json` **v0.8.1**: tasas, tramos, comisiones N1 a N3, incentivos con bono numérico, parámetros de comisión y bono de gerente (sin la red externa).
+  - `seed/textos_cotizacion.json` **v0.6.1**: bloques `pdf_pagina2` (con el comparativo) y `reclutamiento` (con el aviso de inversiones por plazo).
   - `seed/benchmark.json` **v0.2**.
   - `tests/golden/rendimientos_pptx.json` **v0.5** (168 celdas; el nombre quedó por historia, ya no trae datos del pptx) y `tests/golden/rendimientos_usd.json` (128 celdas).
 - **Entidades:** CREDIFLEXI, S.A.P.I. DE C.V. y RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R. Hoy usan la misma tabla de tasas en pesos. Logo del PDF: siempre Crediflexi (el de Rami Sise falta). Pitágoras es la marca comercial de los servicios financieros.
@@ -116,7 +115,7 @@ Detalle exacto (anchos, celdas combinadas, formatos, colores) en `docs/FORMATOS_
 - Reglas de comisión aún por confirmar:
   - el nivel de cada persona (N2 y N3 sin uso);
   - qué pasa con la comisión bloqueada si el mes cierra por debajo del 80% (hoy "se pierde", por confirmar);
-  - si el interno cobra además el 30% de la comisión de su red;
+  - el bono de gerente (30% de la comisión N1 del equipo) y si la meta del gerente se mide sobre su equipo;
   - fecha de pago del sueldo base y del bono;
   - bono del Gerente.
 - Cuándo cuenta una inversión como captada: hoy se supone la fecha de inicio de la inversión, por confirmar.

@@ -97,19 +97,14 @@ describe("liquidarMes: interno", () => {
     expect(l.sueldoBase).toBeNull();
   });
 
-  it("captación de red externa: suma el 30% para la meta (650,000 + 30% de 500,000 = 800,000)", () => {
-    const l = interno([nueva("650000", 12, "2026-10-05")], { captacionRedExterna: "500000" });
-    expect(pesos(l.aporteRed)).toBe("150000.00");
-    expect(pesos(l.captacionParaMeta)).toBe("800000.00");
-    expect(l.desbloqueo!.desbloqueada).toBe(true);
-    // La red no tiene fecha: cuenta al cierre del mes, así que desbloquea el último día y todo se paga el 1.
-    expect(l.desbloqueo!.fecha).toBe("2026-10-31");
-    expect(l.pagos.map((p) => p.fecha)).toEqual(["2026-11-01"]);
-  });
-
-  it("la red externa no genera comisión propia: solo cuenta para la meta", () => {
-    const l = interno([nueva("650000", 12)], { captacionRedExterna: "500000" });
-    expect(pesos(l.comisionBruta)).toBe(pesos(l.lineas[0].comision));
+  it("la red externa ya no cuenta para la meta: la entrada no la acepta y la liquidación no trae aporte (0.8.1)", () => {
+    const l = interno([nueva("650000", 12, "2026-10-05")]);
+    expect(pesos(l.captacionParaMeta)).toBe("650000.00");
+    expect(l.desbloqueo!.desbloqueada).toBe(false);
+    expect(l).not.toHaveProperty("aporteRed");
+    // @ts-expect-error captacionRedExterna ya no existe en la entrada.
+    const conRed = bien(liquidarMes(s, { perfil: "interno", rol: "EJECUTIVO", inversiones: [nueva("650000", 12)], captacionRedExterna: "500000" }));
+    expect(pesos(conRed.captacionParaMeta)).toBe("650000.00");
   });
 });
 
@@ -158,10 +153,6 @@ describe("liquidarMes: externo", () => {
     ]);
   });
 
-  it("la red externa solo aplica a internos", () => {
-    const e = mal(liquidarMes(s, { perfil: "externo", inversiones: [nueva("500000", 12)], captacionRedExterna: "100000" }));
-    expect(e.codigo).toBe("ENTRADA_INVALIDA");
-  });
 });
 
 describe("liquidarMes: calendario de pagos del interno", () => {
@@ -223,11 +214,6 @@ describe("liquidarMes: entradas", () => {
   it("interno sin rol se rechaza", () => {
     const e = mal(liquidarMes(s, { perfil: "interno", inversiones: [] }));
     expect(e.codigo).toBe("ENTRADA_INVALIDA");
-  });
-
-  it("captación de red ilegible se rechaza", () => {
-    const e = mal(liquidarMes(s, { perfil: "interno", rol: "EJECUTIVO", inversiones: [], captacionRedExterna: "-1" }));
-    expect(e.codigo).toBe("MONTO_INVALIDO");
   });
 
   it("con renovaciones_pagan_comision en false, la renovación queda en 0.00", () => {

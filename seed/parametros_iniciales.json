@@ -696,7 +696,6 @@
       "base": "captacion nueva del mes, sin renovaciones",
       "alcance": "toda la captacion del mes, nuevas y renovaciones"
     },
-    "porcentaje_sobre_red_externa": "0.30",
     "metas_mensuales": {
       "EJECUTIVO": 1000000,
       "GERENTE": 2000000,
@@ -738,7 +737,15 @@
       "sueldo_base": 0,
       "bono": null
     },
-    "monto_minimo_comision": 30000
+    "monto_minimo_comision": 30000,
+    "bono_gerente": {
+      "porcentaje": "0.30",
+      "origen": "Bono Quincenal V18, hoja Supuestos, celda D14: '% Bono Gerentes N1'",
+      "base": "comision N1 (nuevas y renovaciones) de las inversiones de su equipo",
+      "equipo": "ejecutivos subordinados por la cadena de mando, sin externos",
+      "requiere_desbloqueo_del_equipo": false,
+      "estado": "por confirmar"
+    }
   },
   "discrepancias_abiertas": [
     "D1 RESUELTA (2026-10-02): limites de tramo. Un monto exacto de $200,000 paga el tramo 30,000-200,000; el tramo siguiente empieza en $200,001 (pesos enteros, como la tabla). El pptx se equivocaba; coincide con el folleto y el Excel.",
@@ -751,5 +758,5 @@
     "D8 RESUELTA (2026-10-02): Pitagoras es la marca comercial de los servicios financieros; no cambia nada en el calculo ni en el PDF (usa el logo de Crediflexi).",
     "D9 RESUELTA (2026-10-07): la tabla USD se habilita (estatus CONFIRMADA) solo para RAMI_SISE, como en el folleto; sus tramos empiezan en dolares enteros (40,001; 80,001...)."
   ],
-  "version": "0.8"
+  "version": "0.8.1"
 }

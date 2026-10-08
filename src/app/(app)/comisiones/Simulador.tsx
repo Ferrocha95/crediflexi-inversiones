@@ -31,6 +31,9 @@ interface Fila {
   readonly fecha: string;
 }
 
+/** Inversión del equipo del gerente (para el bono de gerente): sin fecha. */
+type FilaEquipo = Omit<Fila, "fecha">;
+
 export interface PropsSimulador {
   readonly opciones: OpcionesComisiones;
   readonly rolInicial: Rol;
@@ -49,7 +52,8 @@ export function Simulador({ opciones, rolInicial, fechaInicial, maximoInversione
   const [perfil, setPerfil] = useState<Perfil>("interno");
   const [rol, setRol] = useState<Rol>(rolInicial);
   const [filas, setFilas] = useState<readonly Fila[]>([{ clave: 1, tipo: "nueva", monto: "", plazo: null, fecha: fechaInicial }]);
-  const [red, setRed] = useState("");
+  /** Solo GERENTE: inversiones de su equipo (bloque opcional). */
+  const [equipo, setEquipo] = useState<readonly FilaEquipo[]>([]);
   /** Sube con cada cambio: es el número de petición. */
   const [version, setVersion] = useState(0);
   const [respuesta, setRespuesta] = useState<RespuestaComisiones | null>(null);
@@ -79,11 +83,30 @@ export function Simulador({ opciones, rolInicial, fechaInicial, maximoInversione
     cambio();
   }
 
+  function agregarEquipo() {
+    if (equipo.length >= maximoInversiones) return;
+    const clave = siguienteClave.current++;
+    setEquipo((fs) => [...fs, { clave, tipo: "nueva", monto: "", plazo: null }]);
+    enfocarFila.current = clave;
+    cambio();
+  }
+
+  function cambiarEquipo(clave: number, cambioFila: Partial<FilaEquipo>) {
+    setEquipo((fs) => fs.map((f) => (f.clave === clave ? { ...f, ...cambioFila } : f)));
+    cambio();
+  }
+
+  function quitarEquipo(clave: number) {
+    setEquipo((fs) => fs.filter((f) => f.clave !== clave));
+    document.getElementById(`${id}-agregar-equipo`)?.focus();
+    cambio();
+  }
+
   useEffect(() => {
     if (enfocarFila.current === null) return;
     document.getElementById(`${id}-monto-${enfocarFila.current}`)?.focus();
     enfocarFila.current = null;
-  }, [filas, id]);
+  }, [filas, equipo, id]);
 
   const hayFilas = filas.length > 0;
 
@@ -96,7 +119,8 @@ export function Simulador({ opciones, rolInicial, fechaInicial, maximoInversione
         perfil,
         rol: perfil === "interno" ? rol : null,
         inversiones: filas.map(({ tipo, monto, plazo, fecha }) => ({ tipo, monto, plazo, fecha })),
-        captacionRedExterna: perfil === "interno" ? red : "",
+        // El equipo solo cuenta con el rol GERENTE (el bloque no se muestra en los demás casos).
+        equipo: perfil === "interno" && rol === "GERENTE" ? equipo.map(({ tipo, monto, plazo }) => ({ tipo, monto, plazo })) : [],
       };
       let r: RespuestaComisiones;
       try {
@@ -115,7 +139,7 @@ export function Simulador({ opciones, rolInicial, fechaInicial, maximoInversione
       vigente = false;
       clearTimeout(temporizador);
     };
-  }, [perfil, rol, filas, red, version, hayFilas]);
+  }, [perfil, rol, filas, equipo, version, hayFilas]);
 
   const actual = hayFilas && respuesta !== null && respuesta.peticion === version ? respuesta : null;
 
@@ -266,23 +290,91 @@ export function Simulador({ opciones, rolInicial, fechaInicial, maximoInversione
           )}
         </section>
 
-        {perfil === "interno" && (
-          <Campo id={`${id}-red`} etiqueta={TEXTOS.redExterna} ayuda={TEXTOS.ayudaRedExterna(opciones.porcentajeRed)}>
-            <Entrada
-              id={`${id}-red`}
-              type="text"
-              inputMode="decimal"
-              autoComplete="off"
-              spellCheck={false}
-              className="tabular-nums"
-              aria-describedby={`${id}-red-ayuda`}
-              value={red}
-              onChange={(e) => {
-                setRed(e.target.value);
-                cambio();
-              }}
-            />
-          </Campo>
+        {perfil === "interno" && rol === "GERENTE" && (
+          <section aria-labelledby={`${id}-equipo`} className="flex flex-col gap-4">
+            <div>
+              <h3 id={`${id}-equipo`} className="text-lg font-bold">
+                {TEXTOS.tituloEquipo}
+              </h3>
+              <p className="text-sm text-hielo-tenue">{TEXTOS.ayudaEquipo}</p>
+            </div>
+            {equipo.length > 0 && (
+              <ol className="flex flex-col gap-4">
+                {equipo.map((f, i) => {
+                  const n = i + 1;
+                  const base = `${id}-eq-${f.clave}`;
+                  const nombre = TEXTOS.inversionEquipo(n).toLowerCase();
+                  return (
+                    <li key={f.clave}>
+                      <fieldset className="flex flex-col gap-3 rounded-xl border border-hielo/20 p-4">
+                        <legend className="px-1 font-bold">{TEXTOS.inversionEquipo(n)}</legend>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <Campo id={`${id}-monto-${f.clave}`} etiqueta={TEXTOS.monto}>
+                            <Entrada
+                              id={`${id}-monto-${f.clave}`}
+                              type="text"
+                              inputMode="decimal"
+                              autoComplete="off"
+                              spellCheck={false}
+                              aria-label={`${TEXTOS.monto}, ${nombre}`}
+                              className="font-bold tabular-nums"
+                              value={f.monto}
+                              onChange={(e) => cambiarEquipo(f.clave, { monto: e.target.value })}
+                            />
+                          </Campo>
+                          <Campo id={`${base}-plazo`} etiqueta={TEXTOS.plazo}>
+                            <Selector
+                              id={`${base}-plazo`}
+                              aria-label={`${TEXTOS.plazo}, ${nombre}`}
+                              value={f.plazo === null ? "" : String(f.plazo)}
+                              onChange={(e) => cambiarEquipo(f.clave, { plazo: e.target.value === "" ? null : Number(e.target.value) })}
+                            >
+                              <option value="">{TEXTOS.eligePlazo}</option>
+                              {opciones.plazos.map((p) => (
+                                <option key={p} value={p}>
+                                  {TEXTOS.opcionPlazo(p)}
+                                </option>
+                              ))}
+                            </Selector>
+                          </Campo>
+                          <Campo id={`${base}-tipo`} etiqueta={TEXTOS.tipo}>
+                            <Selector
+                              id={`${base}-tipo`}
+                              aria-label={`${TEXTOS.tipo}, ${nombre}`}
+                              value={f.tipo}
+                              onChange={(e) => cambiarEquipo(f.clave, { tipo: e.target.value === "renovacion" ? "renovacion" : "nueva" })}
+                            >
+                              <option value="nueva">{TEXTOS.nueva}</option>
+                              <option value="renovacion">{TEXTOS.renovacion}</option>
+                            </Selector>
+                          </Campo>
+                        </div>
+                        <Boton
+                          variante="fantasma"
+                          className="self-start"
+                          icono={<Trash2 aria-hidden="true" className="size-5" />}
+                          aria-label={TEXTOS.quitarInversionEquipo(n)}
+                          onClick={() => quitarEquipo(f.clave)}
+                        >
+                          {TEXTOS.quitar}
+                        </Boton>
+                      </fieldset>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+            <Boton
+              id={`${id}-agregar-equipo`}
+              variante="secundario"
+              className="self-start"
+              icono={<Plus aria-hidden="true" className="size-5" />}
+              disabled={equipo.length >= maximoInversiones}
+              onClick={agregarEquipo}
+            >
+              {TEXTOS.agregarEquipo}
+            </Boton>
+          </section>
         )}
       </form>
 
@@ -308,7 +400,7 @@ export function Simulador({ opciones, rolInicial, fechaInicial, maximoInversione
             )}
           </Aviso>
         ) : (
-          <Resultado modelo={actual.resultado.modelo} porcentajeRed={opciones.porcentajeRed} />
+          <Resultado modelo={actual.resultado.modelo} />
         )}
         {/* Solo se anuncia el total, no toda la tabla. */}
         <p className="sr-only" aria-live="polite">

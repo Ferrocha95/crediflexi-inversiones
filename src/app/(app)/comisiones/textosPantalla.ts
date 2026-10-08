@@ -33,8 +33,11 @@ export const TEXTOS = {
   quitarInversion: (n: number) => `Quitar la inversión ${n}`,
   agregar: "Agregar inversión",
   maximoInversiones: (n: number) => `Puedes simular hasta ${n} inversiones por mes.`,
-  redExterna: "Captación de tu red externa (opcional)",
-  ayudaRedExterna: (porcentaje: string) => `Cuenta el ${porcentaje} para tu meta. Ejemplo: 500,000`,
+  tituloEquipo: "Inversiones del equipo (opcional)",
+  ayudaEquipo: "Para el bono de gerente: la comisión N1 de las inversiones de los ejecutivos de tu equipo, nuevas y renovaciones. No cuenta para tu meta.",
+  inversionEquipo: (n: number) => `Inversión del equipo ${n}`,
+  agregarEquipo: "Agregar inversión del equipo",
+  quitarInversionEquipo: (n: number) => `Quitar la inversión del equipo ${n}`,
 
   tituloResultado: "Resultado del mes",
   sinInversiones: "Agrega una inversión para ver la comisión del mes.",
@@ -58,7 +61,6 @@ export const TEXTOS = {
   comisionPagable: "Pagable",
   comisionBloqueada: "Bloqueada",
   captacionParaMeta: "Captación para la meta",
-  aporteRed: (porcentaje: string) => `Aporte de tu red externa (${porcentaje})`,
 
   tituloAvance: "Avance de la meta",
   avanceDescripcion: (porcentaje: string, captacion: string, meta: string) => `${porcentaje} de la meta: ${captacion} de ${meta}`,
@@ -73,10 +75,15 @@ export const TEXTOS = {
   reglaCierre: (nota: string) => `Si el mes cierra sin desbloquear, la comisión bloqueada: ${nota}.`,
 
   tituloIncentivos: "Sueldo base y bono",
-  sueldoBase: "Sueldo base",
+  sueldoBase: "Sueldo base (propuesta)",
   bono: "Bono por captación",
-  sinBono: "El bono para este rol aún no está definido.",
+  sinBono: "El bono por captación del gerente aún no está definido.",
   fechaIncentivosPorConfirmar: "Fecha de pago del sueldo base y del bono: por confirmar.",
+
+  tituloBonoGerente: "Bono de gerente (por confirmar)",
+  ayudaBonoGerente: "Aparte de tu comisión y de tu meta, que se mide sobre tu propia captación.",
+  baseBonoGerente: "Comisión N1 del equipo",
+  bonoGerente: "Bono de gerente",
 
   tituloCalendario: "Calendario de pagos",
   reglaQuincenas: (ultimoDia: number, diaPago1: number, diaPago2: number) =>

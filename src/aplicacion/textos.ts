@@ -22,6 +22,7 @@ export const MARCADORES = [
   "dia_siguiente",
   "mes",
   "fecha_pago",
+  "n",
 ] as const;
 export type Marcador = (typeof MARCADORES)[number];
 
@@ -42,6 +43,7 @@ export const MARCADORES_POR_CAMPO = {
   "pdf_pagina2.benchmark_actualizado": ["fecha"],
   "pdf_pagina2.benchmark_fuentes": ["fuentes"],
   "reclutamiento.aviso": ["fecha"],
+  "reclutamiento.aviso_inversiones_por_plazo": ["n"],
   "reclutamiento.monto_plazo": ["meses"],
   "reclutamiento.pdf_presenta": ["presenta"],
   "reclutamiento.fecha_quincena_1": ["dia_corte", "mes", "fecha_pago"],
@@ -87,6 +89,9 @@ export interface TextosReclutamiento {
   readonly ayudaPresenta: string;
   readonly tituloEscenarios: string;
   readonly ayudaEscenarios: string;
+  /** Etiqueta y ayuda del campo "Inversiones por plazo" (entero de 1 a 20). */
+  readonly inversionesPorPlazo: string;
+  readonly ayudaInversionesPorPlazo: string;
   readonly nombreEscenario: string;
   /** Plantilla con {meses}. */
   readonly montoPlazo: string;
@@ -101,6 +106,8 @@ export interface TextosReclutamiento {
   readonly tituloGrafica: string;
   /** Plantilla con {fecha}: la de las tablas vigentes. */
   readonly aviso: string;
+  /** Plantilla con {n}: cuántas inversiones por plazo se usaron en el cálculo. */
+  readonly avisoInversionesPorPlazo: string;
   readonly pdfTitulo: string;
   /** Plantilla con {presenta}. */
   readonly pdfPresenta: string;
@@ -119,6 +126,8 @@ const CLAVES_RECLUTAMIENTO = {
   ayuda_presenta: "ayudaPresenta",
   titulo_escenarios: "tituloEscenarios",
   ayuda_escenarios: "ayudaEscenarios",
+  inversiones_por_plazo: "inversionesPorPlazo",
+  ayuda_inversiones_por_plazo: "ayudaInversionesPorPlazo",
   nombre_escenario: "nombreEscenario",
   monto_plazo: "montoPlazo",
   titulo_resultado: "tituloResultado",
@@ -130,6 +139,7 @@ const CLAVES_RECLUTAMIENTO = {
   fecha_quincena_2: "fechaQuincena2",
   titulo_grafica: "tituloGrafica",
   aviso: "aviso",
+  aviso_inversiones_por_plazo: "avisoInversionesPorPlazo",
   pdf_titulo: "pdfTitulo",
   pdf_presenta: "pdfPresenta",
   pdf_fecha: "pdfFecha",

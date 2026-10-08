@@ -38,7 +38,6 @@ export interface SemillaComisiones {
   readonly renovacionesPaganComision: boolean;
   readonly renovacionesCuentanParaMeta: boolean;
   readonly umbralDesbloqueo: Decimal;
-  readonly porcentajeRedExterna: Decimal;
   readonly metas: Readonly<Record<RolConMeta, Decimal>>;
   /** Texto de comision_bloqueada_al_cierre_de_mes, tal cual (sigue por confirmar). */
   readonly notaComisionBloqueada: string;
@@ -53,6 +52,12 @@ export interface SemillaComisiones {
   readonly incentivosInternos: readonly IncentivoInterno[];
   readonly sueldoBaseInterno: Decimal;
   readonly externos: { readonly sueldoBase: Decimal };
+  /** Bono de gerente (por confirmar): fracción de la comisión N1 de las inversiones de su equipo. */
+  readonly bonoGerente: {
+    readonly porcentaje: Decimal;
+    readonly requiereDesbloqueoDelEquipo: boolean;
+    readonly estado: string;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -124,7 +129,6 @@ const quincena2 = z.looseObject({
 
 const parametros = z.looseObject({
   desbloqueo: z.looseObject({ umbral: fraccion }),
-  porcentaje_sobre_red_externa: fraccion,
   metas_mensuales: z.looseObject({ EJECUTIVO: montoEntero, GERENTE: montoEntero }),
   renovaciones_cuentan_para_meta: z.boolean({ error: "Debe ser true o false." }),
   renovaciones_pagan_comision: z.boolean({ error: "Debe ser true o false." }),
@@ -141,6 +145,11 @@ const parametros = z.looseObject({
       }
     }),
   externos: z.looseObject({ sueldo_base: montoEntero }),
+  bono_gerente: z.looseObject({
+    porcentaje: fraccion,
+    requiere_desbloqueo_del_equipo: z.boolean({ error: "Debe ser true o false." }),
+    estado: z.string().min(1),
+  }),
   monto_minimo_comision: montoEntero,
 });
 
@@ -193,7 +202,6 @@ const esquemaComisiones = z
       renovacionesPaganComision: p.renovaciones_pagan_comision,
       renovacionesCuentanParaMeta: p.renovaciones_cuentan_para_meta,
       umbralDesbloqueo: p.desbloqueo.umbral,
-      porcentajeRedExterna: p.porcentaje_sobre_red_externa,
       metas: { EJECUTIVO: p.metas_mensuales.EJECUTIVO, GERENTE: p.metas_mensuales.GERENTE },
       notaComisionBloqueada: p.comision_bloqueada_al_cierre_de_mes,
       pago: {
@@ -204,6 +212,11 @@ const esquemaComisiones = z
       incentivosInternos: internos.map((f) => ({ desde: f.desde, bono: f.bono })),
       sueldoBaseInterno: internos[0].sueldo_base,
       externos: { sueldoBase: p.externos.sueldo_base },
+      bonoGerente: {
+        porcentaje: p.bono_gerente.porcentaje,
+        requiereDesbloqueoDelEquipo: p.bono_gerente.requiere_desbloqueo_del_equipo,
+        estado: p.bono_gerente.estado,
+      },
     };
   });
 

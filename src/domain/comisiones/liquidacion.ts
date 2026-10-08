@@ -1,11 +1,10 @@
-import { Decimal, RE_MONTO } from "../comun/decimal";
-import { aCentavos } from "../interes/redondeo";
+import { Decimal } from "../comun/decimal";
 import { comisionDeInversion, type ComisionInversion } from "./comision";
 import { exitoComision, falloComision, type ResultadoComision } from "./errores";
-import { diasDelMes, leerFecha, pagoDeFecha, pagoDeQuincena2, textoDeFecha, type FechaCivil } from "./fechas";
+import { leerFecha, pagoDeFecha, pagoDeQuincena2, textoDeFecha, type FechaCivil } from "./fechas";
 import type { RolConMeta, SemillaComisiones, TipoInversion } from "./semilla";
 
-// Simulador del mes: nada se guarda. Todas las reglas (umbral, red, meta,
+// Simulador del mes: nada se guarda. Todas las reglas (umbral, meta,
 // renovaciones, bono, calendario) salen de la semilla.
 
 export interface InversionDelMes {
@@ -22,8 +21,6 @@ export interface EntradaLiquidacion {
   /** Obligatorio para internos; se ignora en externos. */
   readonly rol?: RolConMeta;
   readonly inversiones: readonly InversionDelMes[];
-  /** Solo internos: captación de su red externa en el mes (texto decimal). */
-  readonly captacionRedExterna?: string;
 }
 
 export interface LineaLiquidacion extends ComisionInversion {
@@ -42,8 +39,6 @@ export interface Liquidacion {
   readonly perfil: "interno" | "externo";
   /** En el orden de entrada. */
   readonly lineas: readonly LineaLiquidacion[];
-  /** 30% (parámetro) de la captación de la red externa; cero en externos. */
-  readonly aporteRed: Decimal;
   readonly captacionParaMeta: Decimal;
   /** null en externos: no tienen meta ni desbloqueo. */
   readonly desbloqueo: {
@@ -89,20 +84,6 @@ export function liquidarMes(s: SemillaComisiones, e: EntradaLiquidacion): Result
   if (e.perfil === "interno" && e.rol === undefined) {
     return falloComision("ENTRADA_INVALIDA", "Elige el rol (Ejecutivo o Gerente): la meta del mes depende del rol.");
   }
-  if (e.perfil === "externo" && e.captacionRedExterna !== undefined) {
-    return falloComision("ENTRADA_INVALIDA", "La captación de red externa solo aplica al perfil interno. Quítala o cambia el perfil.");
-  }
-  let red = CERO;
-  if (e.captacionRedExterna !== undefined) {
-    if (!RE_MONTO.test(e.captacionRedExterna)) {
-      return falloComision(
-        "MONTO_INVALIDO",
-        `La captación de red externa "${e.captacionRedExterna}" no se puede leer. Escríbela sin comas, con máximo 2 decimales.`,
-      );
-    }
-    red = new Decimal(e.captacionRedExterna);
-  }
-
   // Cada inversión: su fecha y su comisión.
   const lineas: LineaLiquidacion[] = [];
   const fechas: FechaCivil[] = [];
@@ -130,15 +111,13 @@ export function liquidarMes(s: SemillaComisiones, e: EntradaLiquidacion): Result
   }
 
   const comisionBruta = sumar(lineas.map((l) => l.comision));
-  const aporteRed = e.perfil === "interno" ? aCentavos(red.times(s.porcentajeRedExterna)) : CERO;
-  const captacionPropia = sumar(lineas.filter((l) => l.cuentaParaMeta).map((l) => l.monto));
-  const captacionParaMeta = captacionPropia.plus(aporteRed);
+  // Solo la captación propia (sin red externa desde la semilla 0.8.1).
+  const captacionParaMeta = sumar(lineas.filter((l) => l.cuentaParaMeta).map((l) => l.monto));
 
   if (e.perfil === "externo") {
     return exitoComision({
       perfil: "externo",
       lineas,
-      aporteRed,
       captacionParaMeta,
       desbloqueo: null,
       comisionBruta,
@@ -166,10 +145,6 @@ export function liquidarMes(s: SemillaComisiones, e: EntradaLiquidacion): Result
       break;
     }
   }
-  // La red no tiene fecha: cuenta al cierre del mes (supuesto aprobado).
-  if (fechaDesbloqueo === null && mes !== undefined && captacionParaMeta.greaterThanOrEqualTo(umbral)) {
-    fechaDesbloqueo = { ...mes, dia: diasDelMes(mes.anio, mes.mes) };
-  }
   const desbloqueada = fechaDesbloqueo !== null;
   const d = fechaDesbloqueo;
 
@@ -184,7 +159,6 @@ export function liquidarMes(s: SemillaComisiones, e: EntradaLiquidacion): Result
   return exitoComision({
     perfil: "interno",
     lineas,
-    aporteRed,
     captacionParaMeta,
     desbloqueo: { meta, umbral, desbloqueada, fecha: d === null ? null : textoDeFecha(d) },
     comisionBruta,

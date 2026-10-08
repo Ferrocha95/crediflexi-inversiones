@@ -37,6 +37,24 @@ test.describe("modo reclutamiento", () => {
     await sinViolaciones(page);
   });
 
+  test("3 inversiones por plazo: aviso visible con el número y el reparto en el desglose", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/comisiones/reclutamiento");
+    await expect(page.getByText(/^Cálculo con 1 inversión\(es\) por plazo:/)).toBeVisible();
+    await page.getByLabel("Inversiones por plazo").fill("3");
+    await expect(page.getByText(/^Cálculo con 3 inversión\(es\) por plazo:/)).toBeVisible();
+    await expect(page.getByText("1 × ($166,666.68 × 5.52% = $9,200.00) + 2 × ($166,666.66 × 5.52% = $9,200.00) = $27,600.00")).toBeVisible();
+    await expect(page.getByText(/sueldo base/i)).toHaveCount(0);
+    await sinViolaciones(page);
+  });
+
+  test("un nombre con promesa no se acepta", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/comisiones/reclutamiento");
+    await page.getByLabel("Quién presenta").fill("Ingreso fijo garantizado");
+    await expect(page.getByRole("alert").filter({ hasText: "No se pudo calcular la propuesta" })).toContainText("quien presenta");
+  });
+
   test("descarga la Propuesta de ingresos en PDF con el teclado", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/comisiones/reclutamiento");

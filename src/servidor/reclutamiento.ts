@@ -23,6 +23,8 @@ export const esquemaReclutamiento = z.strictObject({
       }),
     )
     .length(3),
+  /** Opcional (por omisión 1); el modelo valida que sea un entero de 1 a 20. */
+  inversionesPorPlazo: z.number().int().min(-1000).max(1000).optional(),
 });
 
 export type CamposReclutamientoServidor = z.infer<typeof esquemaReclutamiento>;

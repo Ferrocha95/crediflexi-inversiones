@@ -36,9 +36,9 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 }
 
 describe("cargarTextos: el archivo real", () => {
-  it("carga seed/textos_cotizacion.json versión 0.6", () => {
+  it("carga seed/textos_cotizacion.json versión 0.6.1", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.6");
+    expect(t.version).toBe("0.6.1");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente " +
@@ -456,6 +456,10 @@ describe("cargarTextos: el bloque reclutamiento (0.6)", () => {
     const r = cargarBien(textosJson).reclutamiento;
     expect(r.aviso).toBe(AVISO);
     expect(r.pdfTitulo).toBe("Propuesta de ingresos");
+    expect(r.inversionesPorPlazo).toBe("Inversiones por plazo");
+    expect(r.avisoInversionesPorPlazo).toBe(
+      "Cálculo con {n} inversión(es) por plazo: si el mismo monto se reparte en más inversiones, la tasa de cada una puede ser menor.",
+    );
     expect(r.tituloResultado).toBe("Lo que se ganaría en un mes");
     expect(r.escenariosEjemplo.map((e) => e.nombre)).toEqual(["Escenario 1", "Escenario 2", "Escenario 3"]);
     expect(r.escenariosEjemplo[2].montos).toEqual({ "6": "300000", "12": "500000", "18": "", "24": "500000" });
@@ -473,6 +477,7 @@ describe("cargarTextos: el bloque reclutamiento (0.6)", () => {
 
   it.each([
     ["aviso", "{fecha}"],
+    ["aviso_inversiones_por_plazo", "{n}"],
     ["monto_plazo", "{meses}"],
     ["pdf_presenta", "{presenta}"],
     ["fecha_quincena_1", "{dia_corte} {mes} {fecha_pago}"],

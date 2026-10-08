@@ -28,7 +28,7 @@ const base = {
     { tipo: "nueva", monto: "500,000", plazo: 12, fecha: "2026-10-07" },
     { tipo: "nueva", monto: "400000", plazo: 6, fecha: "2026-10-09" },
   ],
-  captacionRedExterna: "",
+  equipo: [] as unknown[],
 };
 
 function modelo(r: RespuestaComisiones) {
@@ -81,6 +81,28 @@ describe("acción simular (/comisiones)", () => {
     ["más de 50 inversiones", { inversiones: Array.from({ length: 51 }, () => base.inversiones[0]) }],
   ])("forma inválida (%s): mensaje de forma", async (_, cambio) => {
     expect(error(await simular({ ...base, ...cambio })).mensaje).toBe(MENSAJE_FORMA_COMISIONES);
+  });
+
+  it("GERENTE con inversiones del equipo: el bono de gerente llega aparte", async () => {
+    const r = await simular({
+      ...base,
+      rol: "GERENTE",
+      equipo: [
+        { tipo: "nueva", monto: "500,000", plazo: 12 },
+        { tipo: "nueva", monto: "400000", plazo: 6 },
+        { tipo: "renovacion", monto: "500000", plazo: 12 },
+      ],
+    });
+    expect(modelo(r).bonoGerente).toMatchObject({ base: "$25,215.00", bono: "$7,564.50" });
+  });
+
+  it("la captación de red externa ya no se acepta (forma inválida)", async () => {
+    expect(error(await simular({ ...base, captacionRedExterna: "500000" })).mensaje).toBe(MENSAJE_FORMA_COMISIONES);
+  });
+
+  it("más de 50 inversiones del equipo: forma inválida", async () => {
+    const equipo = Array.from({ length: 51 }, () => ({ tipo: "nueva", monto: "500000", plazo: 12 }));
+    expect(error(await simular({ ...base, rol: "GERENTE", equipo })).mensaje).toBe(MENSAJE_FORMA_COMISIONES);
   });
 
   it("un error del motor llega con su mensaje en español", async () => {

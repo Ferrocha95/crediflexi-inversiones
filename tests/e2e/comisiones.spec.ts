@@ -41,6 +41,7 @@ test.describe("comisiones", () => {
     await expect(page.getByRole("progressbar", { name: "Avance de la meta" })).toHaveAttribute("aria-valuenow", "90");
     // El pago del calendario: la fecha y el monto en el mismo renglón.
     await expect(page.getByRole("listitem").filter({ hasText: "16/10/2026" }).filter({ hasText: "$18,450.00" })).toBeVisible();
+    await expect(page.getByText("Sueldo base (propuesta)", { exact: true })).toBeVisible();
     await expect(page.getByText("$15,000.00", { exact: true })).toBeVisible();
     await sinViolaciones(page);
   });
@@ -68,16 +69,42 @@ test.describe("comisiones", () => {
     await expect(page.getByRole("button", { name: "Agregar inversión" })).toBeFocused();
   });
 
-  test("externo: sin rol ni red, todo pagable en su quincena", async ({ page }) => {
+  test("externo: sin rol, sin sueldo base, todo pagable en su quincena", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/comisiones");
     await page.getByText("Externo", { exact: true }).click();
     await expect(page.getByRole("radio", { name: "Ejecutivo" })).toHaveCount(0);
-    await expect(page.getByLabel("Captación de tu red externa (opcional)")).toHaveCount(0);
+    await expect(page.getByText(/red externa/i)).toHaveCount(0);
     await inversion(page, 1, "500,000", "12 meses", "2026-10-20", "Renovación");
     await expect(page.getByText("$6,765.00", { exact: true }).first()).toBeVisible();
     await expect(page.getByRole("cell", { name: "01/11/2026", exact: true })).toBeVisible();
     await expect(page.getByRole("progressbar")).toHaveCount(0);
+    await expect(page.getByText(/Sueldo base/)).toHaveCount(0);
+  });
+
+  test("gerente: inversiones del equipo con el bono de gerente aparte (25,215.00 -> 7,564.50)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/comisiones");
+    await page.getByText("Gerente", { exact: true }).click();
+    await inversion(page, 1, "500,000", "12 meses", "2026-10-07");
+    await expect(page.getByText(/Sueldo base/)).toHaveCount(0);
+    for (const [n, monto, plazo, tipo] of [
+      [1, "500,000", "12 meses", "Nueva"],
+      [2, "400,000", "6 meses", "Nueva"],
+      [3, "500,000", "12 meses", "Renovación"],
+    ] as const) {
+      await page.getByRole("button", { name: "Agregar inversión del equipo" }).click();
+      await page.getByLabel(`Monto, inversión del equipo ${n}`).fill(monto);
+      await page.getByLabel(`Plazo, inversión del equipo ${n}`).selectOption({ label: plazo });
+      await page.getByLabel(`Tipo, inversión del equipo ${n}`).selectOption({ label: tipo });
+    }
+    const bloque = page.getByRole("region", { name: "Bono de gerente (por confirmar)" });
+    await expect(bloque).toContainText("$25,215.00");
+    await expect(bloque).toContainText("$7,564.50");
+    await expect(bloque).toContainText("30% × $25,215.00 = $7,564.50");
+    // La meta sigue sobre su propia captación (500,000 de 2,000,000).
+    await expect(page.getByRole("progressbar", { name: "Avance de la meta" })).toHaveAttribute("aria-valuenow", "25");
+    await sinViolaciones(page);
   });
 
   test("un monto menor al mínimo muestra el error en español", async ({ page }) => {
@@ -103,6 +130,30 @@ test.describe("comisiones", () => {
 
 // Capturas para revisión visual: solo con la variable MUESTRAS_DIR (fuera del repositorio).
 //   PowerShell: $env:MUESTRAS_DIR = "C:\dev\informes\sprint-4"; npx playwright test comisiones
+test.describe("capturas de /comisiones con rol Gerente", () => {
+  test.skip(process.env.MUESTRAS_DIR === undefined, "solo con MUESTRAS_DIR");
+  for (const ancho of [390, 1280]) {
+    test(`gerente a ${ancho} px`, async ({ page }) => {
+      await page.setViewportSize({ width: ancho, height: 900 });
+      await page.goto("/comisiones");
+      await page.getByText("Gerente", { exact: true }).click();
+      await inversion(page, 1, "500,000", "12 meses", "2026-10-07");
+      for (const [n, monto, plazo, tipo] of [
+        [1, "500,000", "12 meses", "Nueva"],
+        [2, "400,000", "6 meses", "Nueva"],
+        [3, "500,000", "12 meses", "Renovación"],
+      ] as const) {
+        await page.getByRole("button", { name: "Agregar inversión del equipo" }).click();
+        await page.getByLabel(`Monto, inversión del equipo ${n}`).fill(monto);
+        await page.getByLabel(`Plazo, inversión del equipo ${n}`).selectOption({ label: plazo });
+        await page.getByLabel(`Tipo, inversión del equipo ${n}`).selectOption({ label: tipo });
+      }
+      await expect(page.getByText("$7,564.50").first()).toBeVisible();
+      await page.screenshot({ path: `${process.env.MUESTRAS_DIR}/comisiones-gerente-${ancho}.png`, fullPage: true });
+    });
+  }
+});
+
 test.describe("capturas de /comisiones", () => {
   test.skip(process.env.MUESTRAS_DIR === undefined, "solo con MUESTRAS_DIR");
   for (const ancho of [390, 1280]) {

@@ -15,24 +15,30 @@ import { extraerTexto, paginaEnPng } from "../servidor/pdf/extraer";
 const DIRECTORIO = process.env.MUESTRAS_DIR;
 
 describe.runIf(DIRECTORIO !== undefined)("muestras del PDF de reclutamiento", () => {
-  it("propuesta de ingresos con los escenarios de ejemplo, a 390 y 1280 px de ancho", { timeout: 120_000 }, async () => {
+  it("propuesta de ingresos con los escenarios de ejemplo (1 y 3 inversiones por plazo), a 390 y 1280 px de ancho", { timeout: 120_000 }, async () => {
     const dir = DIRECTORIO!;
     await mkdir(dir, { recursive: true });
     const p = await leerParametrosReclutamiento();
     if (!p.ok) throw new Error(p.error.mensaje);
-    const m = modeloReclutamiento(
-      p.valor.semilla,
-      p.valor.textos,
-      { presenta: "Persona Sintética Uno", escenarios: textosJson.reclutamiento.escenarios_ejemplo },
-      new Date("2026-10-08T12:00:00-06:00"),
-    );
-    if (!m.ok) throw new Error(m.error.mensaje);
-    const bytes = await renderizarReclutamiento(m.valor);
-    expect((await extraerTexto(bytes)).paginas).toBe(1);
-    await writeFile(path.join(dir, "propuesta-de-ingresos.pdf"), bytes);
-    // La hoja carta mide 612 pt de ancho: la escala da el ancho en píxeles.
-    for (const ancho of [390, 1280]) {
-      await writeFile(path.join(dir, `propuesta-de-ingresos-${ancho}.png`), await paginaEnPng(bytes, 1, ancho / 612));
+    // Con 1 inversión por plazo (por omisión) y con 3.
+    for (const [n, sufijo] of [
+      [1, ""],
+      [3, "-3-inversiones"],
+    ] as const) {
+      const m = modeloReclutamiento(
+        p.valor.semilla,
+        p.valor.textos,
+        { presenta: "Persona Sintética Uno", escenarios: textosJson.reclutamiento.escenarios_ejemplo, inversionesPorPlazo: n },
+        new Date("2026-10-08T12:00:00-06:00"),
+      );
+      if (!m.ok) throw new Error(m.error.mensaje);
+      const bytes = await renderizarReclutamiento(m.valor);
+      expect((await extraerTexto(bytes)).paginas).toBe(1);
+      await writeFile(path.join(dir, `propuesta-de-ingresos${sufijo}.pdf`), bytes);
+      // La hoja carta mide 612 pt de ancho: la escala da el ancho en píxeles.
+      for (const ancho of [390, 1280]) {
+        await writeFile(path.join(dir, `propuesta-de-ingresos${sufijo}-${ancho}.png`), await paginaEnPng(bytes, 1, ancho / 612));
+      }
     }
   });
 });

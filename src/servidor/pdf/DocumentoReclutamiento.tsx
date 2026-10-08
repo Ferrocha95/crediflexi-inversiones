@@ -17,7 +17,7 @@ const SEPARACION = 10;
 const ANCHO_TARJETA = (ANCHO_UTIL - 2 * SEPARACION) / 3;
 
 /** Gráfica de barras horizontales: nombre a la izquierda, total a la derecha. */
-const BARRAS = { alto: 16, anchoNombre: 170, anchoTotal: 90, grosor: 10 } as const;
+const BARRAS = { alto: 14, anchoNombre: 170, anchoTotal: 90, grosor: 9 } as const;
 const ANCHO_BARRA = ANCHO_UTIL - BARRAS.anchoNombre - BARRAS.anchoTotal - 12;
 
 const e = StyleSheet.create({
@@ -40,38 +40,38 @@ const e = StyleSheet.create({
   fechaValor: { fontSize: 11, color: COLOR.gris, fontWeight: "bold" },
   linea: { marginTop: 10, height: 3, backgroundColor: COLOR.verde, borderRadius: 1.5 },
 
-  titulo: { marginTop: 14, fontSize: 26, fontWeight: "bold", lineHeight: 1.1 },
+  titulo: { marginTop: 10, fontSize: 24, fontWeight: "bold", lineHeight: 1.1 },
   presenta: { marginTop: 4, fontSize: 12, color: COLOR.gris },
 
-  seccion: { marginTop: 18 },
-  seccionTitulo: { fontSize: 14, fontWeight: "bold", marginBottom: 8 },
+  seccion: { marginTop: 12 },
+  seccionTitulo: { fontSize: 13, fontWeight: "bold", marginBottom: 6 },
 
   tarjetas: { flexDirection: "row", gap: SEPARACION },
   tarjeta: {
     width: ANCHO_TARJETA,
-    padding: 10,
+    padding: 8,
     borderWidth: 0.75,
     borderColor: COLOR.linea,
     borderRadius: 8,
     backgroundColor: COLOR.fondoTenue,
   },
   tarjetaNombre: { fontSize: 10, fontWeight: "bold" },
-  tarjetaEtiqueta: { marginTop: 6, fontSize: 8, color: COLOR.gris },
-  tarjetaTotal: { fontSize: 20, fontWeight: "bold", color: COLOR.verde, lineHeight: 1.15 },
-  desgloseTitulo: { marginTop: 6, fontSize: 8, fontWeight: "bold", color: COLOR.gris },
-  desgloseLinea: { marginTop: 4, fontSize: 9 },
-  desgloseOperacion: { fontSize: 8, color: COLOR.gris },
+  tarjetaEtiqueta: { marginTop: 4, fontSize: 8, color: COLOR.gris },
+  tarjetaTotal: { fontSize: 18, fontWeight: "bold", color: COLOR.verde, lineHeight: 1.15 },
+  desgloseTitulo: { marginTop: 4, fontSize: 8, fontWeight: "bold", color: COLOR.gris },
+  desgloseLinea: { marginTop: 3, fontSize: 9 },
+  desgloseOperacion: { fontSize: 8, color: COLOR.gris, lineHeight: 1.2 },
   sinCaptacion: { marginTop: 4, fontSize: 9, color: COLOR.gris },
 
   barraFila: { flexDirection: "row", alignItems: "center", height: BARRAS.alto },
   barraNombre: { width: BARRAS.anchoNombre, fontSize: 9 },
   barraTotal: { width: BARRAS.anchoTotal, fontSize: 9, fontWeight: "bold", textAlign: "right" },
 
-  fechaPago: { marginTop: 3, fontSize: 10 },
+  fechaPago: { marginTop: 2, fontSize: 10 },
 
-  relleno: { flexGrow: 1, minHeight: 12 },
+  relleno: { flexGrow: 1, minHeight: 8 },
   aviso: {
-    padding: 12,
+    padding: 10,
     borderWidth: 1.25,
     borderColor: COLOR.marino,
     borderRadius: 8,
@@ -163,7 +163,10 @@ export function DocumentoReclutamiento({ modelo: m, logos }: { modelo: ModeloRec
         </View>
 
         <View style={e.relleno} />
-        <Text style={e.aviso}>{m.aviso}</Text>
+        <View style={e.aviso}>
+          <Text>{m.avisoInversiones}</Text>
+          <Text style={{ marginTop: 4 }}>{m.aviso}</Text>
+        </View>
       </Page>
     </Document>
   );

@@ -2,19 +2,29 @@ import { describe, expect, it } from "vitest";
 import { cargarSemillaComisiones } from "../../../src/domain/comisiones/semilla";
 import { copiaSemilla, mal, semillaComisiones as s } from "./ayudas";
 
-describe("cargarSemillaComisiones con la semilla 0.8", () => {
+describe("cargarSemillaComisiones con la semilla 0.8.1", () => {
   it("lee la versión, el nivel vigente y los parámetros confirmados", () => {
-    expect(s.version).toBe("0.8");
+    expect(s.version).toBe("0.8.1");
     expect(s.generado).toBe("2026-10-07");
     expect(s.nivelVigente).toBe("N1");
     expect(s.renovacionesPaganComision).toBe(true);
     expect(s.renovacionesCuentanParaMeta).toBe(false);
     expect(s.montoMinimo.toFixed(2)).toBe("30000.00");
     expect(s.umbralDesbloqueo.toString()).toBe("0.8");
-    expect(s.porcentajeRedExterna.toString()).toBe("0.3");
     expect(s.metas.EJECUTIVO.toFixed(0)).toBe("1000000");
     expect(s.metas.GERENTE.toFixed(0)).toBe("2000000");
     expect(s.notaComisionBloqueada).toBe("se_pierde (POR_CONFIRMAR, editable)");
+  });
+
+  it("ya no trae el 30% de la red externa para la meta (decisión de Fernando, 0.8.1)", () => {
+    expect(s).not.toHaveProperty("porcentajeRedExterna");
+    expect(copiaSemilla().parametros).not.toHaveProperty("porcentaje_sobre_red_externa");
+  });
+
+  it("lee el bono de gerente (30% de la comisión N1 del equipo, por confirmar)", () => {
+    expect(s.bonoGerente.porcentaje.toString()).toBe("0.3");
+    expect(s.bonoGerente.requiereDesbloqueoDelEquipo).toBe(false);
+    expect(s.bonoGerente.estado).toBe("por confirmar");
   });
 
   it("lee el calendario de pago por quincena", () => {
@@ -92,5 +102,17 @@ describe("cargarSemillaComisiones: errores en español con la ubicación", () =>
     const j = copiaSemilla();
     j.parametros.pago_comisiones.quincena_1.dia_de_pago = 20;
     expect(errorDe(j).detalles?.join("\n")).toContain("parametros.pago_comisiones");
+  });
+
+  it("un porcentaje del bono de gerente fuera de 0 a 1", () => {
+    const j = copiaSemilla();
+    j.parametros.bono_gerente.porcentaje = "30";
+    expect(errorDe(j).detalles?.join("\n")).toContain("parametros.bono_gerente.porcentaje");
+  });
+
+  it("falta el bono de gerente", () => {
+    const j = copiaSemilla();
+    delete (j.parametros as Record<string, unknown>).bono_gerente;
+    expect(errorDe(j).detalles?.join("\n")).toContain("parametros.bono_gerente");
   });
 });
