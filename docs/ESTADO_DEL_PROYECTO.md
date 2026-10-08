@@ -115,7 +115,7 @@ Detalle exacto (anchos, celdas combinadas, formatos, colores) en `docs/FORMATOS_
 - Reglas de comisión aún por confirmar:
   - el nivel de cada persona (N2 y N3 sin uso);
   - qué pasa con la comisión bloqueada si el mes cierra por debajo del 80% (hoy "se pierde", por confirmar);
-  - el bono de gerente (30% de la comisión N1 del equipo) y si requiere que el equipo desbloquee (la meta del gerente se mide sobre su propia captación: confirmado el 8 de octubre de 2026);
+  - el bono de gerente en sí (30% de la comisión N1 del equipo). Confirmado el 8 de octubre de 2026: la meta del gerente se mide sobre su propia captación y el bono no requiere que el equipo desbloquee;
   - fecha de pago del sueldo base y del bono;
   - bono del Gerente.
 - Cuándo cuenta una inversión como captada: hoy se supone la fecha de inicio de la inversión, por confirmar.
