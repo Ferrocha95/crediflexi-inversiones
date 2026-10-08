@@ -8,6 +8,7 @@ import { cargarTextos } from "../../../../src/aplicacion/textos";
 import { renderizarPdf } from "../../../../src/servidor/pdf/renderizar";
 import { cotizarBien, semillaReal } from "../../oro/ayudas";
 import { extraerTexto } from "./extraer";
+import { benchmarkReal } from "../../benchmarkReal";
 
 // PDF real de Rami Sise en USD (datos sintéticos): 10,000 USD a 12 meses.
 
@@ -28,7 +29,7 @@ describe("PDF real en USD", () => {
     [24, "$79.17 USD"],
   ])("RAMI_SISE 10,000 dólares a %s meses: 2 páginas y las cifras con USD", async (plazo, pagoMensual) => {
     const c = cotizarBien({ entidad: "RAMI_SISE", moneda: "USD", monto: "10000", plazo });
-    const m = sinError(modeloPdf(c, { razonesSociales, textos }, {}, AHORA, datosPagina2(semillaReal, c.solicitud)));
+    const m = sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, {}, AHORA, datosPagina2(semillaReal, c.solicitud)));
     const { paginas, porPagina } = await extraerTexto(await renderizarPdf(m));
     expect(paginas).toBe(2);
     expect(porPagina[0]).toContain("$10,000.00 USD");

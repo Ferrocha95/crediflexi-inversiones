@@ -14,6 +14,7 @@ import { MENSAJE_HOST_NO_LOCAL } from "../../../../src/servidor/guardiaHost";
 import type { ParametrosCotizacion } from "../../../../src/servidor/parametros";
 import { manejarPdf, MENSAJES_PDF, type DependenciasPdf } from "../../../../src/servidor/pdf/manejador";
 import { semillaReal } from "../../oro/ayudas";
+import { benchmarkReal } from "../../benchmarkReal";
 
 function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: string } }): T {
   if (!r.ok) throw new Error(r.error.mensaje);
@@ -24,6 +25,7 @@ const parametros: ParametrosCotizacion = {
   semilla: semillaReal,
   razonesSociales: sinError(cargarRazonesSociales(semillaJson, "seed/parametros_iniciales.json")),
   textos: sinError(cargarTextos(textosJson, "seed/textos_cotizacion.json")),
+  benchmark: benchmarkReal,
 };
 
 /** 1 de octubre de 2026, 12:00 en la Ciudad de México. */
@@ -84,7 +86,7 @@ function esperado(solicitud: Partial<SolicitudTasa>, entrada: EntradaPdf = {}): 
     ...solicitud,
   });
   if (!c.ok) throw new Error(c.error.mensaje);
-  const ctx = { razonesSociales: parametros.razonesSociales, textos: parametros.textos };
+  const ctx = { razonesSociales: parametros.razonesSociales, textos: parametros.textos, benchmark: parametros.benchmark };
   return sinError(modeloPdf(c.valor, ctx, entrada, AHORA, datosPagina2(semillaReal, c.valor.solicitud)));
 }
 

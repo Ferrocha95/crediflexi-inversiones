@@ -340,11 +340,20 @@ const CLAVES_PAGINA2 = [
   "serie_cobrado",
   "serie_devengado",
   "comparacion_omitida",
+  "benchmark_titulo",
+  "benchmark_tu_tasa",
+  "benchmark_desactualizado",
+  "benchmark_solo_pesos",
   "pagina",
   "pagina_de",
 ] as const;
 
 const CLAVES_PAGINA2_CON_MESES = ["pago_ganancia_mensual", "pago_ganancia_vencimiento", "capital_vencimiento"] as const;
+/** Claves del comparativo con su único marcador. */
+const CLAVES_PAGINA2_BENCHMARK = [
+  ["benchmark_actualizado", "fecha"],
+  ["benchmark_fuentes", "fuentes"],
+] as const;
 
 describe("cargarTextos: el bloque pdf_pagina2", () => {
   it("trae los textos de la página 2 con la terminología de 'ganancia'", () => {
@@ -369,9 +378,19 @@ describe("cargarTextos: el bloque pdf_pagina2", () => {
     expect(p.notaCentavos).toBe("Los centavos se ajustan para que la suma coincida con el total.");
   });
 
-  it("trae las 29 claves, todas con texto", () => {
+  it("trae los textos del comparativo de tasas", () => {
     const p = cargarBien(textosJson).pdfPagina2;
-    expect(Object.keys(p)).toHaveLength(CLAVES_PAGINA2.length + CLAVES_PAGINA2_CON_MESES.length);
+    expect(p.benchmarkTitulo).toBe("Tu tasa frente a otras opciones");
+    expect(p.benchmarkTuTasa).toBe("Tu tasa");
+    expect(p.benchmarkActualizado).toBe("Actualizado al {fecha}");
+    expect(p.benchmarkFuentes).toBe("Fuentes: {fuentes}");
+    expect(p.benchmarkDesactualizado).toBe("Comparativo no disponible: datos desactualizados");
+    expect(p.benchmarkSoloPesos).toBe("Comparativo no disponible en dólares: las opciones comparadas son en pesos (MXN).");
+  });
+
+  it("trae las 35 claves, todas con texto", () => {
+    const p = cargarBien(textosJson).pdfPagina2;
+    expect(Object.keys(p)).toHaveLength(CLAVES_PAGINA2.length + CLAVES_PAGINA2_CON_MESES.length + CLAVES_PAGINA2_BENCHMARK.length);
     for (const v of Object.values(p)) expect(v.trim()).not.toBe("");
   });
 
@@ -393,7 +412,16 @@ describe("cargarTextos: el bloque pdf_pagina2", () => {
     expect(detalle).toContain("{meses}");
   });
 
-  it.each([...CLAVES_PAGINA2, ...CLAVES_PAGINA2_CON_MESES])("pdf_pagina2.%s vacío rompe la carga", (clave) => {
+  it.each(CLAVES_PAGINA2_BENCHMARK)("pdf_pagina2.%s solo admite {%s}", (clave, marcador) => {
+    const j = copia();
+    (j.pdf_pagina2 as Record<string, string>)[clave] = `Dato {${marcador}}`;
+    expect(cargarBien(j)).toBeDefined();
+    (j.pdf_pagina2 as Record<string, string>)[clave] = `Dato {${marcador}} {meses}`;
+    const detalle = errorDe(j).detalles.find((d) => d.includes("{meses}"));
+    expect(detalle).toContain(`pdf_pagina2.${clave}`);
+  });
+
+  it.each([...CLAVES_PAGINA2, ...CLAVES_PAGINA2_CON_MESES, ...CLAVES_PAGINA2_BENCHMARK.map(([c]) => c)])("pdf_pagina2.%s vacío rompe la carga", (clave) => {
     const j = copia();
     (j.pdf_pagina2 as Record<string, string>)[clave] = "  ";
     expect(errorDe(j).detalles.join("\n")).toContain(`pdf_pagina2.${clave}`);

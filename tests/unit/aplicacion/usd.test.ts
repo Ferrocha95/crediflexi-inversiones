@@ -15,6 +15,7 @@ import { datosPagina2 } from "../../../src/aplicacion/pagina2";
 import { cargarTextos } from "../../../src/aplicacion/textos";
 import { Decimal } from "../../../src/domain/comun/decimal";
 import { cotizarBien, semillaReal } from "../oro/ayudas";
+import { benchmarkReal } from "../benchmarkReal";
 
 function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: string } }): T {
   if (!r.ok) throw new Error(r.error.mensaje);
@@ -46,7 +47,7 @@ describe("vista previa y PDF en USD", () => {
 
   it("la página 1 del PDF muestra la cifra principal y los resultados con USD", () => {
     const c = cotizarBien(USD);
-    const m = sinError(modeloPdf(c, { razonesSociales, textos }, {}, AHORA, datosPagina2(semillaReal, c.solicitud)));
+    const m = sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, {}, AHORA, datosPagina2(semillaReal, c.solicitud)));
     expect(m.cifraPrincipal.cifra).toBe("$70.83 USD");
     expect(m.cifras.map((x) => x.cifra)).toEqual(["$70.83 USD", "$850.00 USD", "$850.00 USD"]);
     expect(m.solicitud.monto).toBe("$10,000.00 USD");
@@ -54,7 +55,7 @@ describe("vista previa y PDF en USD", () => {
 
   it("la página 2 lleva USD en las tarjetas, en las filas y en las etiquetas finales de la gráfica", () => {
     const c = cotizarBien(USD);
-    const m = sinError(modeloPdf(c, { razonesSociales, textos }, {}, AHORA, datosPagina2(semillaReal, c.solicitud)));
+    const m = sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, {}, AHORA, datosPagina2(semillaReal, c.solicitud)));
     const [m1, m2] = m.pagina2.tarjetas;
     expect(m1.detalle!.renglones.map((r) => r.cifra)).toEqual(["$10,000.00 USD", "$850.00 USD", "$10,850.00 USD"]);
     expect(m1.detalle!.filas[0].rendimiento).toBe("$70.83 USD");

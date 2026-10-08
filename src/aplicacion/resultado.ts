@@ -12,7 +12,8 @@ export type CodigoErrorAplicacion =
   | "TEXTOS_INVALIDOS"
   | "MONTO_ILEGIBLE"
   | "MONTO_CERO"
-  | "AJUSTE_INVALIDO";
+  | "AJUSTE_INVALIDO"
+  | "BENCHMARK_INVALIDO";
 
 export interface ErrorAplicacion {
   readonly codigo: CodigoErrorAplicacion;

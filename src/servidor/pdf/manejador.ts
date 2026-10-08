@@ -109,7 +109,7 @@ export async function manejarPdf(request: Request, deps: DependenciasPdf): Promi
 
   const parametros = await deps.leer();
   if (!parametros.ok) return json(500, parametros.error.mensaje, parametros.error.detalles);
-  const { semilla, razonesSociales, textos } = parametros.valor;
+  const { semilla, razonesSociales, textos, benchmark } = parametros.valor;
   if (versionTasas !== semilla.version) return json(409, MENSAJES_PDF.tasasCambiaron);
 
   const monto = normalizarMonto(forma.data.monto);
@@ -130,7 +130,7 @@ export async function manejarPdf(request: Request, deps: DependenciasPdf): Promi
 
   const ahora = deps.ahora();
   const datos = datosPagina2(semilla, solicitud, ajuste.valor);
-  const modelo = modeloPdf(c.valor, { razonesSociales, textos }, entrada, ahora, datos);
+  const modelo = modeloPdf(c.valor, { razonesSociales, textos, benchmark }, entrada, ahora, datos);
   if (!modelo.ok) return json(500, modelo.error.mensaje, modelo.error.detalles);
 
   let bytes: Uint8Array;

@@ -1,0 +1,148 @@
+{
+  "version": "0.2",
+  "actualizado_al": "2026-10-07",
+  "tipo_de_dato": "Tasa anual bruta, antes de impuestos",
+  "reglas": {
+    "dias_maximos_de_antiguedad": 30,
+    "omitir_si_vigente_hasta_ya_paso": true,
+    "solo_se_publica_lo_verificado_en_fuente_oficial": true
+  },
+  "avisos": [
+    "Tasas anuales brutas, antes de impuestos.",
+    "Los instrumentos comparados tienen distinto riesgo, liquidez y protección.",
+    "Comparación informativa, no es una recomendación de inversión."
+  ],
+  "instrumentos": [
+    {
+      "id": "cetes_28",
+      "nombre": "CETES 28 días",
+      "grupo": "CETES",
+      "tasa_anual": "0.0609",
+      "fecha_dato": "2026-10-06",
+      "vigente_hasta": null,
+      "condiciones": "Subasta primaria semanal de Banxico",
+      "fuente": {
+        "nombre": "Banco de México, SIE: resultados de la última subasta de valores gubernamentales (06/10/2026)",
+        "nombre_corto": "Banco de México",
+        "url": "https://www.banxico.org.mx/tipcamb/llenarTasasInteresAction.do?idioma=sp"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "cetes_91",
+      "nombre": "CETES 91 días",
+      "grupo": "CETES",
+      "tasa_anual": "0.0678",
+      "fecha_dato": "2026-10-06",
+      "vigente_hasta": null,
+      "condiciones": "Subasta primaria semanal de Banxico",
+      "fuente": {
+        "nombre": "Banco de México, SIE: resultados de la última subasta de valores gubernamentales (06/10/2026)",
+        "nombre_corto": "Banco de México",
+        "url": "https://www.banxico.org.mx/tipcamb/llenarTasasInteresAction.do?idioma=sp"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "cetes_175",
+      "nombre": "CETES a 175 días (aprox. 6 meses)",
+      "grupo": "CETES",
+      "tasa_anual": "0.0691",
+      "fecha_dato": "2026-10-06",
+      "vigente_hasta": null,
+      "condiciones": "Subasta primaria; en esta subasta el plazo semestral fue de 175 días",
+      "fuente": {
+        "nombre": "Banco de México, SIE: resultados de la última subasta de valores gubernamentales (06/10/2026)",
+        "nombre_corto": "Banco de México",
+        "url": "https://www.banxico.org.mx/tipcamb/llenarTasasInteresAction.do?idioma=sp"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "nu_cajita_247",
+      "nombre": "Nu · Cajita 24/7",
+      "grupo": "Nu",
+      "tasa_anual": "0.0650",
+      "fecha_dato": "2026-10-07",
+      "vigente_hasta": "2026-10-07",
+      "condiciones": "Tasa fija anual, calculada y pagada a diario; vigencia del 20/08/2026 al 07/10/2026",
+      "fuente": {
+        "nombre": "Nu México, blog oficial: ¿Cuánto rendimiento da Nu?",
+        "nombre_corto": "Nu México",
+        "url": "https://blog.nu.com.mx/productos-nu/cuenta-nu/cuanto-rendimiento-da-nu/"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "nu_congelado_180",
+      "nombre": "Nu · Ahorro congelado 180 días",
+      "grupo": "Nu",
+      "tasa_anual": "0.0680",
+      "fecha_dato": "2026-10-07",
+      "vigente_hasta": "2026-10-07",
+      "condiciones": "Tasa fija anual; vigencia del 20/08/2026 al 07/10/2026",
+      "fuente": {
+        "nombre": "Nu México, blog oficial: ¿Cuánto rendimiento da Nu?",
+        "nombre_corto": "Nu México",
+        "url": "https://blog.nu.com.mx/productos-nu/cuenta-nu/cuanto-rendimiento-da-nu/"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "nu_turbo",
+      "nombre": "Nu · Cajita Turbo (hasta $25,000)",
+      "grupo": "Nu",
+      "tasa_anual": "0.1300",
+      "fecha_dato": "2026-10-07",
+      "vigente_hasta": "2026-10-07",
+      "condiciones": "Tope de $25,000 y requisito de al menos una compra al mes con tarjeta Nu; promocional, vigencia hasta el 07/10/2026",
+      "nota_asterisco": "Tope de $25,000 y requisito de al menos una compra al mes con tarjeta Nu; promocional, vigencia hasta el 07/10/2026",
+      "fuente": {
+        "nombre": "Nu México, blog oficial: ¡Tus rendimientos Nu se mantienen!",
+        "nombre_corto": "Nu México",
+        "url": "https://blog.nu.com.mx/productos-nu/cuenta-nu/rendimientos-nu-se-mantienen/"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "mercado_pago",
+      "nombre": "Mercado Pago · hasta 12%",
+      "grupo": "Mercado Pago",
+      "tasa_anual": "0.1200",
+      "fecha_dato": "2026-10-07",
+      "vigente_hasta": null,
+      "condiciones": "'Hasta' 12% anual, sujeto a las condiciones del producto (la página oficial no muestra fecha propia; consultada el 2026-10-07)",
+      "nota_asterisco": "'Hasta' 12% anual, sujeto a las condiciones del producto (la página oficial no muestra fecha propia; consultada el 2026-10-07)",
+      "fuente": {
+        "nombre": "Mercado Pago México, página oficial de la cuenta",
+        "nombre_corto": "Mercado Pago",
+        "url": "https://www.mercadopago.com.mx/cuenta"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "blackrock_blkgub1",
+      "nombre": "BlackRock · BLKGUB1 (rendimiento a 12 meses)",
+      "grupo": "BlackRock",
+      "tasa_anual": "0.0817",
+      "fecha_dato": "2025-12-31",
+      "vigente_hasta": null,
+      "condiciones": "Fondo de deuda gubernamental; rendimiento histórico, variable; capital en riesgo",
+      "fuente": {
+        "nombre": "BlackRock México, ficha del fondo BLKGUB1",
+        "nombre_corto": "BlackRock",
+        "url": "https://www.blackrock.com/mx/intermediarios/productos/298845/liquidez-gubernamental-mexico-muy-corto-plazo"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": false,
+      "motivo_si_no_se_incluye": "El dato oficial disponible es del 31/12/2025 (no vigente) y falta definir qué fondo se compara; usar la ficha mensual más reciente"
+    }
+  ]
+}

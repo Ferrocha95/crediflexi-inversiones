@@ -16,6 +16,7 @@ import { datosPagina2 } from "../../../src/aplicacion/pagina2";
 import type { Cotizacion } from "../../../src/domain/interes/cotizar";
 import { cotizarConAjuste, type Ajuste } from "../../../src/domain/interes/ajustes";
 import { cargar, copiaSemilla, cotizarBien, semillaReal } from "../oro/ayudas";
+import { benchmarkReal } from "../benchmarkReal";
 
 function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: string } }): T {
   if (!r.ok) throw new Error(r.error.mensaje);
@@ -24,7 +25,7 @@ function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: 
 
 const textos: TextosCotizacion = sinError(cargarTextos(textosJson, "seed/textos_cotizacion.json"));
 const razonesSociales = sinError(cargarRazonesSociales(semillaJson, "seed/parametros_iniciales.json"));
-const contexto = { razonesSociales, textos };
+const contexto = { razonesSociales, textos, benchmark: benchmarkReal };
 const VERSION = semillaJson.version;
 /** Fecha de la semilla como la imprime la app (DD/MM/AAAA). */
 const FECHA_SEMILLA = semillaJson.generado.split("-").reverse().join("/");
@@ -160,7 +161,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
         lineaTasas: "Versión sintética {version_tasas}, {fecha_tasas}",
       },
     };
-    const m = sinError(modeloPdfConDatos(cotizarBien({ entidad: clave }), { razonesSociales, textos: otros }, {}, AHORA));
+    const m = sinError(modeloPdfConDatos(cotizarBien({ entidad: clave }), { razonesSociales, textos: otros, benchmark: benchmarkReal }, {}, AHORA));
     expect(m.textos.titulo).toBe("Título sintético");
     expect(m.textos.seccionCalculo).toBe("Cálculo sintético");
     expect(m.lineaTasas).toBe(`Versión sintética ${VERSION}, ${FECHA_SEMILLA}`);
@@ -233,7 +234,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
   it("el nombre del esquema sale del archivo de textos", () => {
     const c = cotizarBien({ entidad: clave });
     const f = cotizarBien({ entidad: clave, esquema: "final_del_plazo" });
-    const ctx = { razonesSociales, textos: textosOtrosNombres };
+    const ctx = { razonesSociales, textos: textosOtrosNombres, benchmark: benchmarkReal };
     expect(sinError(modeloPdfConDatos(c, ctx, {}, AHORA)).solicitud.esquema).toBe("Esquema sintético A");
     expect(sinError(modeloPdfConDatos(f, ctx, {}, AHORA)).solicitud.esquema).toBe("Esquema sintético B");
   });
@@ -318,7 +319,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
 
 describe("modeloPdf: errores", () => {
   it("si la entidad no tiene razón social, falla con un mensaje en español", () => {
-    const r = modeloPdfConDatos(cotizarBien({}), { razonesSociales: new Map(), textos }, {}, AHORA);
+    const r = modeloPdfConDatos(cotizarBien({}), { razonesSociales: new Map(), textos, benchmark: benchmarkReal }, {}, AHORA);
     if (r.ok) throw new Error("Se esperaba un error");
     expect(r.error.codigo).toBe("ENTIDADES_INVALIDAS");
     expect(r.error.mensaje).toContain("CREDIFLEXI");
@@ -449,7 +450,7 @@ describe("modelo con los textos 0.5 (Sprint 3a)", () => {
       },
     };
     expect(modeloVistaPrevia(cotizarBien({}), otros).salidas[0].etiqueta).toBe("Etiqueta sintética");
-    expect(sinError(modeloPdfConDatos(cotizarBien({}), { razonesSociales, textos: otros }, {}, AHORA)).cifraPrincipal.etiqueta).toBe(
+    expect(sinError(modeloPdfConDatos(cotizarBien({}), { razonesSociales, textos: otros, benchmark: benchmarkReal }, {}, AHORA)).cifraPrincipal.etiqueta).toBe(
       "Etiqueta sintética",
     );
   });

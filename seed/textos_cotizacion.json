@@ -76,6 +76,12 @@
     "serie_cobrado": "Modalidad 1 (cobrado)",
     "serie_devengado": "Modalidad 2 (acumulado)",
     "comparacion_omitida": "La comparación de modalidades se omite: falta la tasa acordada de una de las dos modalidades.",
+    "benchmark_titulo": "Tu tasa frente a otras opciones",
+    "benchmark_tu_tasa": "Tu tasa",
+    "benchmark_actualizado": "Actualizado al {fecha}",
+    "benchmark_fuentes": "Fuentes: {fuentes}",
+    "benchmark_desactualizado": "Comparativo no disponible: datos desactualizados",
+    "benchmark_solo_pesos": "Comparativo no disponible en dólares: las opciones comparadas son en pesos (MXN).",
     "pagina": "Página",
     "pagina_de": "de"
   }

@@ -15,6 +15,8 @@ export const MARCADORES = [
   "puntos",
   "tasa",
   "meses",
+  "fecha",
+  "fuentes",
 ] as const;
 export type Marcador = (typeof MARCADORES)[number];
 
@@ -32,6 +34,8 @@ export const MARCADORES_POR_CAMPO = {
   "pdf_pagina2.pago_ganancia_mensual": ["meses"],
   "pdf_pagina2.pago_ganancia_vencimiento": ["meses"],
   "pdf_pagina2.capital_vencimiento": ["meses"],
+  "pdf_pagina2.benchmark_actualizado": ["fecha"],
+  "pdf_pagina2.benchmark_fuentes": ["fuentes"],
 } as const satisfies Readonly<Record<string, readonly Marcador[]>>;
 
 export interface TextosCotizacion {
@@ -115,6 +119,18 @@ export interface TextosPagina2 {
   readonly serieDevengado: string;
   /** Reemplaza la gráfica de comparación si falta la tasa de una modalidad. */
   readonly comparacionOmitida: string;
+  /** Comparativo de tasas (seed/benchmark.json). */
+  readonly benchmarkTitulo: string;
+  /** Rótulo de la barra de la tasa cotizada. */
+  readonly benchmarkTuTasa: string;
+  /** Plantilla con {fecha}: "Actualizado al 7 de octubre de 2026". */
+  readonly benchmarkActualizado: string;
+  /** Plantilla con {fuentes}: los nombres cortos de las fuentes. */
+  readonly benchmarkFuentes: string;
+  /** Reemplaza al comparativo si los datos pasan de la antigüedad máxima. */
+  readonly benchmarkDesactualizado: string;
+  /** Reemplaza al comparativo en una cotización en dólares. */
+  readonly benchmarkSoloPesos: string;
   /** "Página" y "de", para el pie "Página 1 de 2". */
   readonly pagina: string;
   readonly paginaDe: string;
@@ -149,6 +165,12 @@ const CLAVES_PAGINA2 = {
   serie_cobrado: "serieCobrado",
   serie_devengado: "serieDevengado",
   comparacion_omitida: "comparacionOmitida",
+  benchmark_titulo: "benchmarkTitulo",
+  benchmark_tu_tasa: "benchmarkTuTasa",
+  benchmark_actualizado: "benchmarkActualizado",
+  benchmark_fuentes: "benchmarkFuentes",
+  benchmark_desactualizado: "benchmarkDesactualizado",
+  benchmark_solo_pesos: "benchmarkSoloPesos",
   pagina: "pagina",
   pagina_de: "paginaDe",
 } as const satisfies Readonly<Record<string, keyof TextosPagina2>>;

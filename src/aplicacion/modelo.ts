@@ -4,6 +4,7 @@ import type { CodigoAviso } from "../domain/comun/resultado";
 import type { CotizacionAjustada } from "../domain/interes/ajustes";
 import type { Cotizacion } from "../domain/interes/cotizar";
 import type { AvisoTasaAcordada } from "./ajustes";
+import { modeloBenchmark, type Benchmark, type BenchmarkPdf } from "./benchmark";
 import type { Esquema, Estatus, Moneda, Salida } from "../domain/tasas/semilla.esquema";
 import { limpiarCampo } from "./campos";
 import { formatearDinero } from "./dinero";
@@ -148,6 +149,8 @@ export interface ContextoPdf {
   /** Clave de la entidad -> razón social completa. */
   readonly razonesSociales: ReadonlyMap<string, string>;
   readonly textos: TextosCotizacion;
+  /** Comparativo de tasas (seed/benchmark.json). */
+  readonly benchmark: Benchmark;
 }
 
 /** La cifra que el PDF destaca en grande, según el esquema. */
@@ -204,8 +207,8 @@ export interface ModeloPdf {
     /** Línea SIPRES de la entidad (solo RAMI_SISE en los textos 0.5); null si no lleva. */
     readonly sipres: string | null;
   };
-  /** Página 2: calendario de las dos modalidades y comparación. */
-  readonly pagina2: ModeloPagina2;
+  /** Página 2: calendario de las dos modalidades, comparación y comparativo de tasas. */
+  readonly pagina2: ModeloPagina2 & { readonly benchmark: BenchmarkPdf };
 }
 
 const oNulo = (texto: string) => (texto === "" ? null : texto);
@@ -295,6 +298,10 @@ export function modeloPdf(
       avisoFondo: textos.pieAvisoFondo,
       sipres: textos.pieSipres[entidad] ?? null,
     },
-    pagina2: modeloPagina2(c, datos, textos.pdfPagina2),
+    pagina2: {
+      ...modeloPagina2(c, datos, textos.pdfPagina2),
+      // Tu tasa es la de la modalidad elegida, con puntos extra o la acordada si los hay.
+      benchmark: modeloBenchmark(contexto.benchmark, { tasa: c.tasa, moneda }, ahora, textos.pdfPagina2),
+    },
   });
 }

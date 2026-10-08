@@ -1,6 +1,7 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { cargarBenchmark, type Benchmark } from "../aplicacion/benchmark";
 import { cargarRazonesSociales } from "../aplicacion/entidades";
 import { error, ok, type ResultadoApp } from "../aplicacion/resultado";
 import { cargarTextos, type TextosCotizacion } from "../aplicacion/textos";
@@ -9,10 +10,12 @@ import type { Semilla } from "../domain/tasas/semilla.esquema";
 
 export const RUTA_SEMILLA = path.join(process.cwd(), "seed", "parametros_iniciales.json");
 export const RUTA_TEXTOS = path.join(process.cwd(), "seed", "textos_cotizacion.json");
+export const RUTA_BENCHMARK = path.join(process.cwd(), "seed", "benchmark.json");
 
 export interface RutasParametros {
   readonly semilla: string;
   readonly textos: string;
+  readonly benchmark: string;
 }
 
 export interface ParametrosCotizacion {
@@ -20,6 +23,8 @@ export interface ParametrosCotizacion {
   /** Clave de la entidad -> razón social completa. */
   readonly razonesSociales: ReadonlyMap<string, string>;
   readonly textos: TextosCotizacion;
+  /** Comparativo de tasas de la página 2 del PDF. */
+  readonly benchmark: Benchmark;
 }
 
 /** Ruta relativa al proyecto si está dentro de él ("seed/x.json"); si no, la ruta completa. */
@@ -54,16 +59,21 @@ async function leerJson(ruta: string): Promise<ResultadoApp<unknown>> {
 }
 
 /**
- * Lee en cada llamada la semilla y los textos de la cotización desde disco y
+ * Lee en cada llamada la semilla, los textos y el comparativo desde disco y
  * los valida. No guarda nada en memoria: un cambio en los archivos se ve en la
  * siguiente llamada, sin reconstruir la app.
  */
 export async function leerParametrosCotizacion(
-  rutas: RutasParametros = { semilla: RUTA_SEMILLA, textos: RUTA_TEXTOS },
+  rutas: RutasParametros = { semilla: RUTA_SEMILLA, textos: RUTA_TEXTOS, benchmark: RUTA_BENCHMARK },
 ): Promise<ResultadoApp<ParametrosCotizacion>> {
-  const [jsonSemilla, jsonTextos] = await Promise.all([leerJson(rutas.semilla), leerJson(rutas.textos)]);
+  const [jsonSemilla, jsonTextos, jsonBenchmark] = await Promise.all([
+    leerJson(rutas.semilla),
+    leerJson(rutas.textos),
+    leerJson(rutas.benchmark),
+  ]);
   if (!jsonSemilla.ok) return jsonSemilla;
   if (!jsonTextos.ok) return jsonTextos;
+  if (!jsonBenchmark.ok) return jsonBenchmark;
 
   const semilla = cargarSemilla(jsonSemilla.valor);
   if (!semilla.ok) {
@@ -80,5 +90,8 @@ export async function leerParametrosCotizacion(
   const textos = cargarTextos(jsonTextos.valor, nombreVisible(rutas.textos));
   if (!textos.ok) return textos;
 
-  return ok({ semilla: semilla.valor, razonesSociales: razonesSociales.valor, textos: textos.valor });
+  const benchmark = cargarBenchmark(jsonBenchmark.valor, nombreVisible(rutas.benchmark));
+  if (!benchmark.ok) return benchmark;
+
+  return ok({ semilla: semilla.valor, razonesSociales: razonesSociales.valor, textos: textos.valor, benchmark: benchmark.valor });
 }

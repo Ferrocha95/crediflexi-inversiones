@@ -10,6 +10,7 @@ import { cotizarConAjuste, type Ajuste } from "../../../../src/domain/interes/aj
 import { datosPagina2 } from "../../../../src/aplicacion/pagina2";
 import { cotizarBien, semillaReal } from "../../oro/ayudas";
 import { extraerTexto } from "./extraer";
+import { benchmarkReal } from "../../benchmarkReal";
 
 // Renderizado real con react-pdf y lectura del texto con pdfjs-dist. Todo con datos sintéticos.
 
@@ -32,7 +33,7 @@ const OPCIONALES: EntradaPdf = {
 
 function modelo(entidad: string, esquema: Esquema, entrada: EntradaPdf = OPCIONALES, monto = "1500000", plazo = 12) {
   const c = cotizarBien({ entidad, esquema, monto, plazo });
-  return sinError(modeloPdf(c, { razonesSociales, textos }, entrada, AHORA, datosPagina2(semillaReal, c.solicitud)));
+  return sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, entrada, AHORA, datosPagina2(semillaReal, c.solicitud)));
 }
 
 async function render(m: ModeloPdf) {
@@ -105,7 +106,7 @@ function modeloAjustado(entidad: string, esquema: Esquema, ajuste: Ajuste, monto
   const plazo = ajuste.tipo === "especial" ? ajuste.plazo : plazoTabla;
   const r = cotizarConAjuste(semillaReal, { entidad, moneda, esquema, monto, plazo }, ajuste);
   if (!r.ok) throw new Error(r.error.mensaje);
-  return sinError(modeloPdf(r.valor, { razonesSociales, textos }, entrada, AHORA, datosPagina2(semillaReal, r.valor.solicitud, ajuste)));
+  return sinError(modeloPdf(r.valor, { razonesSociales, textos, benchmark: benchmarkReal }, entrada, AHORA, datosPagina2(semillaReal, r.valor.solicitud, ajuste)));
 }
 
 describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses", (caso) => {
@@ -303,6 +304,56 @@ describe("PDF real: puntos extra y plazo especial", () => {
   });
 });
 
+describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
+  /** CREDIFLEXI mensual 1,500,000 a 12 meses (19.00%) con la fecha del PDF indicada. */
+  function conFecha(ahora: Date, moneda: "MXN" | "USD" = "MXN") {
+    const c = moneda === "MXN" ? cotizarBien({ monto: "1500000", plazo: 12 }) : cotizarBien({ entidad: "RAMI_SISE", moneda, monto: "10000", plazo: 12 });
+    return sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, OPCIONALES, ahora, datosPagina2(semillaReal, c.solicitud)));
+  }
+
+  it("el 7 de octubre trae título, fecha en palabras, barras con su tasa, notas y fuentes en la página 2", { timeout: TIEMPO }, async () => {
+    const { paginas, porPagina } = await render(conFecha(new Date("2026-10-07T18:00:00Z")));
+    expect(paginas).toBe(2);
+    const p2 = porPagina[1];
+    expect(p2).toContain(P2.benchmarkTitulo);
+    expect(p2).toContain("Actualizado al 7 de octubre de 2026");
+    expect(p2).toContain("Fuentes: Banco de México, Nu México y Mercado Pago");
+    for (const t of ["Tu tasa 19.00%", "CETES 28 días", "6.09%", "Nu · Cajita Turbo (hasta $25,000)*", "13.00%", "Mercado Pago · hasta 12%**"]) {
+      expect(p2).toContain(t);
+    }
+    for (const a of benchmarkReal.avisos) expect(p2).toContain(a);
+    expect(p2).not.toContain("BlackRock");
+    expect(porPagina[0]).not.toContain(P2.benchmarkTitulo);
+  });
+
+  it("con puntos extra, tu tasa del comparativo es la tasa con los puntos (19.00% + 1.0 = 20.00%)", { timeout: TIEMPO }, async () => {
+    const { porPagina } = await render(modeloAjustado("CREDIFLEXI", "mensual", { tipo: "tabla", puntos: "1.0" }, "1500000"));
+    expect(porPagina[1]).toContain("Tu tasa 20.00%");
+  });
+
+  it("el 8 de octubre a las 00:30 en la Ciudad de México ya no trae Nu", { timeout: TIEMPO }, async () => {
+    const { porPagina } = await render(conFecha(new Date("2026-10-08T00:30:00-06:00")));
+    expect(porPagina[1]).not.toContain("Nu ·");
+    expect(porPagina[1]).toContain("Mercado Pago · hasta 12%*");
+    expect(porPagina[1]).toContain("Fuentes: Banco de México y Mercado Pago");
+  });
+
+  it("con 31 días de antigüedad omite el comparativo completo y lo dice", { timeout: TIEMPO }, async () => {
+    const { paginas, porPagina } = await render(conFecha(new Date("2026-11-07T12:00:00-06:00")));
+    expect(paginas).toBe(2);
+    expect(porPagina[1]).toContain("Comparativo no disponible: datos desactualizados");
+    expect(porPagina[1]).not.toContain("Actualizado al");
+    expect(porPagina[1]).not.toContain("CETES");
+  });
+
+  it("en dólares lo omite con su nota", { timeout: TIEMPO }, async () => {
+    const { paginas, porPagina } = await render(conFecha(new Date("2026-10-07T18:00:00Z"), "USD"));
+    expect(paginas).toBe(2);
+    expect(porPagina[1]).toContain(P2.benchmarkSoloPesos);
+    expect(porPagina[1]).not.toContain("CETES");
+  });
+});
+
 describe("PDF real: exactamente dos páginas en los extremos", () => {
   const TOPE: EntradaPdf = {
     preparadoPara: largo("Persona Sintética Uno con un nombre largo", TOPES.preparadoPara),
@@ -336,7 +387,7 @@ describe("PDF real: exactamente dos páginas en los extremos", () => {
 
   it("USD de Rami Sise a 24 meses con los opcionales al tope: dos páginas", { timeout: TIEMPO }, async () => {
     const c = cotizarBien({ entidad: "RAMI_SISE", moneda: "USD", monto: "500000", plazo: 24 });
-    const m = sinError(modeloPdf(c, { razonesSociales, textos }, TOPE, AHORA, datosPagina2(semillaReal, c.solicitud)));
+    const m = sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, TOPE, AHORA, datosPagina2(semillaReal, c.solicitud)));
     const { paginas, porPagina } = await render(m);
     expect(paginas).toBe(2);
     expect(porPagina[1]).toContain(LINEA_SIPRES);

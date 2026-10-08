@@ -1,5 +1,7 @@
 import "server-only";
-import { Circle, Image, Line, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
+import { Circle, Image, Line, Path, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
+import { Fragment } from "react";
+import { LIENZO_BENCHMARK, type BenchmarkPdf } from "../../aplicacion/benchmark";
 import {
   LIENZO_FRANJA,
   LIENZO_GRAFICA,
@@ -14,7 +16,8 @@ import { COLOR_PDF as COLOR } from "./colores";
 import { FAMILIA } from "./fuente";
 
 // Página 2 del PDF: la modalidad 1 con su tabla mes a mes a la izquierda; a la
-// derecha, la modalidad 2 anualizada y la comparación de modalidades. Cada
+// derecha, la modalidad 2 anualizada, la comparación de modalidades y el
+// comparativo de tasas (barras horizontales). Cada
 // tarjeta dice cuándo se paga la ganancia y cuándo el capital, con su franja
 // de tiempo. Solo presenta el modelo: aquí no se calcula nada y no hay textos
 // propios. Ningún texto nuevo baja de 7.5 pt.
@@ -26,6 +29,10 @@ const ANCHO_LOGO = (ALTO_LOGO * 1834) / 539;
 const ALTO_FILA = 12;
 /** Ancho de cada columna: la mitad del ancho útil (540 pt) menos la separación. */
 const ANCHO_COLUMNA = LIENZO_GRAFICA.ancho;
+/** Alto de cada renglón del comparativo (una línea de 7.5 pt y su barra). */
+const ALTO_BARRA = 11;
+/** x donde empiezan las barras: después de la columna de nombres. */
+const INICIO_BARRA = LIENZO_BENCHMARK.anchoEtiqueta + 4;
 
 const BANDA: Readonly<Record<TarjetaPdf["esquema"], string>> = {
   mensual: COLOR.bandaVerde,
@@ -129,6 +136,11 @@ const e = StyleSheet.create({
     lineHeight: 1.3,
   },
   notaGrafica: { marginTop: 2, fontSize: 6.5, color: COLOR.gris, lineHeight: 1.3 },
+
+  benchmark: { width: ANCHO_COLUMNA },
+  benchmarkActualizado: { fontSize: 7.5, color: COLOR.gris },
+  barras: { marginTop: 3, marginBottom: 2 },
+  benchmarkNota: { marginTop: 2, fontSize: 7.5, color: COLOR.gris, lineHeight: 1.25 },
 
   /** Empuja el pie al final de la hoja. */
   relleno: { flexGrow: 1, minHeight: 8 },
@@ -288,13 +300,62 @@ function Grafica({ g }: { g: GraficaPdf }) {
   );
 }
 
+/** Comparativo de tasas: barras horizontales de mayor a menor, con notas y fuentes. */
+function Benchmark({ b }: { b: BenchmarkPdf }) {
+  return (
+    <View style={e.benchmark}>
+      <View style={e.graficaCabeza}>
+        <Text style={e.graficaTitulo}>{b.titulo}</Text>
+      </View>
+      {b.tipo === "omitido" ? (
+        <Text style={e.omision}>{b.texto}</Text>
+      ) : (
+        <>
+          <Text style={e.benchmarkActualizado}>{b.actualizado}</Text>
+          {/* En SVG: el texto dentro de filas con flex se mide de más en react-pdf. */}
+          <Svg width={ANCHO_COLUMNA} height={b.barras.length * ALTO_BARRA} style={e.barras}>
+            {b.barras.map((x, i) => {
+              const y = i * ALTO_BARRA;
+              return (
+                <Fragment key={x.nombre}>
+                  <Text x={0} y={y + 7.5} fill={COLOR.marino} style={textoSvg(7.5, x.tuya ? "bold" : "normal")}>
+                    {x.nombre}
+                  </Text>
+                  {/* Tu tasa: relleno sólido y borde grueso; las demás, contorno fino y relleno claro. */}
+                  <Rect
+                    x={INICIO_BARRA}
+                    y={y + 1.5}
+                    width={Math.max(x.ancho, 0.5)}
+                    height={LIENZO_BENCHMARK.altoBarra}
+                    fill={x.tuya ? COLOR.marino : COLOR.fondoTenue}
+                    stroke={x.tuya ? COLOR.marino : COLOR.gris}
+                    strokeWidth={x.tuya ? 1.5 : 0.75}
+                  />
+                  <Text x={ANCHO_COLUMNA} y={y + 7.5} textAnchor="end" fill={COLOR.marino} style={textoSvg(7.5, x.tuya ? "bold" : "normal")}>
+                    {x.tasa}
+                  </Text>
+                </Fragment>
+              );
+            })}
+          </Svg>
+          {[...b.notas, b.fuentes].map((n) => (
+            <Text key={n} style={e.benchmarkNota}>
+              {n}
+            </Text>
+          ))}
+        </>
+      )}
+    </View>
+  );
+}
+
 /** Contenido de la página 2 (va dentro de su <Page>). El pie es el mismo de la página 1. */
 export function PaginaCalendario({
   modelo,
   logo,
   pie,
 }: {
-  modelo: ModeloPagina2;
+  modelo: ModeloPagina2 & { readonly benchmark: BenchmarkPdf };
   logo: Buffer;
   pie: { readonly sipres: string | null; readonly avisoFondo: string };
 }) {
@@ -319,6 +380,7 @@ export function PaginaCalendario({
           {modelo.graficas.map((g) => (
             <Grafica key={g.titulo} g={g} />
           ))}
+          <Benchmark b={modelo.benchmark} />
         </View>
       </View>
 

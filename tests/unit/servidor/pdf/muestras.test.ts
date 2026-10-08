@@ -18,6 +18,7 @@ import type { Esquema } from "../../../../src/domain/tasas/semilla.esquema";
 import { renderizarPdf } from "../../../../src/servidor/pdf/renderizar";
 import { cotizarBien, semillaReal } from "../../oro/ayudas";
 import { extraerTexto } from "./extraer";
+import { benchmarkReal } from "../../benchmarkReal";
 
 const DIRECTORIO = process.env.MUESTRAS_DIR;
 
@@ -72,7 +73,7 @@ describe.runIf(DIRECTORIO !== undefined)("muestras de la página 2 para revisió
       await mkdir(dir, { recursive: true });
       const c = cotizarBien({ entidad: m.entidad, esquema: m.esquema, monto: m.monto, plazo: m.plazo });
       const modelo = sinError(
-        modeloPdf(c, { razonesSociales, textos }, OPCIONALES, new Date(), datosPagina2(semillaReal, c.solicitud)),
+        modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, OPCIONALES, new Date(), datosPagina2(semillaReal, c.solicitud)),
       );
       const bytes = await renderizarPdf(modelo);
       const { paginas, porPagina } = await extraerTexto(bytes);
