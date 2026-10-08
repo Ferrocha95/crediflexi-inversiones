@@ -51,6 +51,27 @@ describe("liquidarMes: interno", () => {
     expect(pesos(l.comisionBloqueada)).toBe("26169.00");
   });
 
+  it("una renovación grande no desbloquea: 100,000 nueva + 1,000,000 renovación = captación 100,000", () => {
+    const l = interno([nueva("100000", 12, "2026-10-03"), renovacion("1000000", 12, "2026-10-05")]);
+    expect(pesos(l.captacionParaMeta)).toBe("100000.00");
+    expect(l.desbloqueo).toMatchObject({ desbloqueada: false, fecha: null });
+    expect(pesos(l.comisionPagable)).toBe("0.00");
+    // Bono por captación: tampoco cuenta la renovación.
+    expect(pesos(l.bono)).toBe("0.00");
+  });
+
+  it("la fecha de desbloqueo no la adelanta una renovación: renovación 800,000 el día 2 y nueva 800,000 el día 20", () => {
+    const l = interno([renovacion("800000", 12, "2026-10-02"), nueva("800000", 12, "2026-10-20")]);
+    expect(l.desbloqueo!.fecha).toBe("2026-10-20");
+    expect(l.pagos.map((p) => p.fecha)).toEqual(["2026-11-01"]);
+  });
+
+  it("solo renovaciones por 2,500,000: sin bono (las renovaciones no cuentan para la captación del bono)", () => {
+    const l = interno([renovacion("2500000", 12)]);
+    expect(pesos(l.captacionParaMeta)).toBe("0.00");
+    expect(pesos(l.bono)).toBe("0.00");
+  });
+
   it("desbloqueado, también se paga la comisión de las renovaciones del mes", () => {
     const l = interno([nueva("900000", 12), renovacion("500000", 12)]);
     // 900,000 × 0.02772 = 24,948.00; renovación 6,765.00

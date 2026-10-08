@@ -1,13 +1,17 @@
 # Estado del proyecto — App interna de captación (Crediflexi / Rami Sise)
 
-**Actualizado:** 5 de octubre de 2026 (secciones 0, 2, 3 y 6 con lo verificado en git ese día). **Dueño:** Fernando Rocha (ejecutivo de inversiones).
+**Actualizado:** 8 de octubre de 2026 (secciones 0, 2, 3, 4, 6 y 8 con lo verificado en git ese día). **Dueño:** Fernando Rocha (ejecutivo de inversiones).
 **Para quién es este documento:** para retomar el trabajo en una conversación nueva sin perder nada. Si algo de aquí contradice lo que ves en el repositorio, manda el repositorio (`git log`, `git status`) y se corrige este archivo.
 
 ## 0. Cómo retomar (primeros pasos en una conversación nueva)
 
 1. Pedirle a Fernando que corra, dentro de `C:\dev\crediflexi` (el prompt debe terminar en `C:\dev\crediflexi>`), estos tres comandos, uno a la vez: `git branch`, `git log --oneline -8` y `git status`.
-2. Verificado con git el 5 de octubre de 2026: `main` = `origin/main` = `efbcdae` y contiene los sprints 0a, 1a, 1b (incluido `307f13b`, tramos en pesos enteros) y 2a.
-3. Hay dos ramas sin fusionar ni subir a GitHub: `sprint-2b` (etapa A) y `calendario-pdf` (ver sección 3). Preguntarle a Fernando qué revisó y qué quiere fusionar.
+2. Verificado con git el 8 de octubre de 2026:
+   - `origin/main` = `654d5a8` (Sprint 2b hasta la etapa D y el tope ZIP).
+   - `main` local = `e84a959`: además trae el Sprint 3a, adelantado solo en local y **sin subir** (5 commits por delante de `origin/main`).
+   - La rama `sprint-4` = `d66a504` sale de ese `main` y trae el Sprint 4, sin fusionar ni subir.
+   - `sprint-3a` no tiene upstream.
+3. Preguntarle a Fernando si ya revisó el Sprint 4 y si quiere fusionarlo a `main` y subir (`git push` solo con su permiso).
 4. Seguir el protocolo de la sección 9.
 
 ## 1. Qué es y para qué sirve
@@ -27,38 +31,37 @@ Una mesa de trabajo interna para cotizar, llevar el pipeline, planear la semana,
 | 1a | Motor de tasas e interés en `src/domain`, pruebas de oro con valores independientes | ✅ en `main` (commit `24703fb`) |
 | 1b | Cotizador `/cotizador` con vista previa, confirmación obligatoria y PDF de marca (dos entidades); solo local en 127.0.0.1; unas 890 pruebas unitarias | ✅ en `main` (verificado con git: `08cca23` a `ac7aa2f`, y `307f13b` "Tramos que empiezan en pesos enteros: semilla 0.6 y golden 0.5") |
 | 2a | Sistema de diseño, Inicio, catálogo `/diseno`, cotizador rediseñado, pruebas en el navegador (Playwright) | ✅ en `main` (verificado con git: último commit `efbcdae`, igual a `origin/main`) |
-| 2b, etapa A | Tabla `prospectos` con seguridad por fila (migración `20261005120000_prospectos.sql`), 79 pruebas de seguridad nuevas (195 en total), 9 mutaciones nuevas (10 a 18; 19 en total, todas muertas) | ✅ en la rama `sprint-2b`, commit `f899646`. Sin fusionar a `main` y sin subir (la rama no tiene upstream). Su `git status` quedó limpio al hacer el commit; **por verificar** que siga igual |
-| Calendario del PDF | Página 2 del PDF: calendario de las dos modalidades, comparación de modalidades y escenario ilustrativo de reinversión; textos 0.4; el PDF pasa a 2 páginas | ✅ en la rama `calendario-pdf` (sale de `main`): `d3fe522` (dominio), `8984277` (modelo, escalas y textos 0.4), `edfed10` (página 2) y el commit de pendientes. Sin fusionar a `main` y sin subir |
+| 2b, etapa A | Tabla `prospectos` con seguridad por fila (migración `20261005120000_prospectos.sql`), 79 pruebas de seguridad nuevas, mutaciones 10 a 18 | ✅ en `main` y en `origin/main` (`f899646`) |
+| Calendario del PDF | Página 2 del PDF: calendario de las dos modalidades y comparación; el PDF pasa a 2 páginas | ✅ en `main` y en `origin/main` (`d3fe522`, `8984277`, `edfed10`, `2d35d74`; fusionado con `6e04a2b`) |
+| 2b, etapas B1, B2, C y D | Sesión con Supabase (proxy, acceso, usuarios sintéticos), seguridad por usuario activo, pipeline (alta, edición, archivo, filtros, semana), Excel del pipeline (exportar e importar) y tope real contra bombas ZIP | ✅ en `main` y en `origin/main` (`161e05c`, `d8ee80e`, `a8fdfc3`, `5c9dd04`, `654d5a8`) |
+| 3a | USD solo para Rami Sise (semilla 0.7); puntos extra y plazo especial; PDF con SIPRES (solo Rami Sise), aviso del fondo, Modalidad 2 anualizada, sin reinversión y terminología "ganancia" (textos 0.5); comparativo de tasas en la página 2 (`seed/benchmark.json` 0.2) | ✅ en `main` local, **sin subir** (`c975adc` a `e84a959`) |
+| 4 | Motor de comisiones (`src/domain/comisiones`, semilla 0.8), simulador `/comisiones` (interno y externo, desbloqueo al 80%, bono, calendario por quincena) y modo reclutamiento `/comisiones/reclutamiento` con el PDF "Propuesta de ingresos" (textos 0.6) | ✅ en la rama `sprint-4` (`ee82598` a `d66a504`), sin fusionar ni subir |
 
 Respaldo: se hizo un bundle de git (`C:\dev\respaldos\crediflexi-sprint0a.bundle`) y la copia remota privada en GitHub (repositorio `crediflexi-inversiones`). Se verificó una restauración desde GitHub con éxito en octubre 1.
 
 ## 3. Qué está en curso
 
-**Sprint 2b** (rama `sprint-2b`): inicio de sesión, pipeline guardado, importación y exportación del Excel, "Envío del viernes" y respaldo local. El plan va por etapas:
-- **A**, datos, seguridad y mutaciones: hecha (`f899646`).
-- **B**, sesión: pendiente. Requiere aprobar la instalación de `@supabase/ssr` 0.12.7.
-- **C**, pipeline: pendiente.
-- **D**, Excel: pendiente. Se propuso ExcelJS 4.4.0; correr `npm audit` antes de instalar.
-- **E**, Envío del viernes, Inicio, respaldo y documentación: pendiente.
+**Sprint 4** (rama `sprint-4`): terminado; falta la revisión de Fernando y decidir cuándo se fusiona a `main` y se sube. Informe: `C:\dev\informes\paso59-4.md`. Capturas y PDF de muestra: `C:\dev\informes\sprint-4`. Puntos por confirmar con él (también en `PENDIENTES_TECNICOS.md`, (qqq) a (zzz)):
+- en el modo reclutamiento, cada monto por plazo se calcula como una sola inversión;
+- el nombre de quien presenta se imprime tal cual en el PDF;
+- la red externa cuenta al cierre del mes y solo para la meta (sin el 30% de comisión que menciona `BLUEPRINT.md`);
+- sueldo base del Ejecutivo con captación menor a $1,000,000: se supuso $15,000;
+- el texto del modo reclutamiento debe revisarlo RH o el área legal antes de usarse con candidatos.
 
-Las notas aprobadas para B a E están en el plan de Claude Code. **Por verificar** que Fernando las tenga a la mano en la conversación nueva.
+**Sprint 2b, etapa E** (Envío del viernes, Inicio, respaldo y documentación): no se ha hecho.
 
-**Calendario del PDF** (rama `calendario-pdf`): terminado; falta la revisión de Fernando y decidir cuándo se fusiona.
-- Las muestras de revisión visual (6 PDF con sus PNG) están en `C:\dev\informes\calendario-pdf`, fuera del repositorio.
-- **Por verificar:** que Fernando haya revisado los PNG y el texto.
-- **Ojo al fusionar:** esta rama y `sprint-2b` salen de `main` y las dos agregan líneas al final de `PENDIENTES_TECNICOS.md`. Se esperan conflictos sencillos en ese archivo.
+**Logo de Rami Sise:** `public/logo-rami-sise.png` no existe. Los PDF de Rami Sise salen con el logo de Crediflexi y el de reclutamiento solo con el de Crediflexi (pendiente (kkk)).
 
 ## 4. Orden de lo que sigue
 
-1. **2a** diseño y estructura (en curso).
-2. **2b** inicio de sesión (con segundo factor), guardado en base de datos, **pipeline** con importación de su Excel y exportación en su formato, y "Envío del viernes".
-3. **2c** **plan semanal** y **proyección** con exportación a Excel.
-4. **2d** **Cartera** (mini CRM) y registro de cierres, con vencimientos a 30, 60 y 90 días.
-5. **2e** **Biblioteca de documentos** de la empresa (se puede adelantar).
-6. **Metas y comisiones** (depende de reglas pendientes).
-7. **Red de externos** y **checklist de alta**.
-8. **Parámetros editables** con historial.
-9. **Agente IA** (se cobra por uso; usa los mismos permisos del usuario).
+Hecho: 2a, 2b (etapas A a D), 3a y 4 (simulador de comisiones, sin guardar inversiones). Lo que sigue, en el orden original:
+1. **2b, etapa E:** "Envío del viernes", Inicio, respaldo y documentación. Segundo factor (MFA) antes de salir de localhost.
+2. **2c** **plan semanal** y **proyección** con exportación a Excel.
+3. **2d** **Cartera** (mini CRM) y registro de cierres, con vencimientos a 30, 60 y 90 días. Con ella, las comisiones pueden leer las inversiones reales en vez de simularlas (pendiente (qqq)).
+4. **2e** **Biblioteca de documentos** de la empresa (se puede adelantar).
+5. **Red de externos** (rol EXTERNO, pendiente (rrr)) y **checklist de alta**.
+6. **Parámetros editables** con historial.
+7. **Agente IA** (se cobra por uso; usa los mismos permisos del usuario).
 
 ## 5. Módulos definidos (qué ve y hace cada usuario)
 
@@ -69,23 +72,32 @@ Las notas aprobadas para B a E están en el plan de Claude Code. **Por verificar
 - **Proyección:** fecha, ejecutivo, cantidad, % de cierre, inversionista (tomado del pipeline). Total simple (el del Excel) y total ponderado (solo en pantalla).
 - **Cartera (mini CRM):** cliente (nombre, teléfono, correo opcional, ejecutivo, origen, fecha de alta) e inversiones (entidad, monto, plazo, esquema, tasa congelada, inicio, vencimiento, tipo, estado). Lista con filtros, ficha por cliente, alertas de vencimientos. Guardia contra texto que parezca CLABE, RFC o CURP en notas. El vencimiento se calcula como inicio + plazo y se puede corregir.
 - **Biblioteca:** documentos públicos o internos de la empresa (registros, constancias públicas, contratos modelo en blanco, material comercial, capacitación, marca, formatos en blanco). Categorías editables, versiones, vigencia con alertas, casilla "sin datos personales", tope 25 MB, almacenamiento privado, bitácora, suben directores y gerentes. Se excluyen por defecto las cuentas bancarias de la empresa.
-- **Metas y comisiones:** meta mensual (1,000,000 ejecutivo; 2,000,000 gerente), comisión que se acumula pero queda **bloqueada hasta el 80%** de la meta, después desbloqueada; simulador "si cierro X"; red (30% de lo de externos).
+- **Metas y comisiones:** meta mensual (1,000,000 ejecutivo; 2,000,000 gerente), comisión que se acumula pero queda **bloqueada hasta el 80%** de la meta (solo con captación nueva), después se paga todo lo del mes, nuevas y renovaciones; red (30% de su captación cuenta para la meta). **Hoy es un simulador en `/comisiones`** (Sprint 4): nada se guarda. Tabla N1 con tasas completas; pago por quincena (del 1 al 15, el 16; del 16 a fin de mes, el 1 del siguiente). Modo reclutamiento para candidatos a externos en `/comisiones/reclutamiento`.
 - **Red de externos, checklist de alta, parámetros, agente IA:** como se describe en la sección 4.
 
 ## 6. Cotizador: reglas y datos vigentes
 
 - **Tasas correctas:** la Tabla de Diseño (imagen y Excel `Tasas_Interes_Pesos_y_Dolares_2026.xlsx`; se compararon celda por celda y coinciden). Plazos 6, 12, 18 y 24 meses. Dos esquemas: rendimientos mensuales y al final del plazo. Tramos que empiezan en 30,000; 200,001; 400,001; 600,001; 800,001 y 1,000,001 (un monto exacto de 200,000 paga el tramo 1; un monto con centavos entre 200,000.00 y 200,000.99 cae en el tramo 1).
-- **Decisiones y por qué:** el PowerPoint de ejemplos (`TABLA_RENDIMIENTOS_EJEMPLOS.pptx`) **se descartó**: traía 20% para $30,000 y límites distintos. **No existe el plazo de 36 meses.** USD sigue `POR_CONFIRMAR` y deshabilitado.
+- **Decisiones y por qué:** el PowerPoint de ejemplos (`TABLA_RENDIMIENTOS_EJEMPLOS.pptx`) **se descartó**: traía 20% para $30,000 y límites distintos. **No existe el plazo de 36 meses.** USD: solo para Rami Sise (semilla 0.7, Sprint 3a), con prueba de oro propia (`tests/golden/rendimientos_usd.json`).
+- **Ajustes de tasa (Sprint 3a):** puntos extra de 0 a 5.0 en pasos de 0.5 sobre la tasa de tabla de las dos modalidades, con desglose "Tasa de tabla X% + Y puntos extra = Z%"; plazo especial de 1 a 24 meses con tasa acordada por modalidad (aviso no bloqueante si pasa de la máxima de la tabla más 5 puntos). Esos umbrales siguen en código (pendiente (ooo)).
 - **Cálculo:** interés simple. Salidas: pago mensual (monto × tasa ÷ 12), rendimiento anual equivalente (monto × tasa) y ganancia total del plazo (monto × tasa × meses ÷ 12). Cada cifra se redondea una sola vez desde su valor exacto. El anual es un equivalente a 12 meses, no lo que recibe el cliente en plazos menores a 12.
-- **Archivos de datos:** `seed/parametros_iniciales.json` **v0.6** (tasas, tramos, comisiones N1 verificadas, incentivos, parámetros), `seed/textos_cotizacion.json` **v0.3** en `main` y **v0.4** en `calendario-pdf` (agrega el bloque `pdf_pagina2`), `tests/golden/rendimientos_pptx.json` **v0.5** (168 celdas; el nombre quedó por historia, ya no trae datos del pptx).
-- **Entidades:** CREDIFLEXI, S.A.P.I. DE C.V. y RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R. Hoy usan la misma tabla de tasas. Logo del PDF: siempre Crediflexi. Pitágoras es la marca comercial de los servicios financieros.
-- **PDF:** Carta, una página, fuente Nunito (licencia OFL), cifra principal grande, resumen, resultados, "Cómo se calculó", franja de contacto y pie con texto base fijo (opción 3 del pie). **Sin textos legales ni promesas propias**; una prueba vigila que no aparezcan palabras como garantizado, sin riesgo, neta, libre de impuestos, supervisada, CNBV, CONDUSEF.
-- **Página 2 del PDF** (solo en la rama `calendario-pdf`):
-  - Siempre las dos modalidades lado a lado. Modalidad 1: el último pago ajusta los centavos. Modalidad 2: diferencia de acumulados redondeados.
+- **Archivos de datos** (en la rama `sprint-4`):
+  - `seed/parametros_iniciales.json` **v0.8**: tasas, tramos, comisiones N1 a N3, incentivos con bono numérico y parámetros de comisión.
+  - `seed/textos_cotizacion.json` **v0.6**: bloques `pdf_pagina2` (con el comparativo) y `reclutamiento`.
+  - `seed/benchmark.json` **v0.2**.
+  - `tests/golden/rendimientos_pptx.json` **v0.5** (168 celdas; el nombre quedó por historia, ya no trae datos del pptx) y `tests/golden/rendimientos_usd.json` (128 celdas).
+- **Entidades:** CREDIFLEXI, S.A.P.I. DE C.V. y RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R. Hoy usan la misma tabla de tasas en pesos. Logo del PDF: siempre Crediflexi (el de Rami Sise falta). Pitágoras es la marca comercial de los servicios financieros.
+- **PDF de la cotización:** Carta, **exactamente 2 páginas** ("Página N de 2"), fuente Nunito (licencia OFL).
+  - Página 1: cifra principal, la línea "Pago de la ganancia: cada mes / al vencimiento", resumen, resultados y "Cómo se calculó".
+  - Pie de las dos páginas: aviso del fondo (acción de $1,000.00 MXN) y, solo con Rami Sise, la línea SIPRES.
+  - **Sin promesas propias**; una prueba vigila el lenguaje prohibido, con la línea SIPRES exacta como única excepción.
+- **Página 2 del PDF:**
+  - Las dos modalidades lado a lado, con su franja de tiempo. Modalidad 1 con su tabla mes a mes; Modalidad 2 anualizada, sin filas.
   - Comparación de modalidades.
-  - Escenario ilustrativo de reinversión a dos plazos, con la tasa que corresponde al capital de cada mes. Se omite si el primer pago es menor a $1,000 o si falta una tasa.
+  - Comparativo de tasas (CETES, Nu, Mercado Pago): se omite en USD y con datos de más de 30 días.
+  - Ya **no** lleva el escenario de reinversión (`escenario.ts` quedó sin usar).
   - Bandas #00860D (verde) y #8F7104 (mostaza), con 4.5:1 de contraste con texto blanco.
-  - El PDF tiene siempre 2 páginas, con "Página N de 2".
+- **PDF "Propuesta de ingresos"** (modo reclutamiento): una página, con el aviso fijo "no es una oferta de empleo ni una garantía de ingresos".
 - **Protecciones del cotizador:** solo atiende a Host local (no es seguridad real, es un seguro contra despliegue accidental), `npm run dev` y `start` escuchan solo en 127.0.0.1, nada de lo escrito se guarda, el PDF recalcula en el servidor y detecta si las tasas cambiaron entre la vista previa y la descarga.
 
 ## 7. Formatos de Excel (cada viernes por correo)
@@ -100,8 +112,15 @@ Detalle exacto (anchos, celdas combinadas, formatos, colores) en `docs/FORMATOS_
 ## 8. Pendientes
 
 **De negocio (decide Fernando):**
-- Reglas de comisión y bono: nivel N1, N2 o N3 de cada persona, bono por quincena (la regla exacta no está en ningún archivo; la hoja "Calculadora" del Excel del bono está vacía), base del 30% de la red, qué pasa con la comisión bloqueada si cierra el mes por debajo del 80%, si las renovaciones pagan comisión y si cuentan para la meta.
-- Cuándo cuenta una inversión como captada (firma, depósito o alta).
+- Reglas de comisión ya confirmadas (semilla 0.8, 7 de octubre de 2026): las renovaciones pagan comisión y no cuentan para la meta; tasas completas, sin redondear; nivel vigente N1; desbloqueo al 80% de la captación nueva.
+- Reglas de comisión aún por confirmar:
+  - el nivel de cada persona (N2 y N3 sin uso);
+  - qué pasa con la comisión bloqueada si el mes cierra por debajo del 80% (hoy "se pierde", por confirmar);
+  - si el interno cobra además el 30% de la comisión de su red;
+  - fecha de pago del sueldo base y del bono;
+  - bono del Gerente.
+- Cuándo cuenta una inversión como captada: hoy se supone la fecha de inicio de la inversión, por confirmar.
+- Revisión de RH o del área legal del texto del modo reclutamiento.
 - Dónde vive la app para que otros la usen. Hoy corre solo en su computadora. Hechos verificados: Vercel Hobby no sirve para uso comercial según sus términos; Supabase gratuito no incluye respaldos automáticos, pausa tras una semana sin uso y da 1 GB de archivos; Supabase Pro cuesta desde 25 USD al mes; GitHub gratuito permite repositorios privados ilimitados. Otros hostings: sin verificar. El agente IA se cobra por uso (precio de Claude Haiku 4.5 según fuentes de terceros: 1 USD y 5 USD por millón de tokens, sin confirmar en la página oficial).
 - Quién sube a la Biblioteca y si entran las cuentas bancarias de la empresa (recomendado que no).
 - **Verificación en dos pasos de su cuenta de GitHub:** sin confirmar, con el repositorio ya en internet.
@@ -134,4 +153,4 @@ Detalle exacto (anchos, celdas combinadas, formatos, colores) en `docs/FORMATOS_
 
 ## 11. Mensaje sugerido para abrir la conversación nueva
 
-> Estoy continuando el proyecto de la app interna de Crediflexi. Lee `docs/ESTADO_DEL_PROYECTO.md`, que tiene dónde vamos y el protocolo de trabajo. Primero dime qué comandos de git quieres que corra para confirmar el estado, y luego retomamos en el Sprint 2a: ya instalé la skill de diseño y tengo (o no tengo) el plan de Claude Code para que lo revises.
+> Estoy continuando el proyecto de la app interna de Crediflexi. Lee `docs/ESTADO_DEL_PROYECTO.md`, que tiene dónde vamos y el protocolo de trabajo. Primero dime qué comandos de git quieres que corra para confirmar el estado. Luego decidimos si fusiono el Sprint 4 a `main` y qué sigue (etapa E del Sprint 2b, plan semanal o Cartera).
