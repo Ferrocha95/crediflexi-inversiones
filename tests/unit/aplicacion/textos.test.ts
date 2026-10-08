@@ -17,6 +17,8 @@ const CLAVES_PDF_SIN_MARCADORES = [
   "resumen_esquema",
   "seccion_resultados",
   "seccion_calculo",
+  "plazo_especial",
+  "tasa_acordada",
 ] as const;
 
 function cargarBien(json: unknown): TextosCotizacion {
@@ -34,13 +36,13 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 }
 
 describe("cargarTextos: el archivo real", () => {
-  it("carga seed/textos_cotizacion.json versión 0.4", () => {
+  it("carga seed/textos_cotizacion.json versión 0.5", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.4");
+    expect(t.version).toBe("0.5");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada " +
-        "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +
-        "a 12 meses; la ganancia total corresponde al plazo elegido. Esta cotización no es un contrato: las " +
+        "y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente " +
+        "a 12 meses; la ganancia del plazo corresponde al plazo elegido. Esta cotización no es un contrato: las " +
         "condiciones aplicables son las del contrato que se firme.",
     );
     expect(t.lineaPreparadoPor).toBe("Preparado por {ejecutivo}.");
@@ -64,6 +66,53 @@ describe("cargarTextos: el archivo real", () => {
   });
 });
 
+describe("cargarTextos: textos nuevos de la versión 0.5", () => {
+  it("las etiquetas de los resultados por esquema usan 'ganancia' (Rendimiento anual -> Ganancia anual equivalente)", () => {
+    expect(cargarBien(textosJson).etiquetasResultados).toEqual({
+      mensual: {
+        rendimiento_mensual_pesos: "Pago mensual",
+        rendimiento_anual_pesos: "Ganancia anual equivalente (12 meses)",
+        ganancia_total_plazo: "Ganancia total en el plazo",
+      },
+      final_del_plazo: {
+        rendimiento_mensual_pesos: "Rendimiento mensual equivalente (se paga al final del plazo)",
+        rendimiento_anual_pesos: "Ganancia anual equivalente (12 meses)",
+        ganancia_total_plazo: "Ganancia total al final del plazo",
+      },
+    });
+  });
+
+  it("la línea de cuándo se paga la ganancia (página 1 y vista previa), sin promesas", () => {
+    expect(cargarBien(textosJson).lineaPago).toEqual({
+      mensual: "Pago de la ganancia: cada mes",
+      final_del_plazo: "Pago de la ganancia: al vencimiento",
+    });
+  });
+
+  it("el pie: SIPRES solo para RAMI_SISE y el aviso del fondo para todas", () => {
+    const t = cargarBien(textosJson);
+    expect(t.pieSipres).toEqual({
+      RAMI_SISE:
+        "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES",
+    });
+    expect(t.pieAvisoFondo).toBe("Fondo de inversión privado: para invertir se requiere adquirir una acción de $1,000.00 MXN.");
+  });
+
+  it("ningún texto dice recibes ni recibirás", () => {
+    expect(JSON.stringify(textosJson)).not.toMatch(/recib(es|ir[aá]s)/i);
+  });
+
+  it("el archivo no menciona la reinversión ni el escenario ilustrativo", () => {
+    expect(JSON.stringify(textosJson).toLowerCase()).not.toMatch(/reinver|escenario/);
+  });
+
+  it("pie_sipres rechaza un texto vacío", () => {
+    const j = copia();
+    (j as { pie_sipres: Record<string, string> }).pie_sipres.RAMI_SISE = " ";
+    expect(errorDe(j).detalles.join("\n")).toContain("pie_sipres");
+  });
+});
+
 describe("cargarTextos: el bloque pdf", () => {
   it("trae los textos del PDF con sus acentos", () => {
     expect(cargarBien(textosJson).pdf).toEqual({
@@ -77,7 +126,18 @@ describe("cargarTextos: el bloque pdf", () => {
       seccionResultados: "Tus resultados",
       seccionCalculo: "Cómo se calculó",
       lineaTasas: "Tasas versión {version_tasas} del {fecha_tasas}.",
+      plazoEspecial: "Plazo especial",
+      tasaAcordada: "Tasa acordada",
+      desglosePuntos: "Tasa de tabla {tasa_tabla} + {puntos} puntos extra = {tasa}",
     });
+  });
+
+  it("pdf.desglose_puntos acepta {tasa_tabla}, {puntos} y {tasa} y rechaza otros", () => {
+    const j = copia();
+    (j.pdf as Record<string, string>).desglose_puntos = "Base {tasa_tabla}, +{puntos}, final {tasa}";
+    expect(cargarBien(j).pdf.desglosePuntos).toBe("Base {tasa_tabla}, +{puntos}, final {tasa}");
+    (j.pdf as Record<string, string>).desglose_puntos = "Para {razon_social}";
+    expect(errorDe(j).detalles.join("\n")).toContain("pdf.desglose_puntos");
   });
 
   it.each(CLAVES_PDF_SIN_MARCADORES)("pdf.%s no admite ningún marcador", (clave) => {
@@ -254,81 +314,95 @@ describe("cargarTextos: textos vacíos y estructura", () => {
   });
 });
 
+/** Claves de pdf_pagina2 sin marcadores (las de cuándo se paga solo admiten {meses}). */
 const CLAVES_PAGINA2 = [
   "titulo",
   "modalidad_1",
   "modalidad_2",
   "tasa_anual",
+  "tasa_acordada",
   "capital_inicial",
-  "rendimiento_estimado",
-  "total",
+  "ganancia_anual_equivalente",
+  "ganancia_plazo",
+  "total_capital_ganancia",
+  "franja_ganancia",
+  "franja_mas_capital",
+  "franja_ganancia_capital",
   "columna_mes",
-  "columna_rendimiento_mes",
-  "columna_rendimiento_acumulado",
+  "columna_ganancia_periodo",
+  "columna_ganancia_acumulada",
   "insignia",
   "nota_centavos",
   "modalidad_no_disponible",
+  "modalidad_sin_tasa",
   "titulo_grafica_1",
   "nota_grafica_1",
   "serie_cobrado",
   "serie_devengado",
-  "titulo_grafica_2",
-  "rotulo_escenario",
-  "serie_con_reinversion",
-  "serie_sin_reinvertir",
-  "fin_primer_plazo",
-  "nota_escenario",
-  "escenario_incremento_minimo",
-  "escenario_tasa_no_disponible",
+  "comparacion_omitida",
   "pagina",
   "pagina_de",
 ] as const;
 
+const CLAVES_PAGINA2_CON_MESES = ["pago_ganancia_mensual", "pago_ganancia_vencimiento", "capital_vencimiento"] as const;
+
 describe("cargarTextos: el bloque pdf_pagina2", () => {
-  it("trae los textos de la página 2 con los que fijó Fernando", () => {
+  it("trae los textos de la página 2 con la terminología de 'ganancia'", () => {
     const p = cargarBien(textosJson).pdfPagina2;
+    expect(p.titulo).toBe("Calendario de pagos y comparativo");
     expect(p.modalidad1).toBe("MODALIDAD 1 · RENDIMIENTO MENSUAL");
     expect(p.modalidad2).toBe("MODALIDAD 2 · PAGO AL VENCIMIENTO");
     expect(p.tasaAnual).toBe("TASA ANUAL");
+    expect(p.tasaAcordada).toBe("TASA ACORDADA");
     expect(p.capitalInicial).toBe("Capital inicial");
-    expect(p.rendimientoEstimado).toBe("Rendimiento estimado");
-    expect(p.total).toBe("Total capital + rendimiento");
+    expect(p.gananciaAnualEquivalente).toBe("Ganancia anual equivalente (12 meses)");
+    expect(p.gananciaPlazo).toBe("Ganancia del plazo");
+    expect(p.totalCapitalGanancia).toBe("Total capital + ganancia");
     expect(p.columnaMes).toBe("Mes");
-    expect(p.columnaRendimientoMes).toBe("Rendimiento del mes");
-    expect(p.columnaRendimientoAcumulado).toBe("Rendimiento acumulado");
+    expect(p.columnaGananciaPeriodo).toBe("Ganancia del periodo");
+    expect(p.columnaGananciaAcumulada).toBe("Ganancia acumulada");
+    expect(p.pagoGananciaMensual).toBe("Pago de la ganancia: cada mes, del mes 1 al mes {meses}");
+    expect(p.pagoGananciaVencimiento).toBe("Pago de la ganancia: al vencimiento (mes {meses}), junto con el capital");
+    expect(p.capitalVencimiento).toBe("Capital: al vencimiento (mes {meses})");
+    expect([p.franjaGanancia, p.franjaMasCapital, p.franjaGananciaCapital]).toEqual(["ganancia", "+ capital", "ganancia + capital"]);
     expect(p.insignia).toBe("Tu cotización");
     expect(p.notaCentavos).toBe("Los centavos se ajustan para que la suma coincida con el total.");
-    expect(p.rotuloEscenario).toBe("Escenario ilustrativo");
-    expect(p.notaEscenario).toBe(
-      "Supone las tasas vigentes hoy y que se reinvierten los rendimientos; las tasas pueden cambiar. " +
-        "No es una promesa de rendimiento.",
-    );
   });
 
-  it("trae las 27 claves, todas con texto", () => {
+  it("trae las 29 claves, todas con texto", () => {
     const p = cargarBien(textosJson).pdfPagina2;
-    expect(Object.keys(p)).toHaveLength(CLAVES_PAGINA2.length);
+    expect(Object.keys(p)).toHaveLength(CLAVES_PAGINA2.length + CLAVES_PAGINA2_CON_MESES.length);
     for (const v of Object.values(p)) expect(v.trim()).not.toBe("");
   });
 
   it.each(CLAVES_PAGINA2)("pdf_pagina2.%s no admite ningún marcador", (clave) => {
     const j = copia();
-    j.pdf_pagina2[clave] = "Texto con {razon_social}";
+    (j.pdf_pagina2 as Record<string, string>)[clave] = "Texto con {razon_social}";
     const detalle = errorDe(j).detalles.find((d) => d.includes("{razon_social}"));
     expect(detalle).toContain(`pdf_pagina2.${clave}`);
     expect(detalle).toMatch(/ningún marcador/);
   });
 
-  it.each(CLAVES_PAGINA2)("pdf_pagina2.%s vacío rompe la carga", (clave) => {
+  it.each(CLAVES_PAGINA2_CON_MESES)("pdf_pagina2.%s solo admite {meses}", (clave) => {
     const j = copia();
-    j.pdf_pagina2[clave] = "  ";
+    (j.pdf_pagina2 as Record<string, string>)[clave] = "Mes {meses}";
+    expect(cargarBien(j)).toBeDefined();
+    (j.pdf_pagina2 as Record<string, string>)[clave] = "Mes {meses} de {razon_social}";
+    const detalle = errorDe(j).detalles.find((d) => d.includes("{razon_social}"));
+    expect(detalle).toContain(`pdf_pagina2.${clave}`);
+    expect(detalle).toContain("{meses}");
+  });
+
+  it.each([...CLAVES_PAGINA2, ...CLAVES_PAGINA2_CON_MESES])("pdf_pagina2.%s vacío rompe la carga", (clave) => {
+    const j = copia();
+    (j.pdf_pagina2 as Record<string, string>)[clave] = "  ";
     expect(errorDe(j).detalles.join("\n")).toContain(`pdf_pagina2.${clave}`);
   });
 
   it("falta una clave del bloque pdf_pagina2", () => {
     const j: { pdf_pagina2: Record<string, unknown> } = copia();
-    delete j.pdf_pagina2.nota_escenario;
-    expect(errorDe(j).detalles.join("\n")).toContain("nota_escenario");
+    delete j.pdf_pagina2.capital_vencimiento;
+    expect(errorDe(j).detalles.join("\n")).toContain("capital_vencimiento");
   });
 
   it("una clave desconocida en el bloque pdf_pagina2 rompe la carga", () => {

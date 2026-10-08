@@ -48,15 +48,15 @@ const e = StyleSheet.create({
   fechaValor: { fontSize: 11, color: COLOR.gris, fontWeight: "bold" },
   lineaMarca: { marginTop: 10 },
 
-  titulo: { marginTop: 14, fontSize: 27, fontWeight: "bold", lineHeight: 1.1 },
+  titulo: { marginTop: 10, fontSize: 24, fontWeight: "bold", lineHeight: 1.1 },
   razonSocial: { marginTop: 4, fontSize: 10, color: COLOR.gris },
-  preparadoPara: { marginTop: 8, fontSize: 14, color: COLOR.marino, lineHeight: 1.2 },
+  preparadoPara: { marginTop: 6, fontSize: 13, color: COLOR.marino, lineHeight: 1.2 },
   preparadoParaEtiqueta: { color: COLOR.verde },
   preparadoParaNombre: { fontWeight: "bold" },
 
   tarjeta: {
-    marginTop: 14,
-    paddingVertical: 12,
+    marginTop: 10,
+    paddingVertical: 9,
     paddingHorizontal: 20,
     backgroundColor: COLOR.fondoVerde,
     borderRadius: 10,
@@ -64,11 +64,12 @@ const e = StyleSheet.create({
     borderLeftColor: COLOR.verde,
   },
   tarjetaEtiqueta: { fontSize: 10, color: COLOR.gris },
-  tarjetaCifra: { marginTop: 2, fontSize: 42, fontWeight: "bold", color: COLOR.verde, lineHeight: 1.15 },
+  tarjetaCifra: { marginTop: 1, fontSize: 36, fontWeight: "bold", color: COLOR.verde, lineHeight: 1.15 },
   tarjetaDetalle: { marginTop: 2, fontSize: 11, color: COLOR.marino },
+  tarjetaLinea: { marginTop: 2, fontSize: 10, color: COLOR.marino },
   fuerte: { fontWeight: "bold" },
 
-  resumen: { marginTop: 12, flexDirection: "row", gap: 8 },
+  resumen: { marginTop: 9, flexDirection: "row", gap: 8 },
   casilla: {
     flex: 1,
     paddingVertical: 8,
@@ -79,13 +80,13 @@ const e = StyleSheet.create({
   casillaEtiqueta: { fontSize: 8, color: COLOR.gris },
   casillaValor: { marginTop: 3, fontSize: 11, fontWeight: "bold", color: COLOR.marino, lineHeight: 1.2 },
 
-  seccion: { marginTop: 14 },
+  seccion: { marginTop: 10 },
   seccionTitulo: { fontSize: 13, fontWeight: "bold", marginBottom: 4 },
   fila: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 10,
     borderBottomWidth: 0.75,
     borderBottomColor: COLOR.linea,
@@ -97,8 +98,8 @@ const e = StyleSheet.create({
   filaCifraPrincipal: { color: COLOR.verde },
 
   calculo: {
-    marginTop: 12,
-    paddingVertical: 8,
+    marginTop: 9,
+    paddingVertical: 7,
     paddingHorizontal: 12,
     backgroundColor: COLOR.fondoTenue,
     borderWidth: 0.75,
@@ -108,7 +109,7 @@ const e = StyleSheet.create({
   calculoCabeza: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", gap: 12 },
   calculoTitulo: { fontSize: 10, fontWeight: "bold" },
   calculoTasas: { fontSize: 8, color: COLOR.gris, textAlign: "right" },
-  calculoFila: { flexDirection: "row", marginTop: 5, gap: 10 },
+  calculoFila: { flexDirection: "row", marginTop: 3, gap: 10 },
   calculoEtiqueta: { width: "34%", fontSize: 8.5, fontWeight: "bold" },
   calculoFormula: { width: "24%", fontSize: 8.5, color: COLOR.gris },
   calculoOperacion: { flex: 1, fontSize: 8.5, color: COLOR.marino },
@@ -119,7 +120,7 @@ const e = StyleSheet.create({
    * todo el contenido, los huecos quedan en cero.
    */
   hueco: { flexGrow: 1, maxHeight: HUECO_MAXIMO },
-  relleno: { flexGrow: 1, minHeight: 12 },
+  relleno: { flexGrow: 1, minHeight: 6 },
 
   franja: {
     flexDirection: "row",
@@ -133,8 +134,8 @@ const e = StyleSheet.create({
   },
   franjaIzquierda: { flex: 1, fontSize: 9, color: COLOR.blanco },
   franjaDerecha: { maxWidth: "45%", fontSize: 9, color: COLOR.blanco, fontWeight: "bold", textAlign: "right" },
-  pieBase: { marginTop: 7, fontSize: 8, color: COLOR.gris, lineHeight: 1.3 },
-  pieNota: { marginTop: 3, fontSize: 8, color: COLOR.gris, lineHeight: 1.3 },
+  pieBase: { marginTop: 5, fontSize: 8, color: COLOR.gris, lineHeight: 1.2 },
+  pieNota: { marginTop: 2, fontSize: 8, color: COLOR.gris, lineHeight: 1.2 },
 
   /** En el margen inferior, fuera del flujo: no mueve nada del contenido de la página. */
   numeroPagina: {
@@ -218,17 +219,20 @@ export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo:
           <Text style={e.tarjetaEtiqueta}>{cifraPrincipal.etiqueta}</Text>
           <Text style={e.tarjetaCifra}>{cifraPrincipal.cifra}</Text>
           <Text style={e.tarjetaDetalle}>
-            {t.resumenTasa} <Text style={e.fuerte}>{modelo.tasa}</Text>
+            {modelo.etiquetas.tasa} <Text style={e.fuerte}>{modelo.tasa}</Text>
             {SEPARADOR}
-            {t.resumenPlazo} <Text style={e.fuerte}>{modelo.solicitud.plazo}</Text>
+            {modelo.etiquetas.plazo} <Text style={e.fuerte}>{modelo.solicitud.plazo}</Text>
+            {SEPARADOR}
+            {modelo.lineaPago}
           </Text>
+          {modelo.desgloseTasa !== null && <Text style={e.tarjetaLinea}>{modelo.desgloseTasa}</Text>}
         </View>
 
         <View style={e.hueco} />
         <View style={e.resumen}>
           <Casilla etiqueta={t.resumenMonto} valor={modelo.solicitud.monto} />
-          <Casilla etiqueta={t.resumenPlazo} valor={modelo.solicitud.plazo} />
-          <Casilla etiqueta={t.resumenTasa} valor={modelo.tasa} />
+          <Casilla etiqueta={modelo.etiquetas.plazo} valor={modelo.solicitud.plazo} />
+          <Casilla etiqueta={modelo.etiquetas.tasa} valor={modelo.tasa} />
           <Casilla etiqueta={t.resumenEsquema} valor={modelo.solicitud.esquema} />
         </View>
 
@@ -275,12 +279,14 @@ export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo:
           )}
           <Text style={e.pieBase}>{pie.base}</Text>
           {pie.notaAdicional !== null && <Text style={e.pieNota}>{pie.notaAdicional}</Text>}
+          {/* SIPRES (si la entidad lo lleva) y el aviso del fondo, en un solo párrafo para ahorrar renglones. */}
+          <Text style={e.pieNota}>{[pie.sipres, pie.avisoFondo].filter((x) => x !== null).join(" ")}</Text>
         </View>
         {numero(1)}
       </Page>
 
       <Page size="LETTER" style={e.pagina}>
-        <PaginaCalendario modelo={pagina2} logo={logo} />
+        <PaginaCalendario modelo={pagina2} logo={logo} pie={pie} />
         {numero(2)}
       </Page>
     </Document>

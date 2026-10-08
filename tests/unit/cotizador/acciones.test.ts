@@ -61,7 +61,7 @@ describe.each(["CREDIFLEXI", "RAMI_SISE"])("previsualizar (%s)", (entidad) => {
     expect(v.tasa).toBe("19.00%");
     expect(v.salidas.map((s) => [s.etiqueta, s.cifra])).toEqual([
       ["Pago mensual", "$23,750.00"],
-      ["Rendimiento anual equivalente (12 meses)", "$285,000.00"],
+      ["Ganancia anual equivalente (12 meses)", "$285,000.00"],
       ["Ganancia total en el plazo", "$285,000.00"],
     ]);
     expect(v.salidas[0].operacion).toBe("1,500,000.00 × 0.19 ÷ 12 = 23,750.00");

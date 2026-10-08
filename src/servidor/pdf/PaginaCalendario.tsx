@@ -1,8 +1,10 @@
 import "server-only";
-import { Image, Line, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
+import { Circle, Image, Line, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import {
+  LIENZO_FRANJA,
   LIENZO_GRAFICA,
   type ColorSerie,
+  type FranjaPdf,
   type GraficaPdf,
   type ModeloPagina2,
   type TarjetaPdf,
@@ -11,14 +13,19 @@ import {
 import { COLOR_PDF as COLOR } from "./colores";
 import { FAMILIA } from "./fuente";
 
-// Página 2 del PDF: calendario de las dos modalidades y las dos gráficas.
-// Solo presenta el modelo: aquí no se calcula nada y no hay textos propios.
+// Página 2 del PDF: la modalidad 1 con su tabla mes a mes a la izquierda; a la
+// derecha, la modalidad 2 anualizada y la comparación de modalidades. Cada
+// tarjeta dice cuándo se paga la ganancia y cuándo el capital, con su franja
+// de tiempo. Solo presenta el modelo: aquí no se calcula nada y no hay textos
+// propios. Ningún texto nuevo baja de 7.5 pt.
 
 const ALTO_LOGO = 26;
 /** Proporción del PNG del logo (1834 × 539). */
 const ANCHO_LOGO = (ALTO_LOGO * 1834) / 539;
-/** Alto de cada fila de las tablas y de los renglones de las tarjetas. */
+/** Alto de cada fila de la tabla y de los renglones de las tarjetas. */
 const ALTO_FILA = 12;
+/** Ancho de cada columna: la mitad del ancho útil (540 pt) menos la separación. */
+const ANCHO_COLUMNA = LIENZO_GRAFICA.ancho;
 
 const BANDA: Readonly<Record<TarjetaPdf["esquema"], string>> = {
   mensual: COLOR.bandaVerde,
@@ -31,7 +38,7 @@ const COLOR_SERIE: Readonly<Record<ColorSerie, string>> = {
   gris: COLOR.gris,
 };
 
-/** Continuo, rayado (modalidad 2) y punteado (sin reinvertir): se distinguen sin depender del color. */
+/** Continuo y rayado (modalidad 2): se distinguen sin depender del color. */
 const RAYADO: Readonly<Record<TrazoSerie, string | undefined>> = {
   continuo: undefined,
   rayado: "5 2.5",
@@ -50,8 +57,10 @@ const e = StyleSheet.create({
   logo: { height: ALTO_LOGO, width: ANCHO_LOGO, backgroundColor: COLOR.blanco },
   titulo: { fontSize: 14, fontWeight: "bold", color: COLOR.marino },
 
-  tarjetas: { marginTop: 10, flexDirection: "row", gap: 12, alignItems: "flex-start" },
-  tarjeta: { flex: 1, borderWidth: 0.75, borderColor: COLOR.linea, borderRadius: 6 },
+  columnas: { marginTop: 10, flexDirection: "row", gap: 12, alignItems: "flex-start" },
+  columna: { width: ANCHO_COLUMNA, gap: 10 },
+
+  tarjeta: { width: ANCHO_COLUMNA, borderWidth: 0.75, borderColor: COLOR.linea, borderRadius: 6 },
   banda: { paddingVertical: 4, paddingHorizontal: 8, borderTopLeftRadius: 5, borderTopRightRadius: 5 },
   bandaTexto: { fontSize: 8.5, fontWeight: "bold", color: COLOR.blanco, lineHeight: 1.2 },
   cuerpo: { paddingTop: 5, paddingBottom: 6, paddingHorizontal: 8 },
@@ -70,7 +79,7 @@ const e = StyleSheet.create({
     fontWeight: "bold",
     lineHeight: 1,
   },
-  renglones: { marginTop: 4, marginBottom: 5 },
+  renglones: { marginTop: 4, marginBottom: 4 },
   renglon: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -81,6 +90,8 @@ const e = StyleSheet.create({
   },
   renglonTotal: { fontWeight: "bold", borderTopWidth: 0.75, borderTopColor: COLOR.linea },
   renglonCifra: { fontWeight: "bold" },
+  linea: { fontSize: 7.5, color: COLOR.marino, lineHeight: 1.3 },
+  franja: { marginTop: 3, marginBottom: 4 },
 
   tablaCabeza: {
     flexDirection: "row",
@@ -101,23 +112,9 @@ const e = StyleSheet.create({
 
   notaCentavos: { marginTop: 4, fontSize: 7, color: COLOR.gris },
 
-  graficas: { marginTop: 10, flexDirection: "row", gap: 12, alignItems: "flex-start" },
   grafica: { width: LIENZO_GRAFICA.ancho },
-  /** Alto fijo: con o sin rótulo, las dos gráficas empiezan a la misma altura. */
   graficaCabeza: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 6, height: 16 },
   graficaTitulo: { fontSize: 9, fontWeight: "bold", color: COLOR.marino },
-  rotulo: {
-    paddingTop: 2.5,
-    paddingBottom: 1.5,
-    paddingHorizontal: 6,
-    borderRadius: 6,
-    lineHeight: 1,
-    borderWidth: 0.75,
-    borderColor: COLOR.gris,
-    fontSize: 6.5,
-    fontWeight: "bold",
-    color: COLOR.gris,
-  },
   leyenda: { marginTop: 3, flexDirection: "row", flexWrap: "wrap", gap: 10 },
   leyendaElemento: { flexDirection: "row", alignItems: "center", gap: 3 },
   leyendaTexto: { fontSize: 6.5, color: COLOR.marino },
@@ -132,46 +129,86 @@ const e = StyleSheet.create({
     lineHeight: 1.3,
   },
   notaGrafica: { marginTop: 2, fontSize: 6.5, color: COLOR.gris, lineHeight: 1.3 },
+
+  /** Empuja el pie al final de la hoja. */
+  relleno: { flexGrow: 1, minHeight: 8 },
+  pie: { fontSize: 8, color: COLOR.gris, lineHeight: 1.3 },
 });
 
+const textoSvg = (fontSize: number, fontWeight: "normal" | "bold" = "normal") => ({ fontSize, fontFamily: FAMILIA, fontWeight });
+
+/** Franja de tiempo: un punto por pago, del mes 1 al mes N, con sus rótulos. */
+function Franja({ f }: { f: FranjaPdf }) {
+  const { ancho, alto, y } = LIENZO_FRANJA;
+  const ultimo = f.puntos[f.puntos.length - 1];
+  return (
+    <Svg width={ancho} height={alto} style={e.franja}>
+      <Line x1={f.inicio} y1={y} x2={f.fin} y2={y} stroke={COLOR.linea} strokeWidth={1.2} />
+      <Circle cx={f.inicio} cy={y} r={1.6} fill={COLOR.gris} />
+      {f.puntos.map((p) => (
+        <Circle key={p.mes} cx={p.x} cy={y} r={p === ultimo ? 3 : 2} fill={p === ultimo ? COLOR.verde : COLOR.marino} />
+      ))}
+      {f.etiquetaPuntos !== null && (
+        <Text x={f.inicio} y={y + 13} fill={COLOR.marino} style={textoSvg(7.5)}>
+          {f.etiquetaPuntos}
+        </Text>
+      )}
+      <Text x={ultimo.x + 5} y={y + 13} textAnchor="end" fill={COLOR.verde} style={textoSvg(7.5, "bold")}>
+        {f.etiquetaFinal}
+      </Text>
+    </Svg>
+  );
+}
+
 function Tarjeta({ t, textos }: { t: TarjetaPdf; textos: ModeloPagina2["textos"] }) {
+  const d = t.detalle;
   return (
     <View style={e.tarjeta} wrap={false}>
       <View style={[e.banda, { backgroundColor: BANDA[t.esquema] }]}>
         <Text style={e.bandaTexto}>{t.titulo}</Text>
       </View>
       <View style={e.cuerpo}>
-        {t.detalle === null ? (
+        {d === null ? (
           <Text style={e.notaTarjeta}>{t.nota ?? ""}</Text>
         ) : (
           <>
             <View style={e.filaTasa}>
               <View>
-                <Text style={e.tasa}>{t.detalle.tasa}</Text>
-                <Text style={e.tasaEtiqueta}>{textos.tasaAnual}</Text>
+                <Text style={e.tasa}>{d.tasa}</Text>
+                <Text style={e.tasaEtiqueta}>{d.etiquetaTasa}</Text>
               </View>
               {t.elegida && <Text style={e.insignia}>{textos.insignia}</Text>}
             </View>
             <View style={e.renglones}>
-              {t.detalle.renglones.map((r, i) => (
-                <View key={r.etiqueta} style={[e.renglon, ...(i === 2 ? [e.renglonTotal] : [])]}>
+              {d.renglones.map((r, i) => (
+                <View key={r.etiqueta} style={[e.renglon, ...(i === d.renglones.length - 1 ? [e.renglonTotal] : [])]}>
                   <Text>{r.etiqueta}</Text>
                   <Text style={e.renglonCifra}>{r.cifra}</Text>
                 </View>
               ))}
             </View>
-            <View style={e.tablaCabeza}>
-              <Text style={e.colMes}>{textos.columnaMes}</Text>
-              <Text style={e.colCifra}>{textos.columnaRendimientoMes}</Text>
-              <Text style={e.colCifra}>{textos.columnaRendimientoAcumulado}</Text>
-            </View>
-            {t.detalle.filas.map((f, i) => (
-              <View key={f.mes} style={[e.tablaFila, ...(i % 2 === 1 ? [e.tablaFilaAlterna] : [])]}>
-                <Text style={e.colMes}>{f.mes}</Text>
-                <Text style={e.colCifra}>{f.rendimiento}</Text>
-                <Text style={e.colCifra}>{f.acumulado}</Text>
-              </View>
+            {d.lineas.map((l) => (
+              <Text key={l} style={e.linea}>
+                {l}
+              </Text>
             ))}
+            <Franja f={d.franja} />
+            {d.filas.length > 0 && (
+              <>
+                <View style={e.tablaCabeza}>
+                  <Text style={e.colMes}>{textos.columnaMes}</Text>
+                  <Text style={e.colCifra}>{textos.columnaGananciaPeriodo}</Text>
+                  <Text style={e.colCifra}>{textos.columnaGananciaAcumulada}</Text>
+                </View>
+                {d.filas.map((f, i) => (
+                  <View key={f.mes} style={[e.tablaFila, ...(i % 2 === 1 ? [e.tablaFilaAlterna] : [])]}>
+                    <Text style={e.colMes}>{f.mes}</Text>
+                    <Text style={e.colCifra}>{f.rendimiento}</Text>
+                    <Text style={e.colCifra}>{f.acumulado}</Text>
+                  </View>
+                ))}
+              </>
+            )}
           </>
         )}
       </View>
@@ -188,8 +225,6 @@ function MuestraTrazo({ color, trazo }: { color: ColorSerie; trazo: TrazoSerie }
   );
 }
 
-const textoSvg = (fontSize: number, fontWeight: "normal" | "bold" = "normal") => ({ fontSize, fontFamily: FAMILIA, fontWeight });
-
 function Grafica({ g }: { g: GraficaPdf }) {
   const { ancho, alto, area } = LIENZO_GRAFICA;
   const d = g.dibujo;
@@ -197,7 +232,6 @@ function Grafica({ g }: { g: GraficaPdf }) {
     <View style={e.grafica} wrap={false}>
       <View style={e.graficaCabeza}>
         <Text style={e.graficaTitulo}>{g.titulo}</Text>
-        {g.rotulo !== null && <Text style={e.rotulo}>{g.rotulo}</Text>}
       </View>
       {d === null ? (
         <Text style={e.omision}>{g.omision ?? ""}</Text>
@@ -229,22 +263,6 @@ function Grafica({ g }: { g: GraficaPdf }) {
             <Text x={(area.izquierda + area.derecha) / 2} y={area.abajo + 19} textAnchor="middle" fill={COLOR.gris} style={textoSvg(6.5)}>
               {d.tituloEjeX}
             </Text>
-            {d.lineaVertical !== null && (
-              <>
-                <Line
-                  x1={d.lineaVertical.x}
-                  y1={area.arriba}
-                  x2={d.lineaVertical.x}
-                  y2={area.abajo}
-                  stroke={COLOR.gris}
-                  strokeWidth={0.75}
-                  strokeDasharray="2 2"
-                />
-                <Text x={d.lineaVertical.x - 3} y={area.arriba + 6} textAnchor="end" fill={COLOR.gris} style={textoSvg(6)}>
-                  {d.lineaVertical.texto}
-                </Text>
-              </>
-            )}
             {d.series.map((s) => (
               <Path
                 key={s.nombre}
@@ -270,9 +288,18 @@ function Grafica({ g }: { g: GraficaPdf }) {
   );
 }
 
-/** Contenido de la página 2 (va dentro de su <Page>). */
-export function PaginaCalendario({ modelo, logo }: { modelo: ModeloPagina2; logo: Buffer }) {
+/** Contenido de la página 2 (va dentro de su <Page>). El pie es el mismo de la página 1. */
+export function PaginaCalendario({
+  modelo,
+  logo,
+  pie,
+}: {
+  modelo: ModeloPagina2;
+  logo: Buffer;
+  pie: { readonly sipres: string | null; readonly avisoFondo: string };
+}) {
   const { textos } = modelo;
+  const [m1, m2] = modelo.tarjetas;
   return (
     <>
       <View style={e.encabezado}>
@@ -282,17 +309,23 @@ export function PaginaCalendario({ modelo, logo }: { modelo: ModeloPagina2; logo
         <Text style={e.titulo}>{textos.titulo}</Text>
       </View>
 
-      <View style={e.tarjetas}>
-        {modelo.tarjetas.map((t) => (
-          <Tarjeta key={t.esquema} t={t} textos={textos} />
-        ))}
+      <View style={e.columnas}>
+        <View style={e.columna}>
+          <Tarjeta t={m1} textos={textos} />
+          <Text style={e.notaCentavos}>{textos.notaCentavos}</Text>
+        </View>
+        <View style={e.columna}>
+          <Tarjeta t={m2} textos={textos} />
+          {modelo.graficas.map((g) => (
+            <Grafica key={g.titulo} g={g} />
+          ))}
+        </View>
       </View>
-      <Text style={e.notaCentavos}>{textos.notaCentavos}</Text>
 
-      <View style={e.graficas}>
-        {modelo.graficas.map((g) => (
-          <Grafica key={g.titulo} g={g} />
-        ))}
+      <View style={e.relleno} />
+      <View>
+        {pie.sipres !== null && <Text style={e.pie}>{pie.sipres}</Text>}
+        <Text style={e.pie}>{pie.avisoFondo}</Text>
       </View>
     </>
   );

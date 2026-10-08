@@ -6,6 +6,7 @@ import { modeloPdf, TOPES, type EntradaPdf, type ModeloPdf } from "../../../../s
 import { cargarTextos } from "../../../../src/aplicacion/textos";
 import type { Esquema } from "../../../../src/domain/tasas/semilla.esquema";
 import { renderizarPdf } from "../../../../src/servidor/pdf/renderizar";
+import { cotizarConAjuste, type Ajuste } from "../../../../src/domain/interes/ajustes";
 import { datosPagina2 } from "../../../../src/aplicacion/pagina2";
 import { cotizarBien, semillaReal } from "../../oro/ayudas";
 import { extraerTexto } from "./extraer";
@@ -48,24 +49,32 @@ function largo(base: string, n: number): string {
 
 const P2 = textos.pdfPagina2;
 
-/** Textos fijos que la página 2 lleva siempre (tarjetas y títulos de las gráficas). */
+/** Textos fijos que la página 2 lleva siempre (tarjetas, franja y título de la gráfica). */
 const TEXTOS_PAGINA2 = [
   P2.titulo,
   P2.modalidad1,
   P2.modalidad2,
   P2.tasaAnual,
   P2.capitalInicial,
-  P2.rendimientoEstimado,
-  P2.total,
-  P2.columnaRendimientoMes,
-  P2.columnaRendimientoAcumulado,
+  P2.gananciaAnualEquivalente,
+  P2.gananciaPlazo,
+  P2.totalCapitalGanancia,
+  P2.columnaGananciaPeriodo,
+  P2.columnaGananciaAcumulada,
   P2.notaCentavos,
   P2.tituloGrafica1,
-  P2.tituloGrafica2,
+  P2.franjaMasCapital,
+  P2.franjaGananciaCapital,
 ];
 
+/** La línea SIPRES exacta de Rami Sise: la ÚNICA excepción a la revisión de lenguaje. */
+const LINEA_SIPRES = textos.pieSipres.RAMI_SISE;
+
 const RE_PROHIBIDO =
-  /(?<![\p{L}\p{N}])(garantiz\p{L}*|asegur\p{L}*|sin riesgo|libre de impuestos|neta|neto|sin comisiones|supervis\p{L}*|CNBV|CONDUSEF|SHCP)(?![\p{L}\p{N}])/iu;
+  /(?<![\p{L}\p{N}])(garantiz\p{L}*|asegur\p{L}*|sin riesgo|libre de impuestos|neta|neto|sin comisiones|supervis\p{L}*|promesa|recib(es|ir[aá]s)|CNBV|CONDUSEF|SIPRES|SHCP)(?![\p{L}\p{N}])/iu;
+
+/** El texto sin la línea SIPRES exacta: lo que queda debe pasar la revisión de lenguaje. */
+const sinLineaSipres = (texto: string) => texto.split(LINEA_SIPRES).join(" ");
 
 const CASOS = [
   {
@@ -73,7 +82,9 @@ const CASOS = [
     razonSocial: "CREDIFLEXI, S.A.P.I. DE C.V.",
     esquema: "mensual" as const,
     cifras: ["$23,750.00", "$285,000.00"],
-    etiquetas: ["Pago mensual", "Rendimiento anual equivalente (12 meses)", "Ganancia total en el plazo"],
+    etiquetas: ["Pago mensual", "Ganancia anual equivalente (12 meses)", "Ganancia total en el plazo"],
+    lineaPago: "Pago de la ganancia: cada mes",
+    sipres: false,
   },
   {
     entidad: "RAMI_SISE",
@@ -82,11 +93,20 @@ const CASOS = [
     cifras: ["$26,250.00", "$315,000.00"],
     etiquetas: [
       "Rendimiento mensual equivalente (se paga al final del plazo)",
-      "Rendimiento anual equivalente (12 meses)",
+      "Ganancia anual equivalente (12 meses)",
       "Ganancia total al final del plazo",
     ],
+    lineaPago: "Pago de la ganancia: al vencimiento",
+    sipres: true,
   },
 ];
+
+function modeloAjustado(entidad: string, esquema: Esquema, ajuste: Ajuste, monto: string, moneda: "MXN" | "USD" = "MXN", entrada: EntradaPdf = OPCIONALES, plazoTabla = 12) {
+  const plazo = ajuste.tipo === "especial" ? ajuste.plazo : plazoTabla;
+  const r = cotizarConAjuste(semillaReal, { entidad, moneda, esquema, monto, plazo }, ajuste);
+  if (!r.ok) throw new Error(r.error.mensaje);
+  return sinError(modeloPdf(r.valor, { razonesSociales, textos }, entrada, AHORA, datosPagina2(semillaReal, r.valor.solicitud, ajuste)));
+}
 
 describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses", (caso) => {
   it("es un PDF de exactamente dos páginas", { timeout: TIEMPO }, async () => {
@@ -95,10 +115,10 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
     expect(paginas).toBe(2);
   });
 
-  it("la página 1 trae su texto de siempre y nada de la página 2", { timeout: TIEMPO }, async () => {
+  it("la página 1 trae su texto, la línea de cuándo se paga la ganancia y nada de la página 2", { timeout: TIEMPO }, async () => {
     const m = modelo(caso.entidad, caso.esquema);
     const { porPagina } = await render(m);
-    for (const t of [caso.razonSocial, "Tu cotización de inversión", m.lineaTasas, m.pie.base, ...caso.cifras]) {
+    for (const t of [caso.razonSocial, "Tu cotización de inversión", m.lineaTasas, m.pie.base, caso.lineaPago, ...caso.cifras]) {
       expect(porPagina[0]).toContain(t);
     }
     for (const t of [P2.modalidad1, P2.tasaAnual, P2.tituloGrafica1, P2.notaCentavos]) {
@@ -106,10 +126,9 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
     }
   });
 
-  it("la página 2 trae las dos modalidades, las gráficas y la nota del escenario", { timeout: TIEMPO }, async () => {
+  it("la página 2 trae las dos modalidades, las líneas de pago, la franja y la gráfica de comparación", { timeout: TIEMPO }, async () => {
     const { porPagina } = await render(modelo(caso.entidad, caso.esquema));
     for (const t of TEXTOS_PAGINA2) expect(porPagina[1]).toContain(t);
-    expect(porPagina[1]).toContain(P2.notaEscenario);
     expect(porPagina[1]).toContain(P2.insignia);
   });
 
@@ -119,10 +138,19 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
     expect(porPagina[1]).toContain(`${P2.pagina} 2 ${P2.paginaDe} 2`);
   });
 
-  it("la página 2 no trae restos técnicos ni lenguaje prohibido", { timeout: TIEMPO }, async () => {
+  it("el pie de las dos páginas: aviso del fondo siempre; SIPRES solo con RAMI_SISE", { timeout: TIEMPO }, async () => {
+    const { porPagina } = await render(modelo(caso.entidad, caso.esquema));
+    for (const p of porPagina) {
+      expect(p).toContain(textos.pieAvisoFondo);
+      if (caso.sipres) expect(p).toContain(LINEA_SIPRES);
+      else expect(p).not.toMatch(/SIPRES|CONDUSEF/i);
+    }
+  });
+
+  it("la página 2 no trae restos técnicos ni lenguaje prohibido (fuera de la línea SIPRES)", { timeout: TIEMPO }, async () => {
     const { porPagina } = await render(modelo(caso.entidad, caso.esquema));
     for (const t of ["undefined", "NaN", "{", "}", "null", "Infinity"]) expect(porPagina[1]).not.toContain(t);
-    expect(porPagina[1]).not.toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres(porPagina[1])).not.toMatch(RE_PROHIBIDO);
   });
 
   it("trae la razón social, el título, las cifras, las etiquetas y la línea de tasas", { timeout: TIEMPO }, async () => {
@@ -189,9 +217,14 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
     expect(texto).not.toContain("TASA_MAYOR_QUE_TRAMO_SIGUIENTE");
   });
 
-  it("no usa lenguaje de promesas, urgencia ni de autoridades", { timeout: TIEMPO }, async () => {
+  it("no usa lenguaje de promesas, urgencia ni de autoridades (fuera de la línea SIPRES)", { timeout: TIEMPO }, async () => {
     const { texto } = await render(modelo(caso.entidad, caso.esquema));
-    expect(texto).not.toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres(texto)).not.toMatch(RE_PROHIBIDO);
+  });
+
+  it("no menciona la reinversión ni el escenario ilustrativo", { timeout: TIEMPO }, async () => {
+    const { texto } = await render(modelo(caso.entidad, caso.esquema));
+    expect(texto).not.toMatch(/reinver|escenario/i);
   });
 });
 
@@ -207,29 +240,83 @@ describe("PDF real: la revisión de lenguaje detecta lo prohibido", () => {
     "supervisada",
     "CNBV",
     "Condusef",
+    "SIPRES",
     "SHCP",
+    "recibes cada mes",
+    "recibirás",
   ])("%s", (t) => {
     expect(t).toMatch(RE_PROHIBIDO);
   });
 
-  it.each(["Netflix", "planeta", "Rendimientos mensuales"])("no confunde %s", (t) => {
+  it.each(["Netflix", "planeta", "Rendimientos mensuales", "Pago de la ganancia: cada mes"])("no confunde %s", (t) => {
     expect(t).not.toMatch(RE_PROHIBIDO);
+  });
+
+  it("la excepción es exacta: la línea SIPRES alterada ya no se perdona", () => {
+    expect(sinLineaSipres(LINEA_SIPRES)).not.toMatch(RE_PROHIBIDO);
+    const alterada = LINEA_SIPRES.replace("696338", "000000");
+    expect(sinLineaSipres(alterada)).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres(`${LINEA_SIPRES} Supervisada por la CNBV.`)).toMatch(RE_PROHIBIDO);
+  });
+});
+
+describe("PDF real: las líneas de cuándo se paga la ganancia llevan el N correcto", () => {
+  const lineas = (n: number) => [
+    `Pago de la ganancia: cada mes, del mes 1 al mes ${n}`,
+    `Pago de la ganancia: al vencimiento (mes ${n}), junto con el capital`,
+    `Capital: al vencimiento (mes ${n})`,
+  ];
+
+  it.each([6, 12, 24])("%s meses", { timeout: TIEMPO }, async (plazo) => {
+    const { paginas, porPagina } = await render(modelo("CREDIFLEXI", "mensual", OPCIONALES, "1000000", plazo));
+    expect(paginas).toBe(2);
+    for (const t of lineas(plazo)) expect(porPagina[1]).toContain(t);
+  });
+
+  it("plazo especial de 9 meses", { timeout: TIEMPO }, async () => {
+    const m = modeloAjustado("CREDIFLEXI", "mensual", { tipo: "especial", plazo: 9, tasas: { mensual: "17", final_del_plazo: "19" } }, "100000");
+    const { paginas, porPagina } = await render(m);
+    expect(paginas).toBe(2);
+    for (const t of lineas(9)) expect(porPagina[1]).toContain(t);
+  });
+});
+
+describe("PDF real: puntos extra y plazo especial", () => {
+  it("+1.0 punto: la página 1 trae el desglose y el pago con 20%", { timeout: TIEMPO }, async () => {
+    const m = modeloAjustado("CREDIFLEXI", "mensual", { tipo: "tabla", puntos: "1.0" }, "1500000");
+    const { porPagina } = await render(m);
+    expect(porPagina[0]).toContain("Tasa de tabla 19.00% + 1.0 puntos extra = 20.00%");
+    expect(porPagina[0]).toContain("$25,000.00");
+    expect(porPagina[1]).toContain("20.00%");
+  });
+
+  it("plazo especial: Plazo especial y Tasa acordada, nunca tasa de tabla", { timeout: TIEMPO }, async () => {
+    const m = modeloAjustado("CREDIFLEXI", "mensual", { tipo: "especial", plazo: 9, tasas: { mensual: "17" } }, "100000");
+    const { paginas, texto, porPagina } = await render(m);
+    expect(paginas).toBe(2);
+    expect(porPagina[0]).toContain(textos.pdf.plazoEspecial);
+    expect(porPagina[0]).toContain(textos.pdf.tasaAcordada);
+    expect(porPagina[1]).toContain(P2.tasaAcordada);
+    expect(texto).not.toMatch(/tasa de tabla/i);
+    expect(porPagina[1]).toContain(P2.modalidadSinTasa);
+    expect(porPagina[1]).toContain(P2.comparacionOmitida);
   });
 });
 
 describe("PDF real: exactamente dos páginas en los extremos", () => {
+  const TOPE: EntradaPdf = {
+    preparadoPara: largo("Persona Sintética Uno con un nombre largo", TOPES.preparadoPara),
+    ejecutivo: largo("Ejecutivo Prueba · ejecutivo.prueba@ejemplo.test", TOPES.ejecutivo),
+    vigencia: largo("15 días naturales", TOPES.vigencia),
+    notaAdicional: largo("Nota sintética de prueba con texto largo", TOPES.notaAdicional),
+  };
+
   it.each(CASOS)("$entidad con los cuatro opcionales en su tope y 24 meses sigue en dos páginas y sin cortes", { timeout: TIEMPO }, async (caso) => {
-    const entrada: EntradaPdf = {
-      preparadoPara: largo("Persona Sintética Uno con un nombre largo", TOPES.preparadoPara),
-      ejecutivo: largo("Ejecutivo Prueba · ejecutivo.prueba@ejemplo.test", TOPES.ejecutivo),
-      vigencia: largo("15 días naturales", TOPES.vigencia),
-      notaAdicional: largo("Nota sintética de prueba con texto largo", TOPES.notaAdicional),
-    };
-    expect(Array.from(entrada.preparadoPara ?? "")).toHaveLength(120);
-    expect(Array.from(entrada.ejecutivo ?? "")).toHaveLength(120);
-    expect(Array.from(entrada.vigencia ?? "")).toHaveLength(60);
-    expect(Array.from(entrada.notaAdicional ?? "")).toHaveLength(300);
-    const m = modelo(caso.entidad, caso.esquema, entrada, "99999999.99", 24);
+    expect(Array.from(TOPE.preparadoPara ?? "")).toHaveLength(120);
+    expect(Array.from(TOPE.ejecutivo ?? "")).toHaveLength(120);
+    expect(Array.from(TOPE.vigencia ?? "")).toHaveLength(60);
+    expect(Array.from(TOPE.notaAdicional ?? "")).toHaveLength(300);
+    const m = modelo(caso.entidad, caso.esquema, TOPE, "99999999.99", 24);
     const { paginas, porPagina } = await render(m);
     expect(paginas).toBe(2);
     const texto = porPagina[0];
@@ -240,9 +327,44 @@ describe("PDF real: exactamente dos páginas en los extremos", () => {
     expect(texto).toContain(m.pie.notaAdicional);
     expect(texto).toContain(m.lineaTasas);
     for (const c of m.cifras) expect(texto).toContain(c.operacion);
-    // La página 2 con 24 filas por modalidad, completa.
+    // La página 2 con 24 filas en la modalidad 1, completa, con su pie.
     for (const t of TEXTOS_PAGINA2) expect(porPagina[1]).toContain(t);
     expect(porPagina[1]).toContain("$99,999,999.99");
+    expect(porPagina[1]).toContain("Capital: al vencimiento (mes 24)");
+    expect(porPagina[1]).toContain(textos.pieAvisoFondo);
+  });
+
+  it("USD de Rami Sise a 24 meses con los opcionales al tope: dos páginas", { timeout: TIEMPO }, async () => {
+    const c = cotizarBien({ entidad: "RAMI_SISE", moneda: "USD", monto: "500000", plazo: 24 });
+    const m = sinError(modeloPdf(c, { razonesSociales, textos }, TOPE, AHORA, datosPagina2(semillaReal, c.solicitud)));
+    const { paginas, porPagina } = await render(m);
+    expect(paginas).toBe(2);
+    expect(porPagina[1]).toContain(LINEA_SIPRES);
+    expect(porPagina[1]).toContain("Capital: al vencimiento (mes 24)");
+  });
+
+  it("plazo especial de 24 meses con las dos tasas, puntos de tabla en cero y opcionales al tope: dos páginas", { timeout: TIEMPO }, async () => {
+    const m = modeloAjustado("RAMI_SISE", "final_del_plazo", { tipo: "especial", plazo: 24, tasas: { mensual: "17", final_del_plazo: "19" } }, "99999999.99", "MXN", TOPE);
+    const { paginas, porPagina } = await render(m);
+    expect(paginas).toBe(2);
+    expect(porPagina[1]).toContain("Pago de la ganancia: cada mes, del mes 1 al mes 24");
+  });
+
+  // Peor caso de la página 1: SIPRES, desglose de puntos y opcionales al tope.
+  it.each([
+    { esquema: "mensual", moneda: "MXN", monto: "99999999.99" },
+    { esquema: "final_del_plazo", moneda: "MXN", monto: "99999999.99" },
+    { esquema: "mensual", moneda: "USD", monto: "500000" },
+  ] as const)("Rami Sise $esquema $moneda con +5.0 puntos, opcionales al tope y 24 meses: dos páginas", { timeout: TIEMPO }, async ({ esquema, moneda, monto }) => {
+    const m = modeloAjustado("RAMI_SISE", esquema, { tipo: "tabla", puntos: "5.0" }, monto, moneda, TOPE, 24);
+    const { paginas, porPagina } = await render(m);
+    expect(paginas).toBe(2);
+    expect(m.desgloseTasa).not.toBeNull();
+    expect(porPagina[0]).toContain(m.desgloseTasa);
+    expect(porPagina[0]).toContain(m.pie.notaAdicional);
+    expect(porPagina[0]).toContain(LINEA_SIPRES);
+    expect(porPagina[0]).toContain(textos.pieAvisoFondo);
+    expect(porPagina[1]).toContain(LINEA_SIPRES);
   });
 
   it.each(CASOS)("$entidad con todos los opcionales vacíos sigue en dos páginas y sin líneas opcionales", { timeout: TIEMPO }, async (caso) => {
@@ -294,7 +416,7 @@ describe("PDF real: metadatos", () => {
 });
 
 describe("PDF real: página 2 del ejemplo del Excel, 1,000,000 pesos a 6 meses", () => {
-  it("las cifras de las dos modalidades, como en el Excel", { timeout: TIEMPO }, async () => {
+  it("la modalidad 1 con su tabla y la 2 anualizada, sin filas por mes", { timeout: TIEMPO }, async () => {
     const { paginas, porPagina } = await render(modelo("CREDIFLEXI", "mensual", OPCIONALES, "1000000", 6));
     expect(paginas).toBe(2);
     const p2 = porPagina[1];
@@ -309,34 +431,16 @@ describe("PDF real: página 2 del ejemplo del Excel, 1,000,000 pesos a 6 meses",
       "$75,000.00",
       "$90,000.00",
       "$1,090,000.00",
-      "$16,666.67",
-      "$16,666.66",
-      "$33,333.33",
-      "$50,000.00",
-      "$66,666.67",
-      "$83,333.33",
+      // Modalidad 2: anual 1,000,000 × 0.20 = 200,000.00; ganancia del plazo 100,000.00.
+      "$200,000.00",
       "$100,000.00",
       "$1,100,000.00",
       P2.serieCobrado,
       P2.serieDevengado,
-      P2.rotuloEscenario,
-      P2.serieConReinversion,
-      P2.serieSinReinvertir,
-      P2.finPrimerPlazo,
-      P2.notaEscenario,
     ]) {
       expect(p2).toContain(t);
     }
-  });
-});
-
-describe("PDF real: escenario omitido", () => {
-  it("55,000 pesos a 6 meses mensual: dos páginas, tarjetas completas y la nota en lugar de la gráfica 2", { timeout: TIEMPO }, async () => {
-    const { paginas, porPagina } = await render(modelo("CREDIFLEXI", "mensual", OPCIONALES, "55000", 6));
-    expect(paginas).toBe(2);
-    for (const t of TEXTOS_PAGINA2) expect(porPagina[1]).toContain(t);
-    expect(porPagina[1]).toContain(P2.escenarioIncrementoMinimo);
-    expect(porPagina[1]).not.toContain(P2.serieConReinversion);
-    expect(porPagina[1]).toContain("$733.35");
+    // Ya no van las filas mensuales de la modalidad 2.
+    for (const t of ["$16,666.67", "$16,666.66", "$33,333.33", "$83,333.33"]) expect(p2).not.toContain(t);
   });
 });

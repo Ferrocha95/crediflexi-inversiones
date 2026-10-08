@@ -1,6 +1,10 @@
 {
-  "version": "0.4",
-  "pie_base": "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente a 12 meses; la ganancia total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables son las del contrato que se firme.",
+  "version": "0.5",
+  "pie_base": "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente a 12 meses; la ganancia del plazo corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables son las del contrato que se firme.",
+  "pie_aviso_fondo": "Fondo de inversión privado: para invertir se requiere adquirir una acción de $1,000.00 MXN.",
+  "pie_sipres": {
+    "RAMI_SISE": "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES"
+  },
   "linea_preparado_por": "Preparado por {ejecutivo}.",
   "linea_vigencia": "Vigencia: {vigencia}.",
   "estatus_tramo": {
@@ -13,6 +17,22 @@
     "final_del_plazo": "Al final del plazo"
   },
   "moneda_deshabilitada": "Las tasas en {moneda} están por confirmar.",
+  "etiquetas_resultados": {
+    "mensual": {
+      "rendimiento_mensual_pesos": "Pago mensual",
+      "rendimiento_anual_pesos": "Ganancia anual equivalente (12 meses)",
+      "ganancia_total_plazo": "Ganancia total en el plazo"
+    },
+    "final_del_plazo": {
+      "rendimiento_mensual_pesos": "Rendimiento mensual equivalente (se paga al final del plazo)",
+      "rendimiento_anual_pesos": "Ganancia anual equivalente (12 meses)",
+      "ganancia_total_plazo": "Ganancia total al final del plazo"
+    }
+  },
+  "linea_pago": {
+    "mensual": "Pago de la ganancia: cada mes",
+    "final_del_plazo": "Pago de la ganancia: al vencimiento"
+  },
   "pdf": {
     "titulo": "Tu cotización de inversión",
     "preparado_para": "Preparado para",
@@ -23,34 +43,39 @@
     "resumen_esquema": "Esquema",
     "seccion_resultados": "Tus resultados",
     "seccion_calculo": "Cómo se calculó",
-    "linea_tasas": "Tasas versión {version_tasas} del {fecha_tasas}."
+    "linea_tasas": "Tasas versión {version_tasas} del {fecha_tasas}.",
+    "plazo_especial": "Plazo especial",
+    "tasa_acordada": "Tasa acordada",
+    "desglose_puntos": "Tasa de tabla {tasa_tabla} + {puntos} puntos extra = {tasa}"
   },
   "pdf_pagina2": {
-    "titulo": "Calendario de pagos y escenarios",
+    "titulo": "Calendario de pagos y comparativo",
     "modalidad_1": "MODALIDAD 1 · RENDIMIENTO MENSUAL",
     "modalidad_2": "MODALIDAD 2 · PAGO AL VENCIMIENTO",
     "tasa_anual": "TASA ANUAL",
+    "tasa_acordada": "TASA ACORDADA",
     "capital_inicial": "Capital inicial",
-    "rendimiento_estimado": "Rendimiento estimado",
-    "total": "Total capital + rendimiento",
+    "ganancia_anual_equivalente": "Ganancia anual equivalente (12 meses)",
+    "ganancia_plazo": "Ganancia del plazo",
+    "total_capital_ganancia": "Total capital + ganancia",
+    "pago_ganancia_mensual": "Pago de la ganancia: cada mes, del mes 1 al mes {meses}",
+    "pago_ganancia_vencimiento": "Pago de la ganancia: al vencimiento (mes {meses}), junto con el capital",
+    "capital_vencimiento": "Capital: al vencimiento (mes {meses})",
+    "franja_ganancia": "ganancia",
+    "franja_mas_capital": "+ capital",
+    "franja_ganancia_capital": "ganancia + capital",
     "columna_mes": "Mes",
-    "columna_rendimiento_mes": "Rendimiento del mes",
-    "columna_rendimiento_acumulado": "Rendimiento acumulado",
+    "columna_ganancia_periodo": "Ganancia del periodo",
+    "columna_ganancia_acumulada": "Ganancia acumulada",
     "insignia": "Tu cotización",
     "nota_centavos": "Los centavos se ajustan para que la suma coincida con el total.",
     "modalidad_no_disponible": "Esta modalidad no se puede cotizar con el monto y el plazo elegidos.",
+    "modalidad_sin_tasa": "Esta modalidad no lleva tasa acordada en este plazo especial.",
     "titulo_grafica_1": "Comparación de modalidades",
-    "nota_grafica_1": "Rendimiento acumulado mes a mes: en la modalidad 1 se cobra cada mes; en la modalidad 2 se acumula y se paga al vencimiento.",
+    "nota_grafica_1": "Ganancia acumulada mes a mes: en la modalidad 1 se paga cada mes; en la modalidad 2 se acumula y se paga al vencimiento.",
     "serie_cobrado": "Modalidad 1 (cobrado)",
     "serie_devengado": "Modalidad 2 (acumulado)",
-    "titulo_grafica_2": "Si reinviertes tus rendimientos",
-    "rotulo_escenario": "Escenario ilustrativo",
-    "serie_con_reinversion": "Reinvirtiendo",
-    "serie_sin_reinvertir": "Sin reinvertir",
-    "fin_primer_plazo": "Fin del primer plazo",
-    "nota_escenario": "Supone las tasas vigentes hoy y que se reinvierten los rendimientos; las tasas pueden cambiar. No es una promesa de rendimiento.",
-    "escenario_incremento_minimo": "El escenario de reinversión no se muestra porque el rendimiento mensual es menor al incremento mínimo para reinvertir.",
-    "escenario_tasa_no_disponible": "El escenario de reinversión no se muestra porque alguna de las tasas que usaría está por confirmar.",
+    "comparacion_omitida": "La comparación de modalidades se omite: falta la tasa acordada de una de las dos modalidades.",
     "pagina": "Página",
     "pagina_de": "de"
   }

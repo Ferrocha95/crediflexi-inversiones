@@ -2,17 +2,20 @@ import { Decimal } from "../domain/comun/decimal";
 import { formatearCantidad, formatearPorcentaje } from "../domain/comun/formato";
 import { exito, fallo, type Resultado } from "../domain/comun/resultado";
 import { calendariosAjustados, type Ajuste, type CotizacionAjustada, type ModalidadAjustada } from "../domain/interes/ajustes";
+import { calcularRendimientos } from "../domain/interes/calcular";
 import { calendarios, type CalendarioModalidad } from "../domain/interes/calendario";
 import type { Cotizacion } from "../domain/interes/cotizar";
-import { escenarioReinversion, type EscenarioReinversion } from "../domain/interes/escenario";
 import type { SolicitudTasa } from "../domain/tasas/resolver";
 import type { Esquema, Moneda, Semilla } from "../domain/tasas/semilla.esquema";
 import { formatearDinero } from "./dinero";
 import { escalaLineal, marcasMeses, marcasValor, separarEtiquetas, trazado } from "./graficas";
+import { rellenar } from "./rellenar";
 import type { TextosPagina2 } from "./textos";
 
 // Página 2 del PDF: este módulo no calcula cifras, solo les da forma de texto y
-// convierte a coordenadas (números) lo que se dibuja.
+// convierte a coordenadas (números) lo que se dibuja. La única cifra que pide
+// al dominio es la ganancia anual equivalente de la modalidad 2, con la misma
+// fórmula de siempre (calcularRendimientos).
 
 /** Lo que el dominio calcula para la página 2. Una modalidad en null no tiene tasa acordada (plazo especial). */
 export interface DatosPagina2 {
@@ -20,7 +23,6 @@ export interface DatosPagina2 {
     readonly mensual: Resultado<CalendarioModalidad> | null;
     readonly finalDelPlazo: Resultado<CalendarioModalidad> | null;
   };
-  readonly escenario: EscenarioReinversion;
 }
 
 const SIN_AJUSTE: Ajuste = { tipo: "tabla", puntos: "0" };
@@ -34,20 +36,29 @@ function comoResultado(m: ModalidadAjustada): Resultado<CalendarioModalidad> | n
 }
 
 /**
- * Calendarios de las dos modalidades y escenario de reinversión para la misma
- * solicitud. Con puntos extra o plazo especial, los calendarios usan la tasa
- * ajustada (calendariosAjustados) y el escenario de reinversión se omite,
- * porque solo sabe usar tasas de tabla.
+ * Calendarios de las dos modalidades para la misma solicitud. Con puntos extra
+ * o plazo especial, usan la tasa ajustada (calendariosAjustados). El escenario
+ * de reinversión ya no va en el PDF (src/domain/interes/escenario.ts queda sin
+ * usar; ver PENDIENTES_TECNICOS.md).
  */
 export function datosPagina2(semilla: Semilla, solicitud: SolicitudTasa, ajuste: Ajuste = SIN_AJUSTE): DatosPagina2 {
-  if (sinPuntos(ajuste)) {
-    return { calendarios: calendarios(semilla, solicitud), escenario: escenarioReinversion(semilla, solicitud) };
-  }
+  if (sinPuntos(ajuste)) return { calendarios: calendarios(semilla, solicitud) };
   const a = calendariosAjustados(semilla, solicitud, ajuste);
-  return {
-    calendarios: { mensual: comoResultado(a.mensual), finalDelPlazo: comoResultado(a.finalDelPlazo) },
-    escenario: { tipo: "omitido", motivo: "TASA_NO_DISPONIBLE" },
-  };
+  return { calendarios: { mensual: comoResultado(a.mensual), finalDelPlazo: comoResultado(a.finalDelPlazo) } };
+}
+
+/** Franja de tiempo de una tarjeta: de dónde a dónde va y en qué meses hay un pago. */
+export interface FranjaPdf {
+  readonly meses: number;
+  /** x del mes 0 y del mes N en el lienzo de la franja. */
+  readonly inicio: number;
+  readonly fin: number;
+  /** Un punto por pago: cada mes en la modalidad 1; solo el mes N en la 2. */
+  readonly puntos: readonly { readonly mes: number; readonly x: number }[];
+  /** Rótulo de los pagos mensuales ("ganancia"); null si solo hay un pago. */
+  readonly etiquetaPuntos: string | null;
+  /** Rótulo del último punto ("+ capital" o "ganancia + capital"). */
+  readonly etiquetaFinal: string;
 }
 
 export interface TarjetaPdf {
@@ -55,13 +66,19 @@ export interface TarjetaPdf {
   readonly titulo: string;
   /** La modalidad de la cotización: lleva la insignia. */
   readonly elegida: boolean;
-  /** null si la modalidad no se puede cotizar. */
+  /** null si la modalidad no se puede cotizar o no tiene tasa acordada. */
   readonly detalle: {
     readonly tasa: string;
+    /** "TASA ANUAL", o "TASA ACORDADA" en un plazo especial. */
+    readonly etiquetaTasa: string;
     readonly renglones: readonly { readonly etiqueta: string; readonly cifra: string }[];
+    /** Cuándo se paga la ganancia y cuándo el capital (con el mes N). */
+    readonly lineas: readonly [string, string];
+    readonly franja: FranjaPdf;
+    /** Tabla mes por mes: solo la modalidad 1; la 2 va anualizada, sin filas. */
     readonly filas: readonly { readonly mes: string; readonly rendimiento: string; readonly acumulado: string }[];
   } | null;
-  /** Reemplaza al detalle cuando la modalidad no se puede cotizar. */
+  /** Reemplaza al detalle cuando la modalidad no se puede cotizar o no tiene tasa acordada. */
   readonly nota: string | null;
 }
 
@@ -98,13 +115,14 @@ export interface GraficaPdf {
 export interface ModeloPagina2 {
   readonly textos: TextosPagina2;
   readonly tarjetas: readonly [TarjetaPdf, TarjetaPdf];
-  readonly graficas: readonly [GraficaPdf, GraficaPdf];
+  /** Solo la comparación de modalidades. */
+  readonly graficas: readonly [GraficaPdf];
 }
 
 /**
- * Lienzo de cada gráfica, en puntos: dos gráficas lado a lado en el ancho útil
- * de la hoja carta (540 pt). A la izquierda van las marcas del eje de valores y
- * a la derecha las etiquetas finales de las líneas.
+ * Lienzo de la gráfica, en puntos: media hoja carta (540 pt de ancho útil). A la
+ * izquierda van las marcas del eje de valores y a la derecha las etiquetas
+ * finales de las líneas.
  */
 export const LIENZO_GRAFICA = {
   ancho: 264,
@@ -114,9 +132,26 @@ export const LIENZO_GRAFICA = {
   separacionEtiquetas: 9,
 } as const;
 
+/** Lienzo de la franja de tiempo de cada tarjeta (dentro del cuerpo de la tarjeta). */
+export const LIENZO_FRANJA = { ancho: 246, alto: 26, izquierda: 6, derecha: 210, y: 7 } as const;
+
 const dinero = (texto: string, moneda: Moneda) => formatearDinero(new Decimal(texto), moneda);
-/** Marca del eje de valores: pesos sin centavos si son cero ("$1,800,000"). */
+/** Marca del eje de valores: sin centavos si son cero ("$1,800,000"). */
 const marcaPesos = (v: number) => `$${formatearCantidad(new Decimal(v)).replace(/\.00$/, "")}`;
+
+function franja(esquema: Esquema, meses: number, t: TextosPagina2): FranjaPdf {
+  const { izquierda, derecha } = LIENZO_FRANJA;
+  const x = (mes: number) => izquierda + ((derecha - izquierda) * mes) / meses;
+  const pagos = esquema === "mensual" ? Array.from({ length: meses }, (_, i) => i + 1) : [meses];
+  return {
+    meses,
+    inicio: x(0),
+    fin: x(meses),
+    puntos: pagos.map((mes) => ({ mes, x: x(mes) })),
+    etiquetaPuntos: esquema === "mensual" ? t.franjaGanancia : null,
+    etiquetaFinal: esquema === "mensual" ? t.franjaMasCapital : t.franjaGananciaCapital,
+  };
+}
 
 function tarjeta(
   esquema: Esquema,
@@ -125,22 +160,44 @@ function tarjeta(
   r: Resultado<CalendarioModalidad> | null,
   t: TextosPagina2,
   moneda: Moneda,
+  especial: boolean,
 ): TarjetaPdf {
   const pesos = (texto: string) => dinero(texto, moneda);
-  if (r === null || !r.ok) return { esquema, titulo, elegida, detalle: null, nota: t.modalidadNoDisponible };
+  if (r === null) return { esquema, titulo, elegida, detalle: null, nota: t.modalidadSinTasa };
+  if (!r.ok) return { esquema, titulo, elegida, detalle: null, nota: t.modalidadNoDisponible };
   const c = r.valor;
+  const meses = c.filas.length;
+  const n = { meses: String(meses) };
+  const capital = { etiqueta: t.capitalInicial, cifra: pesos(c.capitalInicial) };
+  const plazo = { etiqueta: t.gananciaPlazo, cifra: pesos(c.rendimientoEstimado) };
+  const total = { etiqueta: t.totalCapitalGanancia, cifra: pesos(c.total) };
+  const comun = { tasa: formatearPorcentaje(new Decimal(c.tasa)), etiquetaTasa: especial ? t.tasaAcordada : t.tasaAnual, franja: franja(esquema, meses, t) };
+
+  if (esquema === "mensual") {
+    return {
+      esquema,
+      titulo,
+      elegida,
+      detalle: {
+        ...comun,
+        renglones: [capital, plazo, total],
+        lineas: [rellenar(t.pagoGananciaMensual, n), rellenar(t.capitalVencimiento, n)],
+        filas: c.filas.map((f) => ({ mes: String(f.mes), rendimiento: pesos(f.rendimiento), acumulado: pesos(f.acumulado) })),
+      },
+      nota: null,
+    };
+  }
+  // Modalidad 2 anualizada: sin filas por mes. La ganancia anual equivalente es monto × tasa (calcularRendimientos).
+  const anual = calcularRendimientos(new Decimal(c.capitalInicial), new Decimal(c.tasa), meses).rendimiento_anual_pesos.redondeado;
   return {
     esquema,
     titulo,
     elegida,
     detalle: {
-      tasa: formatearPorcentaje(new Decimal(c.tasa)),
-      renglones: [
-        { etiqueta: t.capitalInicial, cifra: pesos(c.capitalInicial) },
-        { etiqueta: t.rendimientoEstimado, cifra: pesos(c.rendimientoEstimado) },
-        { etiqueta: t.total, cifra: pesos(c.total) },
-      ],
-      filas: c.filas.map((f) => ({ mes: String(f.mes), rendimiento: pesos(f.rendimiento), acumulado: pesos(f.acumulado) })),
+      ...comun,
+      renglones: [capital, { etiqueta: t.gananciaAnualEquivalente, cifra: pesos(anual.toFixed(2)) }, plazo, total],
+      lineas: [rellenar(t.pagoGananciaVencimiento, n), rellenar(t.capitalVencimiento, n)],
+      filas: [],
     },
     nota: null,
   };
@@ -199,7 +256,7 @@ function graficaComparacion(
 ): GraficaPdf {
   // Sin tasa acordada para una de las modalidades no hay qué comparar: la gráfica se omite.
   if (m1 === null || m2 === null) {
-    return { titulo: t.tituloGrafica1, rotulo: null, nota: null, dibujo: null, omision: t.modalidadNoDisponible };
+    return { titulo: t.tituloGrafica1, rotulo: null, nota: null, dibujo: null, omision: t.comparacionOmitida };
   }
   const series: SerieDatos[] = [];
   for (const [r, nombre, color, trazo] of [
@@ -217,54 +274,18 @@ function graficaComparacion(
   };
 }
 
-function graficaEscenario(e: EscenarioReinversion, t: TextosPagina2, moneda: Moneda): GraficaPdf {
-  const base = { titulo: t.tituloGrafica2, rotulo: t.rotuloEscenario, nota: t.notaEscenario };
-  if (e.tipo === "omitido") {
-    return {
-      ...base,
-      nota: null,
-      dibujo: null,
-      omision: e.motivo === "INCREMENTO_MINIMO" ? t.escenarioIncrementoMinimo : t.escenarioTasaNoDisponible,
-    };
-  }
-  const series: SerieDatos[] = [
-    {
-      nombre: t.serieConReinversion,
-      color: "verde",
-      trazo: "continuo",
-      valores: [e.capitalInicial, ...e.puntos.map((p) => p.valor)],
-    },
-    {
-      nombre: t.serieSinReinvertir,
-      color: "gris",
-      trazo: "punteado",
-      valores: [e.capitalInicial, ...e.puntos.map((p) => p.sinReinvertir)],
-    },
-  ];
-  return {
-    ...base,
-    dibujo: dibujo(series, e.meses, Number(e.capitalInicial), t.columnaMes, {
-      mes: e.finPrimerPlazo,
-      texto: t.finPrimerPlazo,
-    }, moneda),
-    omision: null,
-  };
-}
-
-/** Tarjetas y gráficas de la página 2 para una cotización ya hecha. */
+/** Tarjetas y gráfica de la página 2 para una cotización ya hecha. */
 export function modeloPagina2(c: Cotizacion | CotizacionAjustada, datos: DatosPagina2, textos: TextosPagina2): ModeloPagina2 {
   const { mensual, finalDelPlazo } = datos.calendarios;
   const elegido = c.solicitud.esquema;
   const { moneda } = c.solicitud;
+  const especial = c.origenTasa === "especial";
   return {
     textos,
     tarjetas: [
-      tarjeta("mensual", textos.modalidad1, elegido === "mensual", mensual, textos, moneda),
-      tarjeta("final_del_plazo", textos.modalidad2, elegido === "final_del_plazo", finalDelPlazo, textos, moneda),
+      tarjeta("mensual", textos.modalidad1, elegido === "mensual", mensual, textos, moneda, especial),
+      tarjeta("final_del_plazo", textos.modalidad2, elegido === "final_del_plazo", finalDelPlazo, textos, moneda, especial),
     ],
-    graficas: [
-      graficaComparacion(mensual, finalDelPlazo, c.solicitud.plazo, textos, moneda),
-      graficaEscenario(datos.escenario, textos, moneda),
-    ],
+    graficas: [graficaComparacion(mensual, finalDelPlazo, c.solicitud.plazo, textos, moneda)],
   };
 }

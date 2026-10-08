@@ -24,6 +24,10 @@ test.describe("cotizador: puntos extra y plazo especial", () => {
     await page.getByLabel("Puntos extra", { exact: true }).selectOption({ label: "+1.0 puntos" });
     await expect(page.getByText("Tasa de tabla 19.00% + 1.0 puntos extra = 20.00%")).toBeVisible();
     await expect(page.getByText("$25,000.00", { exact: true })).toBeVisible();
+    // Textos 0.5: cuándo se paga la ganancia y las etiquetas con "ganancia".
+    await expect(page.getByText("Pago de la ganancia: cada mes", { exact: true })).toBeVisible();
+    await expect(page.getByText("Ganancia anual equivalente (12 meses)", { exact: true })).toBeVisible();
+    await expect(page.getByText(/recib/i)).toHaveCount(0);
     await sinViolaciones(page);
   });
 

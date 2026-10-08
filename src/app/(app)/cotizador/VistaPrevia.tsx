@@ -63,6 +63,7 @@ export function VistaPrevia({ vista }: { vista: ModeloVistaPrevia }) {
         <h3 id="titulo-cifras" className="text-lg font-bold">
           {TEXTOS.tituloCifras}
         </h3>
+        <p className="text-hielo">{vista.lineaPago}</p>
         <ul className="flex flex-col gap-4">
           {vista.salidas.map((s, i) => (
             <li key={s.clave} className={i === 0 ? "pb-1" : "border-t border-hielo/15 pt-4"}>

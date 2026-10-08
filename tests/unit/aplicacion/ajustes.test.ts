@@ -124,7 +124,7 @@ describe("página 2 con ajustes", () => {
     const p = modeloPagina2(c, datosPagina2(semillaReal, c.solicitud, ESPECIAL_9), textos.pdfPagina2);
     expect(p.tarjetas[0].detalle!.filas.map((f) => f.rendimiento)).toEqual([...Array(8).fill("$1,416.67"), "$1,416.64"]);
     expect(p.tarjetas[1].detalle).toBeNull();
-    expect(p.tarjetas[1].nota).toBe(textos.pdfPagina2.modalidadNoDisponible);
+    expect(p.tarjetas[1].nota).toBe(textos.pdfPagina2.modalidadSinTasa);
     expect(p.graficas[0].dibujo).toBeNull();
   });
 

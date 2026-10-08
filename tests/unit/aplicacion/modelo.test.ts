@@ -14,6 +14,7 @@ import { cargarTextos, type TextosCotizacion } from "../../../src/aplicacion/tex
 import { ESTATUS } from "../../../src/domain/tasas/semilla.esquema";
 import { datosPagina2 } from "../../../src/aplicacion/pagina2";
 import type { Cotizacion } from "../../../src/domain/interes/cotizar";
+import { cotizarConAjuste, type Ajuste } from "../../../src/domain/interes/ajustes";
 import { cargar, copiaSemilla, cotizarBien, semillaReal } from "../oro/ayudas";
 
 function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: string } }): T {
@@ -43,8 +44,8 @@ const ENTIDADES = [
 
 const pieEsperado = (razonSocial: string) =>
   `Cotización informativa para ${razonSocial}, calculada con interés simple sobre la tasa anual indicada ` +
-  `y con las tasas de la versión ${VERSION} del ${FECHA_SEMILLA}. El rendimiento anual es un equivalente a 12 meses; ` +
-  "la ganancia total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables " +
+  `y con las tasas de la versión ${VERSION} del ${FECHA_SEMILLA}. La ganancia anual es un equivalente a 12 meses; ` +
+  "la ganancia del plazo corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables " +
   "son las del contrato que se firme.";
 
 /** Textos reales con otros nombres de esquema, para probar que el nombre sale del archivo. */
@@ -80,7 +81,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
       },
       {
         clave: "rendimiento_anual_pesos",
-        etiqueta: "Rendimiento anual equivalente (12 meses)",
+        etiqueta: "Ganancia anual equivalente (12 meses)",
         cifra: "$285,000.00",
         formula: "monto × tasa anual",
         operacion: "1,500,000.00 × 0.19 = 285,000.00",
@@ -144,6 +145,8 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
       resumenEsquema: "Esquema",
       seccionResultados: "Tus resultados",
       seccionCalculo: "Cómo se calculó",
+      plazoEspecial: "Plazo especial",
+      tasaAcordada: "Tasa acordada",
     });
   });
 
@@ -178,7 +181,8 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     const texto = JSON.stringify(sinError(modeloPdfConDatos(c, contexto, ENTRADA_COMPLETA, AHORA)));
     expect(texto).not.toContain("Aviso sintético");
     expect(texto).not.toContain("TASA_MAYOR_QUE_TRAMO_SIGUIENTE");
-    expect(texto).not.toMatch(/aviso/i);
+    // "avisoFondo" es el pie fijo del fondo, no un aviso de la cotización.
+    expect(texto.replaceAll('"avisoFondo":', "")).not.toMatch(/aviso/i);
   });
 
   it("final del plazo: etiquetas del esquema y 21% -> 26,250.00 y 315,000.00", () => {
@@ -187,7 +191,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     expect(m.tasa).toBe("21.00%");
     expect(m.cifras.map((c) => [c.etiqueta, c.cifra])).toEqual([
       ["Rendimiento mensual equivalente (se paga al final del plazo)", "$26,250.00"],
-      ["Rendimiento anual equivalente (12 meses)", "$315,000.00"],
+      ["Ganancia anual equivalente (12 meses)", "$315,000.00"],
       ["Ganancia total al final del plazo", "$315,000.00"],
     ]);
   });
@@ -241,13 +245,13 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
   it("sin los campos opcionales, el pie no trae las líneas opcionales", () => {
     const m = pdf(clave);
     expect(m.preparadoPara).toBeNull();
-    expect(m.pie).toEqual({ base: pieEsperado(razonSocial), preparadoPor: null, vigencia: null, notaAdicional: null });
+    expect(m.pie).toMatchObject({ base: pieEsperado(razonSocial), preparadoPor: null, vigencia: null, notaAdicional: null });
   });
 
   it("con los campos opcionales, el pie trae las dos líneas y la nota después", () => {
     const m = pdf(clave, ENTRADA_COMPLETA);
     expect(m.preparadoPara).toBe("Persona Sintética Uno");
-    expect(m.pie).toEqual({
+    expect(m.pie).toMatchObject({
       base: pieEsperado(razonSocial),
       preparadoPor: "Preparado por Ejecutivo Prueba · ejecutivo.prueba@ejemplo.test.",
       vigencia: "Vigencia: 15 días naturales.",
@@ -346,7 +350,7 @@ describe.each(ENTIDADES)("modeloVistaPrevia ($clave)", ({ clave }) => {
       },
       {
         clave: "rendimiento_anual_pesos",
-        etiqueta: "Rendimiento anual equivalente (12 meses)",
+        etiqueta: "Ganancia anual equivalente (12 meses)",
         cifra: "$285,000.00",
         formula: "monto × tasa anual",
         operacion: "1,500,000.00 × 0.19 = 285,000.00",
@@ -423,5 +427,65 @@ describe("modelo.ts ya no define nombres de esquema", () => {
   it("no exporta NOMBRE_ESQUEMA", async () => {
     const modulo: Record<string, unknown> = await import("../../../src/aplicacion/modelo");
     expect(modulo.NOMBRE_ESQUEMA).toBeUndefined();
+  });
+});
+
+describe("modelo con los textos 0.5 (Sprint 3a)", () => {
+  const ajustado = (solicitud: Partial<Parameters<typeof cotizarBien>[0]>, ajuste: Ajuste) => {
+    const plazo = ajuste.tipo === "especial" ? ajuste.plazo : (solicitud.plazo ?? 12);
+    const r = cotizarConAjuste(semillaReal, { entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1500000", ...solicitud, plazo }, ajuste);
+    if (!r.ok) throw new Error(r.error.mensaje);
+    return r.valor;
+  };
+  const pdfDe = (c: ReturnType<typeof ajustado>, ajuste: Ajuste) =>
+    sinError(modeloPdf(c, contexto, {}, AHORA, datosPagina2(semillaReal, c.solicitud, ajuste)));
+
+  it("las etiquetas de los resultados salen del archivo de textos, no de la semilla", () => {
+    const otros: TextosCotizacion = {
+      ...textos,
+      etiquetasResultados: {
+        ...textos.etiquetasResultados,
+        mensual: { ...textos.etiquetasResultados.mensual, rendimiento_mensual_pesos: "Etiqueta sintética" },
+      },
+    };
+    expect(modeloVistaPrevia(cotizarBien({}), otros).salidas[0].etiqueta).toBe("Etiqueta sintética");
+    expect(sinError(modeloPdfConDatos(cotizarBien({}), { razonesSociales, textos: otros }, {}, AHORA)).cifraPrincipal.etiqueta).toBe(
+      "Etiqueta sintética",
+    );
+  });
+
+  it("la línea de cuándo se paga la ganancia, en la vista previa y en la página 1", () => {
+    expect(modeloVistaPrevia(cotizarBien({}), textos).lineaPago).toBe("Pago de la ganancia: cada mes");
+    const f = cotizarBien({ esquema: "final_del_plazo" });
+    expect(modeloVistaPrevia(f, textos).lineaPago).toBe("Pago de la ganancia: al vencimiento");
+    expect(sinError(modeloPdfConDatos(f, contexto, {}, AHORA)).lineaPago).toBe("Pago de la ganancia: al vencimiento");
+  });
+
+  it("el pie: el aviso del fondo siempre; SIPRES solo con RAMI_SISE", () => {
+    const credi = sinError(modeloPdfConDatos(cotizarBien({}), contexto, {}, AHORA)).pie;
+    const rami = sinError(modeloPdfConDatos(cotizarBien({ entidad: "RAMI_SISE" }), contexto, {}, AHORA)).pie;
+    expect(credi.avisoFondo).toBe(textos.pieAvisoFondo);
+    expect(credi.sipres).toBeNull();
+    expect(rami.avisoFondo).toBe(textos.pieAvisoFondo);
+    expect(rami.sipres).toBe(textos.pieSipres.RAMI_SISE);
+  });
+
+  it("con puntos extra la página 1 lleva el desglose", () => {
+    const a: Ajuste = { tipo: "tabla", puntos: "1.0" };
+    const m = pdfDe(ajustado({}, a), a);
+    expect(m.desgloseTasa).toBe("Tasa de tabla 19.00% + 1.0 puntos extra = 20.00%");
+    expect([m.etiquetas.plazo, m.etiquetas.tasa]).toEqual([textos.pdf.resumenPlazo, textos.pdf.resumenTasa]);
+  });
+
+  it("sin puntos no hay desglose", () => {
+    expect(sinError(modeloPdfConDatos(cotizarBien({}), contexto, {}, AHORA)).desgloseTasa).toBeNull();
+  });
+
+  it("plazo especial: Plazo especial y Tasa acordada en lugar de Plazo y Tasa anual, sin desglose", () => {
+    const a: Ajuste = { tipo: "especial", plazo: 9, tasas: { mensual: "17" } };
+    const m = pdfDe(ajustado({ monto: "100000" }, a), a);
+    expect([m.etiquetas.plazo, m.etiquetas.tasa]).toEqual([textos.pdf.plazoEspecial, textos.pdf.tasaAcordada]);
+    expect(m.desgloseTasa).toBeNull();
+    expect(JSON.stringify(m)).not.toMatch(/tasa de tabla/i);
   });
 });

@@ -1,6 +1,6 @@
 import * as z from "zod";
 import { listaEnEspanol } from "../domain/comun/formato";
-import type { Esquema, Estatus } from "../domain/tasas/semilla.esquema";
+import type { Esquema, Estatus, Salida } from "../domain/tasas/semilla.esquema";
 import { validar, type ResultadoApp } from "./resultado";
 
 /** Marcadores que se pueden usar en seed/textos_cotizacion.json. */
@@ -11,6 +11,10 @@ export const MARCADORES = [
   "ejecutivo",
   "vigencia",
   "moneda",
+  "tasa_tabla",
+  "puntos",
+  "tasa",
+  "meses",
 ] as const;
 export type Marcador = (typeof MARCADORES)[number];
 
@@ -24,6 +28,10 @@ export const MARCADORES_POR_CAMPO = {
   linea_vigencia: ["vigencia"],
   moneda_deshabilitada: ["moneda"],
   "pdf.linea_tasas": ["version_tasas", "fecha_tasas"],
+  "pdf.desglose_puntos": ["tasa_tabla", "puntos", "tasa"],
+  "pdf_pagina2.pago_ganancia_mensual": ["meses"],
+  "pdf_pagina2.pago_ganancia_vencimiento": ["meses"],
+  "pdf_pagina2.capital_vencimiento": ["meses"],
 } as const satisfies Readonly<Record<string, readonly Marcador[]>>;
 
 export interface TextosCotizacion {
@@ -36,6 +44,14 @@ export interface TextosCotizacion {
   /** Nombre del esquema en la pantalla y en el PDF. */
   readonly nombreEsquema: Readonly<Record<Esquema, string>>;
   readonly monedaDeshabilitada: string;
+  /** Aviso del fondo, en el pie de las dos páginas del PDF (todas las entidades). */
+  readonly pieAvisoFondo: string;
+  /** Línea SIPRES por entidad; la entidad que no aparece no lleva bloque SIPRES. */
+  readonly pieSipres: Readonly<Record<string, string>>;
+  /** Etiqueta de cada resultado, por esquema (pantalla y PDF). */
+  readonly etiquetasResultados: Readonly<Record<Esquema, Readonly<Record<Salida, string>>>>;
+  /** "Pago de la ganancia: cada mes" o "al vencimiento", por esquema (página 1 y vista previa). */
+  readonly lineaPago: Readonly<Record<Esquema, string>>;
   /** Textos fijos del PDF. */
   readonly pdf: TextosPdf;
   /** Textos fijos de la página 2 del PDF (calendario, gráficas y escenario). */
@@ -55,39 +71,50 @@ export interface TextosPdf {
   readonly seccionCalculo: string;
   /** Plantilla con {version_tasas} y {fecha_tasas}. */
   readonly lineaTasas: string;
+  /** Etiqueta del plazo en un plazo especial. */
+  readonly plazoEspecial: string;
+  /** Etiqueta de la tasa en un plazo especial (nunca "tasa de tabla"). */
+  readonly tasaAcordada: string;
+  /** Plantilla con {tasa_tabla}, {puntos} y {tasa}: el desglose de los puntos extra. */
+  readonly desglosePuntos: string;
 }
 
-/** Textos de la página 2 del PDF. Ninguno admite marcadores. */
+/** Textos de la página 2 del PDF. Solo las líneas de cuándo se paga admiten {meses}. */
 export interface TextosPagina2 {
   readonly titulo: string;
   readonly modalidad1: string;
   readonly modalidad2: string;
   readonly tasaAnual: string;
+  /** En lugar de tasaAnual en un plazo especial. */
+  readonly tasaAcordada: string;
   readonly capitalInicial: string;
-  readonly rendimientoEstimado: string;
-  readonly total: string;
+  readonly gananciaAnualEquivalente: string;
+  readonly gananciaPlazo: string;
+  readonly totalCapitalGanancia: string;
+  /** Plantillas con {meses}: cuándo se paga la ganancia y el capital. */
+  readonly pagoGananciaMensual: string;
+  readonly pagoGananciaVencimiento: string;
+  readonly capitalVencimiento: string;
+  /** Rótulos de la franja de tiempo de cada tarjeta. */
+  readonly franjaGanancia: string;
+  readonly franjaMasCapital: string;
+  readonly franjaGananciaCapital: string;
   readonly columnaMes: string;
-  readonly columnaRendimientoMes: string;
-  readonly columnaRendimientoAcumulado: string;
+  readonly columnaGananciaPeriodo: string;
+  readonly columnaGananciaAcumulada: string;
   /** Marca la modalidad de la cotización. */
   readonly insignia: string;
   readonly notaCentavos: string;
   /** Reemplaza la tarjeta de una modalidad que no se puede cotizar. */
   readonly modalidadNoDisponible: string;
+  /** Reemplaza la tarjeta de una modalidad sin tasa acordada (plazo especial). */
+  readonly modalidadSinTasa: string;
   readonly tituloGrafica1: string;
   readonly notaGrafica1: string;
   readonly serieCobrado: string;
   readonly serieDevengado: string;
-  readonly tituloGrafica2: string;
-  readonly rotuloEscenario: string;
-  readonly serieConReinversion: string;
-  readonly serieSinReinvertir: string;
-  readonly finPrimerPlazo: string;
-  readonly notaEscenario: string;
-  /** Reemplaza la gráfica 2 si el primer pago es menor al incremento mínimo. */
-  readonly escenarioIncrementoMinimo: string;
-  /** Reemplaza la gráfica 2 si alguna tasa del escenario no está disponible. */
-  readonly escenarioTasaNoDisponible: string;
+  /** Reemplaza la gráfica de comparación si falta la tasa de una modalidad. */
+  readonly comparacionOmitida: string;
   /** "Página" y "de", para el pie "Página 1 de 2". */
   readonly pagina: string;
   readonly paginaDe: string;
@@ -99,27 +126,29 @@ const CLAVES_PAGINA2 = {
   modalidad_1: "modalidad1",
   modalidad_2: "modalidad2",
   tasa_anual: "tasaAnual",
+  tasa_acordada: "tasaAcordada",
   capital_inicial: "capitalInicial",
-  rendimiento_estimado: "rendimientoEstimado",
-  total: "total",
+  ganancia_anual_equivalente: "gananciaAnualEquivalente",
+  ganancia_plazo: "gananciaPlazo",
+  total_capital_ganancia: "totalCapitalGanancia",
+  pago_ganancia_mensual: "pagoGananciaMensual",
+  pago_ganancia_vencimiento: "pagoGananciaVencimiento",
+  capital_vencimiento: "capitalVencimiento",
+  franja_ganancia: "franjaGanancia",
+  franja_mas_capital: "franjaMasCapital",
+  franja_ganancia_capital: "franjaGananciaCapital",
   columna_mes: "columnaMes",
-  columna_rendimiento_mes: "columnaRendimientoMes",
-  columna_rendimiento_acumulado: "columnaRendimientoAcumulado",
+  columna_ganancia_periodo: "columnaGananciaPeriodo",
+  columna_ganancia_acumulada: "columnaGananciaAcumulada",
   insignia: "insignia",
   nota_centavos: "notaCentavos",
   modalidad_no_disponible: "modalidadNoDisponible",
+  modalidad_sin_tasa: "modalidadSinTasa",
   titulo_grafica_1: "tituloGrafica1",
   nota_grafica_1: "notaGrafica1",
   serie_cobrado: "serieCobrado",
   serie_devengado: "serieDevengado",
-  titulo_grafica_2: "tituloGrafica2",
-  rotulo_escenario: "rotuloEscenario",
-  serie_con_reinversion: "serieConReinversion",
-  serie_sin_reinvertir: "serieSinReinvertir",
-  fin_primer_plazo: "finPrimerPlazo",
-  nota_escenario: "notaEscenario",
-  escenario_incremento_minimo: "escenarioIncrementoMinimo",
-  escenario_tasa_no_disponible: "escenarioTasaNoDisponible",
+  comparacion_omitida: "comparacionOmitida",
   pagina: "pagina",
   pagina_de: "paginaDe",
 } as const satisfies Readonly<Record<string, keyof TextosPagina2>>;
@@ -163,6 +192,17 @@ function claveDesconocida(iss: { code: string; keys?: readonly string[] }): stri
   return `Clave desconocida: ${iss.keys.map((k) => `"${k}"`).join(", ")}. Revisa que esté bien escrita o quítala.`;
 }
 
+/** Las etiquetas de las tres salidas de un esquema. */
+const etiquetasDeResultados = (campo: string) =>
+  z.strictObject(
+    {
+      rendimiento_mensual_pesos: texto(`${campo}.rendimiento_mensual_pesos`),
+      rendimiento_anual_pesos: texto(`${campo}.rendimiento_anual_pesos`),
+      ganancia_total_plazo: texto(`${campo}.ganancia_total_plazo`),
+    },
+    { error: claveDesconocida },
+  );
+
 const esquemaTextos = z
   .strictObject(
     {
@@ -186,6 +226,19 @@ const esquemaTextos = z
         { error: claveDesconocida },
       ),
       moneda_deshabilitada: texto("moneda_deshabilitada", MARCADORES_POR_CAMPO.moneda_deshabilitada),
+      pie_aviso_fondo: texto("pie_aviso_fondo"),
+      pie_sipres: z.record(z.string().min(1), texto("pie_sipres")),
+      etiquetas_resultados: z.strictObject(
+        {
+          mensual: etiquetasDeResultados("etiquetas_resultados.mensual"),
+          final_del_plazo: etiquetasDeResultados("etiquetas_resultados.final_del_plazo"),
+        },
+        { error: claveDesconocida },
+      ),
+      linea_pago: z.strictObject(
+        { mensual: texto("linea_pago.mensual"), final_del_plazo: texto("linea_pago.final_del_plazo") },
+        { error: claveDesconocida },
+      ),
       pdf: z.strictObject(
         {
           titulo: texto("pdf.titulo"),
@@ -198,12 +251,19 @@ const esquemaTextos = z
           seccion_resultados: texto("pdf.seccion_resultados"),
           seccion_calculo: texto("pdf.seccion_calculo"),
           linea_tasas: texto("pdf.linea_tasas", MARCADORES_POR_CAMPO["pdf.linea_tasas"]),
+          plazo_especial: texto("pdf.plazo_especial"),
+          tasa_acordada: texto("pdf.tasa_acordada"),
+          desglose_puntos: texto("pdf.desglose_puntos", MARCADORES_POR_CAMPO["pdf.desglose_puntos"]),
         },
         { error: claveDesconocida },
       ),
       pdf_pagina2: z.strictObject(
         Object.fromEntries(
-          Object.keys(CLAVES_PAGINA2).map((clave) => [clave, texto(`pdf_pagina2.${clave}`)]),
+          Object.keys(CLAVES_PAGINA2).map((clave) => {
+            const campo = `pdf_pagina2.${clave}`;
+            const permitidos = (MARCADORES_POR_CAMPO as Readonly<Record<string, readonly Marcador[]>>)[campo] ?? [];
+            return [clave, texto(campo, permitidos)];
+          }),
         ) as Record<ClaveArchivoPagina2, ReturnType<typeof texto>>,
         { error: claveDesconocida },
       ),
@@ -219,6 +279,10 @@ const esquemaTextos = z
       estatusTramo: t.estatus_tramo,
       nombreEsquema: t.nombre_esquema,
       monedaDeshabilitada: t.moneda_deshabilitada,
+      pieAvisoFondo: t.pie_aviso_fondo,
+      pieSipres: t.pie_sipres,
+      etiquetasResultados: t.etiquetas_resultados,
+      lineaPago: t.linea_pago,
       pdf: {
         titulo: t.pdf.titulo,
         preparadoPara: t.pdf.preparado_para,
@@ -230,6 +294,9 @@ const esquemaTextos = z
         seccionResultados: t.pdf.seccion_resultados,
         seccionCalculo: t.pdf.seccion_calculo,
         lineaTasas: t.pdf.linea_tasas,
+        plazoEspecial: t.pdf.plazo_especial,
+        tasaAcordada: t.pdf.tasa_acordada,
+        desglosePuntos: t.pdf.desglose_puntos,
       },
       pdfPagina2: Object.fromEntries(
         (Object.entries(CLAVES_PAGINA2) as [ClaveArchivoPagina2, keyof TextosPagina2][]).map(([archivo, clave]) => [
