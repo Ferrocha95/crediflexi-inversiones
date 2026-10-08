@@ -17,6 +17,10 @@ export interface CamposPdf {
   readonly esquema: string;
   readonly monto: string;
   readonly plazo: number;
+  /** Puntos extra ("0.0" a "5.0"); viaja solo si se indica. */
+  readonly puntosExtra?: string;
+  /** Plazo especial con sus tasas acordadas; viaja solo si se indica. */
+  readonly especial?: { readonly plazo: number; readonly tasaMensual: string | null; readonly tasaFinal: string | null } | null;
 }
 
 /**
@@ -32,6 +36,8 @@ export function cuerpoPeticionPdf(campos: CamposPdf, opcionales: OpcionalesPdf, 
     esquema: campos.esquema,
     monto: campos.monto,
     plazo: campos.plazo,
+    ...(campos.puntosExtra === undefined ? {} : { puntosExtra: campos.puntosExtra }),
+    ...(campos.especial === undefined ? {} : { especial: campos.especial }),
     confirmado: true as const,
     versionTasas,
     ...conTexto,

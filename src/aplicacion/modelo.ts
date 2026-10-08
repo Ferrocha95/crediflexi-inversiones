@@ -1,7 +1,9 @@
 import { Decimal } from "../domain/comun/decimal";
 import { formatearMonto, formatearPorcentaje } from "../domain/comun/formato";
 import type { CodigoAviso } from "../domain/comun/resultado";
+import type { CotizacionAjustada } from "../domain/interes/ajustes";
 import type { Cotizacion } from "../domain/interes/cotizar";
+import type { AvisoTasaAcordada } from "./ajustes";
 import type { Esquema, Estatus, Moneda, Salida } from "../domain/tasas/semilla.esquema";
 import { limpiarCampo } from "./campos";
 import { formatearDinero } from "./dinero";
@@ -25,12 +27,27 @@ const dinero = (texto: string, moneda: Moneda) => formatearDinero(new Decimal(te
 const monto = (texto: string, moneda: Moneda) => formatearMonto(new Decimal(texto), moneda);
 const meses = (plazo: number) => `${plazo} ${plazo === 1 ? "mes" : "meses"}`;
 
+/** Una cotización de tabla tal cual, o con puntos extra o plazo especial (cotizarConAjuste). */
+export type CotizacionParaModelo = Cotizacion | CotizacionAjustada;
+
+const esAjustada = (c: CotizacionParaModelo): c is CotizacionAjustada => "puntos" in c;
+
+/** Desglose "tasa de tabla + puntos = tasa" cuando hay puntos extra; null si no hay. */
+function desgloseDeTasa(c: CotizacionParaModelo): ModeloVistaPrevia["desgloseTasa"] {
+  if (!esAjustada(c) || c.tasaTabla === null || new Decimal(c.puntos).isZero()) return null;
+  return {
+    tasaTabla: formatearPorcentaje(new Decimal(c.tasaTabla)),
+    puntos: new Decimal(c.puntos).toFixed(1),
+    tasa: formatearPorcentaje(new Decimal(c.tasa)),
+  };
+}
+
 function rangoDelTramo(tramo: Cotizacion["tramo"], moneda: Moneda): string {
   const desde = `Desde ${monto(tramo.desde, moneda)}`;
   return tramo.hasta === null ? desde : `${desde} hasta ${monto(tramo.hasta, moneda)}`;
 }
 
-function tasasDeLaCotizacion(c: Cotizacion) {
+function tasasDeLaCotizacion(c: CotizacionParaModelo) {
   return { version: c.semilla.version, fecha: fechaDeTextoIso(c.semilla.generado) };
 }
 
@@ -47,13 +64,19 @@ export interface ModeloVistaPrevia {
     readonly plazo: string;
   };
   readonly tasa: string;
-  readonly origenTasa: Cotizacion["origenTasa"];
-  /** Tramo aplicado con su estatus visible (pendiente t). */
+  readonly origenTasa: CotizacionAjustada["origenTasa"];
+  /** Tramo aplicado con su estatus visible (pendiente t); null en un plazo especial (no hay tabla). */
   readonly tramo: {
     readonly rango: string;
     readonly estatus: Estatus | null;
     readonly explicacionEstatus: string | null;
-  };
+  } | null;
+  /** "Tasa de tabla X% + Y puntos extra = Z%": solo con puntos extra. */
+  readonly desgloseTasa: { readonly tasaTabla: string; readonly puntos: string; readonly tasa: string } | null;
+  /** true si es un plazo especial con tasa acordada. */
+  readonly plazoEspecial: boolean;
+  /** Aviso no bloqueante: la tasa acordada pasa de la máxima de la tabla más 5 puntos. */
+  readonly tasaAcordadaAlta: AvisoTasaAcordada | null;
   readonly salidas: readonly {
     readonly clave: Salida;
     readonly etiqueta: string;
@@ -66,7 +89,11 @@ export interface ModeloVistaPrevia {
   readonly tasas: { readonly version: string; readonly fecha: string };
 }
 
-export function modeloVistaPrevia(c: Cotizacion, textos: TextosCotizacion): ModeloVistaPrevia {
+export function modeloVistaPrevia(
+  c: CotizacionParaModelo,
+  textos: TextosCotizacion,
+  extras: { readonly tasaAcordadaAlta?: AvisoTasaAcordada | null } = {},
+): ModeloVistaPrevia {
   const { moneda } = c.solicitud;
   return {
     solicitud: {
@@ -78,11 +105,17 @@ export function modeloVistaPrevia(c: Cotizacion, textos: TextosCotizacion): Mode
     },
     tasa: formatearPorcentaje(new Decimal(c.tasa)),
     origenTasa: c.origenTasa,
-    tramo: {
-      rango: rangoDelTramo(c.tramo, moneda),
-      estatus: c.tramo.estatus,
-      explicacionEstatus: c.tramo.estatus === null ? null : textos.estatusTramo[c.tramo.estatus],
-    },
+    tramo:
+      c.tramo === null
+        ? null
+        : {
+            rango: rangoDelTramo(c.tramo, moneda),
+            estatus: c.tramo.estatus,
+            explicacionEstatus: c.tramo.estatus === null ? null : textos.estatusTramo[c.tramo.estatus],
+          },
+    desgloseTasa: desgloseDeTasa(c),
+    plazoEspecial: c.origenTasa === "especial",
+    tasaAcordadaAlta: extras.tasaAcordadaAlta ?? null,
     salidas: c.salidas.map((s) => ({
       clave: s.clave,
       etiqueta: s.etiqueta,
@@ -170,7 +203,7 @@ const oNulo = (texto: string) => (texto === "" ? null : texto);
  * parámetro para que la función sea pura.
  */
 export function modeloPdf(
-  c: Cotizacion,
+  c: CotizacionParaModelo,
   contexto: ContextoPdf,
   entrada: EntradaPdf,
   ahora: Date,

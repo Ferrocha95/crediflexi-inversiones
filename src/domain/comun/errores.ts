@@ -10,7 +10,10 @@ export type CodigoError =
   | "TRAMO_POR_CONFIRMAR"
   | "MONTO_INVALIDO"
   | "MONTO_FUERA_DE_RANGO"
-  | "PLAZO_NO_DISPONIBLE";
+  | "PLAZO_NO_DISPONIBLE"
+  | "PUNTOS_INVALIDOS"
+  | "PLAZO_ESPECIAL_INVALIDO"
+  | "TASA_INVALIDA";
 
 export interface ErrorCotizacion {
   readonly codigo: CodigoError;

@@ -3,7 +3,8 @@ import * as z from "zod";
 import { modeloVistaPrevia, type ModeloVistaPrevia } from "../aplicacion/modelo";
 import { normalizarMonto } from "../aplicacion/monto";
 import { plazosDisponibles } from "../aplicacion/plazos";
-import { cotizar } from "../domain/interes/cotizar";
+import { ajusteDesdeCampos, avisoTasaAcordada } from "../aplicacion/ajustes";
+import { cotizarConAjuste } from "../domain/interes/ajustes";
 import { ESQUEMAS, MONEDAS } from "../domain/tasas/semilla.esquema";
 import { MENSAJE_HOST_NO_LOCAL } from "./guardiaHost";
 import { esHostLocal } from "../aplicacion/host";
@@ -21,6 +22,17 @@ const esquemaCampos = z.strictObject({
   esquema: z.enum(ESQUEMAS),
   monto: z.string().max(40),
   plazo: z.number().int().positive().max(600).nullable(),
+  /** Puntos extra sobre la tasa de tabla; el dominio valida el valor. Ausente = 0. */
+  puntosExtra: z.string().max(10).optional(),
+  /** Plazo especial con tasas acordadas (porcentaje como texto); el dominio valida. Ausente o null = plazo de tabla. */
+  especial: z
+    .strictObject({
+      plazo: z.number().int().min(-1000).max(1000),
+      tasaMensual: z.string().max(20).nullable(),
+      tasaFinal: z.string().max(20).nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type CamposVistaPrevia = z.infer<typeof esquemaCampos>;
@@ -71,6 +83,21 @@ export async function previsualizarCon(
   if (!monto.ok) return fallo(peticion, monto.error.mensaje);
 
   const consulta = { entidad, moneda, esquema, monto: monto.valor };
+  const ajuste = ajusteDesdeCampos({ puntosExtra: forma.data.puntosExtra ?? "0", especial: forma.data.especial ?? null });
+  if (!ajuste.ok) return fallo(peticion, ajuste.error.mensaje);
+
+  // Plazo especial: no usa los plazos de la tabla; el motor valida entidad, moneda y monto.
+  if (ajuste.valor.tipo === "especial") {
+    const c = cotizarConAjuste(semilla, { ...consulta, plazo: ajuste.valor.plazo }, ajuste.valor);
+    if (!c.ok) return fallo(peticion, c.error.mensaje, c.error.detalles);
+    const tasaAcordadaAlta = avisoTasaAcordada(semilla, moneda, c.valor.tasa);
+    return {
+      peticion,
+      plazos: null,
+      resultado: { tipo: "vista_previa", vistaPrevia: modeloVistaPrevia(c.valor, textos, { tasaAcordadaAlta }) },
+    };
+  }
+
   const plazos = plazosDisponibles(semilla, consulta);
   if (!plazos.ok) return fallo(peticion, plazos.error.mensaje, plazos.error.detalles);
   const opcionesPlazo = plazos.valor.map((valor) => ({ valor, etiqueta: `${valor} meses` }));
@@ -79,7 +106,7 @@ export async function previsualizarCon(
     return { peticion, plazos: opcionesPlazo, resultado: { tipo: "elige_plazo" } };
   }
 
-  const c = cotizar(semilla, { ...consulta, plazo });
+  const c = cotizarConAjuste(semilla, { ...consulta, plazo }, ajuste.valor);
   if (!c.ok) return fallo(peticion, c.error.mensaje, c.error.detalles, opcionesPlazo);
   return {
     peticion,

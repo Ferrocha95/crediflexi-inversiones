@@ -4,7 +4,7 @@ import { useEffect, useId, useReducer, useState } from "react";
 import type { ModeloVistaPrevia } from "../../../aplicacion/modelo";
 import type { OpcionesCotizador } from "../../../aplicacion/opciones";
 import { monedaParaEntidad, monedasDeEntidad, monedasSoloPara } from "./monedas";
-import type { Esquema, Moneda } from "../../../domain/tasas/semilla.esquema";
+import { camposParaServidor, SIN_PUNTOS, type CamposPantalla } from "./ajustesPantalla";
 import type { RespuestaVistaPrevia } from "../../../servidor/vistaPrevia";
 import { previsualizar } from "./acciones";
 import {
@@ -40,13 +40,7 @@ import { VistaPrevia } from "./VistaPrevia";
 /** Pausa antes de pedir la vista previa, para no calcular con cada tecla. */
 const PAUSA_MS = 400;
 
-interface Campos {
-  readonly entidad: string;
-  readonly moneda: Moneda;
-  readonly esquema: Esquema;
-  readonly monto: string;
-  readonly plazo: number | null;
-}
+type Campos = CamposPantalla;
 
 function camposIniciales(opciones: OpcionesCotizador): Campos {
   const entidad = opciones.entidades[0]?.clave ?? "";
@@ -56,6 +50,8 @@ function camposIniciales(opciones: OpcionesCotizador): Campos {
     esquema: opciones.esquemas[0]?.esquema ?? "mensual",
     monto: "",
     plazo: null,
+    puntosExtra: SIN_PUNTOS,
+    especial: null,
   };
 }
 
@@ -77,7 +73,7 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
   const [version, setVersion] = useState(0);
   const [respuesta, setRespuesta] = useState<RespuestaVistaPrevia | null>(null);
   const [confirmacion, despachar] = useReducer(reducirConfirmacion<ModeloVistaPrevia>, opciones, (o) =>
-    estadoInicial<ModeloVistaPrevia>(huellaDeCampos(camposIniciales(o))),
+    estadoInicial<ModeloVistaPrevia>(huellaDeCampos(camposParaServidor(camposIniciales(o)))),
   );
   /** Solo se imprimen en el PDF: cambiarlos no invalida la confirmación de los números. */
   const [opcionales, setOpcionales] = useState<OpcionalesPdf>(OPCIONALES_VACIOS);
@@ -91,7 +87,7 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
     setCampos(nuevos);
     setVersion((v) => v + 1);
     // Cualquier cambio en los campos invalida la vista previa y la confirmación.
-    despachar({ tipo: "campoCambiado", huella: huellaDeCampos(nuevos) });
+    despachar({ tipo: "campoCambiado", huella: huellaDeCampos(camposParaServidor(nuevos)) });
     setMensajePdf(null);
   }
 
@@ -103,7 +99,7 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
     const temporizador = setTimeout(async () => {
       let r: RespuestaVistaPrevia;
       try {
-        r = await previsualizar({ ...campos, peticion: version });
+        r = await previsualizar({ ...camposParaServidor(campos), peticion: version });
       } catch (e) {
         // El proxy responde 401 a una acción sin sesión y Next lo convierte en este error.
         if (errorEsSesionExpirada(e)) setSesionExpirada(true);
@@ -115,7 +111,7 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
       setRespuesta(r);
       despachar({
         tipo: "vistaPreviaRecibida",
-        huella: huellaDeCampos(campos),
+        huella: huellaDeCampos(camposParaServidor(campos)),
         vistaPrevia: r.resultado.tipo === "vista_previa" ? r.resultado.vistaPrevia : null,
       });
       // El plazo elegido dejó de estar disponible para este monto: se borra (y eso cuenta como cambio).
@@ -123,7 +119,7 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
         const sinPlazo = { ...campos, plazo: null };
         setCampos(sinPlazo);
         setVersion((v) => v + 1);
-        despachar({ tipo: "campoCambiado", huella: huellaDeCampos(sinPlazo) });
+        despachar({ tipo: "campoCambiado", huella: huellaDeCampos(camposParaServidor(sinPlazo)) });
         setMensajePdf(null);
       }
     }, PAUSA_MS);
@@ -145,7 +141,10 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
   /** POST a /cotizador/pdf; el servidor recalcula todo y responde el archivo o un error en español. */
   async function generarPdf() {
     const vista = confirmacion.vistaPrevia;
-    if (!puedePdf || generando || vista === null || campos.plazo === null) return;
+    const envio = camposParaServidor(campos);
+    // En un plazo especial manda el plazo acordado; en uno de tabla, el elegido.
+    const plazoPdf = envio.especial?.plazo ?? envio.plazo;
+    if (!puedePdf || generando || vista === null || plazoPdf === null) return;
     setGenerando(true);
     setMensajePdf({ tipo: "estado", texto: TEXTOS.generandoPdf });
     try {
@@ -153,7 +152,7 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
         method: "POST",
         headers: { "content-type": "application/json" },
         cache: "no-store",
-        body: JSON.stringify(cuerpoPeticionPdf({ ...campos, plazo: campos.plazo }, opcionales, vista.tasas.version)),
+        body: JSON.stringify(cuerpoPeticionPdf({ ...envio, plazo: plazoPdf }, opcionales, vista.tasas.version)),
       });
       const clase = clasificarRespuestaPdf(r.status, r.headers.get("content-type"));
       if (clase === "sesion_expirada") {
@@ -275,21 +274,78 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
           />
         </Campo>
 
-        <Campo id={`${id}-plazo`} etiqueta={TEXTOS.plazo}>
-          <Selector
-            id={`${id}-plazo`}
-            value={campos.plazo === null ? "" : String(campos.plazo)}
-            disabled={plazos.length === 0}
-            onChange={(e) => cambiar({ plazo: e.target.value === "" ? null : Number(e.target.value) })}
-          >
-            <option value="">{hayMonto ? TEXTOS.eligePlazoOpcion : TEXTOS.plazoSinMonto}</option>
-            {plazos.map((p) => (
-              <option key={p.valor} value={p.valor}>
-                {p.etiqueta}
-              </option>
-            ))}
-          </Selector>
-        </Campo>
+        <Casilla
+          etiqueta={TEXTOS.plazoEspecial}
+          checked={campos.especial !== null}
+          aria-describedby={`${id}-especial-ayuda`}
+          onChange={(e) =>
+            cambiar({ especial: e.target.checked ? { meses: "", tasaMensual: "", tasaFinal: "" } : null, puntosExtra: SIN_PUNTOS })
+          }
+        />
+        <p id={`${id}-especial-ayuda`} className="-mt-3 text-sm text-hielo-tenue">
+          {TEXTOS.ayudaPlazoEspecial}
+        </p>
+
+        {campos.especial === null ? (
+          <>
+          <Campo id={`${id}-plazo`} etiqueta={TEXTOS.plazo}>
+            <Selector
+              id={`${id}-plazo`}
+              value={campos.plazo === null ? "" : String(campos.plazo)}
+              disabled={plazos.length === 0}
+              onChange={(e) => cambiar({ plazo: e.target.value === "" ? null : Number(e.target.value) })}
+            >
+              <option value="">{hayMonto ? TEXTOS.eligePlazoOpcion : TEXTOS.plazoSinMonto}</option>
+              {plazos.map((p) => (
+                <option key={p.valor} value={p.valor}>
+                  {p.etiqueta}
+                </option>
+              ))}
+            </Selector>
+          </Campo>
+
+            <Campo id={`${id}-puntos`} etiqueta={TEXTOS.puntosExtra} ayuda={TEXTOS.ayudaPuntosExtra}>
+              <Selector
+                id={`${id}-puntos`}
+                value={campos.puntosExtra}
+                aria-describedby={`${id}-puntos-ayuda`}
+                onChange={(e) => cambiar({ puntosExtra: e.target.value })}
+              >
+                {opciones.puntosExtra.map((p) => (
+                  <option key={p} value={p}>
+                    {p === SIN_PUNTOS ? TEXTOS.sinPuntosExtra : TEXTOS.opcionPuntos(p)}
+                  </option>
+                ))}
+              </Selector>
+            </Campo>
+          </>
+        ) : (
+          <>
+            <Campo id={`${id}-meses`} etiqueta={TEXTOS.mesesEspecial(opciones.plazoEspecial.minimo, opciones.plazoEspecial.maximo)}>
+              <Entrada
+                id={`${id}-meses`}
+                inputMode="numeric"
+                autoComplete="off"
+                value={campos.especial.meses}
+                onChange={(e) => cambiar({ especial: { ...campos.especial!, meses: e.target.value } })}
+              />
+            </Campo>
+            {opciones.esquemas.map((e) => {
+              const clave = e.esquema === "mensual" ? "tasaMensual" : "tasaFinal";
+              return (
+                <Campo key={e.esquema} id={`${id}-tasa-${e.esquema}`} etiqueta={TEXTOS.tasaAcordadaDe(e.nombre)}>
+                  <Entrada
+                    id={`${id}-tasa-${e.esquema}`}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={campos.especial![clave]}
+                    onChange={(ev) => cambiar({ especial: { ...campos.especial!, [clave]: ev.target.value } })}
+                  />
+                </Campo>
+              );
+            })}
+          </>
+        )}
 
         <fieldset className="mt-1 flex flex-col gap-4 border-t border-hielo/15 pt-5">
           <legend className="float-left mb-1 w-full text-lg font-bold">{TEXTOS.tituloOpcionales}</legend>

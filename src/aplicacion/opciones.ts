@@ -1,4 +1,6 @@
+import { PLAZO_ESPECIAL } from "../domain/interes/ajustes";
 import { ESQUEMAS, MONEDAS, type Esquema, type Moneda, type Semilla } from "../domain/tasas/semilla.esquema";
+import { OPCIONES_PUNTOS } from "./ajustes";
 import { TOPES } from "./modelo";
 import { rellenar } from "./rellenar";
 import type { TextosCotizacion } from "./textos";
@@ -21,6 +23,10 @@ export interface OpcionesCotizador {
   readonly esquemas: readonly { readonly esquema: Esquema; readonly nombre: string }[];
   /** Topes en caracteres de los campos opcionales del PDF (los de modelo.ts). */
   readonly topes: Readonly<Record<keyof typeof TOPES, number>>;
+  /** Valores del selector de puntos extra ("0.0" a "5.0"). */
+  readonly puntosExtra: readonly string[];
+  /** Meses permitidos en un plazo especial. */
+  readonly plazoEspecial: { readonly minimo: number; readonly maximo: number };
 }
 
 export interface ParametrosOpciones {
@@ -48,5 +54,7 @@ export function opcionesCotizador({ semilla, razonesSociales, textos }: Parametr
     }),
     esquemas: ESQUEMAS.map((esquema) => ({ esquema, nombre: textos.nombreEsquema[esquema] })),
     topes: { ...TOPES },
+    puntosExtra: [...OPCIONES_PUNTOS],
+    plazoEspecial: { ...PLAZO_ESPECIAL },
   };
 }

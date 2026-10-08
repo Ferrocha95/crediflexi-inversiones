@@ -82,6 +82,12 @@ describe("opcionesCotizador", () => {
     expect(opcionesCotizador(parametros).topes).toEqual({ preparadoPara: 120, ejecutivo: 120, vigencia: 60, notaAdicional: 300 });
   });
 
+  it("trae las opciones de puntos extra (0.0 a 5.0 en pasos de 0.5) y el rango del plazo especial", () => {
+    const o = opcionesCotizador(parametros);
+    expect(o.puntosExtra).toEqual(["0.0", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0"]);
+    expect(o.plazoEspecial).toEqual({ minimo: 1, maximo: 24 });
+  });
+
   it("solo trae texto: sobrevive igual a JSON y no incluye tasas ni tablas", () => {
     const o = opcionesCotizador(parametros);
     expect(JSON.parse(JSON.stringify(o))).toEqual(o);

@@ -10,11 +10,24 @@ export interface CamposHuella {
   readonly esquema: string;
   readonly monto: string;
   readonly plazo: number | null;
+  /** Puntos extra sobre la tasa de tabla ("0.0" a "5.0"). */
+  readonly puntosExtra?: string;
+  /** Plazo especial con sus tasas acordadas; null o ausente = plazo de tabla. */
+  readonly especial?: { readonly plazo: number; readonly tasaMensual: string | null; readonly tasaFinal: string | null } | null;
 }
 
 /** Identifica un juego de campos: dos huellas iguales significan los mismos campos. */
 export function huellaDeCampos(c: CamposHuella): string {
-  return JSON.stringify([c.entidad, c.moneda, c.esquema, c.monto, c.plazo]);
+  const especial = c.especial ?? null;
+  return JSON.stringify([
+    c.entidad,
+    c.moneda,
+    c.esquema,
+    c.monto,
+    c.plazo,
+    c.puntosExtra ?? null,
+    especial === null ? null : [especial.plazo, especial.tasaMensual, especial.tasaFinal],
+  ]);
 }
 
 export interface EstadoConfirmacion<V> {

@@ -6,7 +6,8 @@ import { modeloPdf, TOPES, type ModeloPdf } from "../../aplicacion/modelo";
 import { normalizarMonto } from "../../aplicacion/monto";
 import { datosPagina2 } from "../../aplicacion/pagina2";
 import type { ResultadoApp } from "../../aplicacion/resultado";
-import { cotizar } from "../../domain/interes/cotizar";
+import { ajusteDesdeCampos } from "../../aplicacion/ajustes";
+import { cotizarConAjuste } from "../../domain/interes/ajustes";
 import { ESQUEMAS, MONEDAS } from "../../domain/tasas/semilla.esquema";
 import { MENSAJE_HOST_NO_LOCAL } from "../guardiaHost";
 import type { ParametrosCotizacion } from "../parametros";
@@ -52,6 +53,17 @@ const esquemaCuerpo = z.object({
   ejecutivo: opcional(TOPES.ejecutivo),
   vigencia: opcional(TOPES.vigencia),
   notaAdicional: opcional(TOPES.notaAdicional),
+  /** Puntos extra sobre la tasa de tabla; el dominio valida el valor. Ausente = 0. */
+  puntosExtra: z.string().max(10).optional(),
+  /** Plazo especial con sus tasas acordadas; el dominio valida. Ausente o null = plazo de tabla. */
+  especial: z
+    .object({
+      plazo: z.number().int().min(-1000).max(1000),
+      tasaMensual: z.string().max(20).nullable(),
+      tasaFinal: z.string().max(20).nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 
 function json(status: number, mensaje: string, detalles?: readonly string[]): Response {
@@ -92,7 +104,7 @@ export async function manejarPdf(request: Request, deps: DependenciasPdf): Promi
 
   const forma = esquemaCuerpo.safeParse(await leerCuerpo(request));
   if (!forma.success) return json(422, MENSAJES_PDF.formaInvalida);
-  const { entidad, moneda, esquema, plazo, confirmado, versionTasas, ...entrada } = forma.data;
+  const { entidad, moneda, esquema, plazo, confirmado, versionTasas, puntosExtra, especial, ...entrada } = forma.data;
   if (confirmado !== true) return json(422, MENSAJES_PDF.sinConfirmar);
 
   const parametros = await deps.leer();
@@ -103,11 +115,21 @@ export async function manejarPdf(request: Request, deps: DependenciasPdf): Promi
   const monto = normalizarMonto(forma.data.monto);
   if (!monto.ok) return json(422, monto.error.mensaje);
 
-  const c = cotizar(semilla, { entidad, moneda, esquema, monto: monto.valor, plazo });
+  const ajuste = ajusteDesdeCampos({ puntosExtra: puntosExtra ?? "0", especial: especial ?? null });
+  if (!ajuste.ok) return json(422, ajuste.error.mensaje);
+  // En un plazo especial manda el plazo acordado, no el de la tabla.
+  const solicitud = {
+    entidad,
+    moneda,
+    esquema,
+    monto: monto.valor,
+    plazo: ajuste.valor.tipo === "especial" ? ajuste.valor.plazo : plazo,
+  };
+  const c = cotizarConAjuste(semilla, solicitud, ajuste.valor);
   if (!c.ok) return json(422, c.error.mensaje, c.error.detalles);
 
   const ahora = deps.ahora();
-  const datos = datosPagina2(semilla, { entidad, moneda, esquema, monto: monto.valor, plazo });
+  const datos = datosPagina2(semilla, solicitud, ajuste.valor);
   const modelo = modeloPdf(c.valor, { razonesSociales, textos }, entrada, ahora, datos);
   if (!modelo.ok) return json(500, modelo.error.mensaje, modelo.error.detalles);
 

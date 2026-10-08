@@ -19,6 +19,20 @@ export const TEXTOS = {
   monto: "Monto",
   ayudaMonto: "Ejemplo: 150,000.50 o 150000.50",
   plazo: "Plazo",
+  puntosExtra: "Puntos extra",
+  sinPuntosExtra: "Sin puntos extra",
+  opcionPuntos: (puntos: string) => `+${puntos} puntos`,
+  ayudaPuntosExtra: "Se suman a la tasa de tabla de las dos modalidades.",
+  plazoEspecial: "Plazo especial",
+  ayudaPlazoEspecial:
+    "Meses enteros y la tasa anual acordada de cada modalidad que quieras mostrar; la modalidad sin tasa no aparece en el PDF.",
+  mesesEspecial: (minimo: number, maximo: number) => `Meses (${minimo} a ${maximo})`,
+  tasaAcordadaDe: (modalidad: string) => `Tasa acordada, ${modalidad} (% anual)`,
+  tasaAcordada: "Tasa acordada",
+  desglosePuntos: (tasaTabla: string, puntos: string, tasa: string) =>
+    `Tasa de tabla ${tasaTabla} + ${puntos} puntos extra = ${tasa}`,
+  avisoTasaAcordadaAlta: (tasa: string, maximoTabla: string, limite: string) =>
+    `La tasa acordada (${tasa}) pasa de la máxima de la tabla (${maximoTabla}) más 5 puntos (${limite}). Revísala antes de confirmar; puedes continuar.`,
   eligePlazoOpcion: "Elige un plazo",
   plazoSinMonto: "Escribe primero el monto",
 

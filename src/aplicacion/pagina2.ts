@@ -1,6 +1,7 @@
 import { Decimal } from "../domain/comun/decimal";
 import { formatearCantidad, formatearPorcentaje } from "../domain/comun/formato";
-import type { Resultado } from "../domain/comun/resultado";
+import { exito, fallo, type Resultado } from "../domain/comun/resultado";
+import { calendariosAjustados, type Ajuste, type CotizacionAjustada, type ModalidadAjustada } from "../domain/interes/ajustes";
 import { calendarios, type CalendarioModalidad } from "../domain/interes/calendario";
 import type { Cotizacion } from "../domain/interes/cotizar";
 import { escenarioReinversion, type EscenarioReinversion } from "../domain/interes/escenario";
@@ -13,18 +14,40 @@ import type { TextosPagina2 } from "./textos";
 // Página 2 del PDF: este módulo no calcula cifras, solo les da forma de texto y
 // convierte a coordenadas (números) lo que se dibuja.
 
-/** Lo que el dominio calcula para la página 2. */
+/** Lo que el dominio calcula para la página 2. Una modalidad en null no tiene tasa acordada (plazo especial). */
 export interface DatosPagina2 {
   readonly calendarios: {
-    readonly mensual: Resultado<CalendarioModalidad>;
-    readonly finalDelPlazo: Resultado<CalendarioModalidad>;
+    readonly mensual: Resultado<CalendarioModalidad> | null;
+    readonly finalDelPlazo: Resultado<CalendarioModalidad> | null;
   };
   readonly escenario: EscenarioReinversion;
 }
 
-/** Calendarios de las dos modalidades y escenario de reinversión para la misma solicitud. */
-export function datosPagina2(semilla: Semilla, solicitud: SolicitudTasa): DatosPagina2 {
-  return { calendarios: calendarios(semilla, solicitud), escenario: escenarioReinversion(semilla, solicitud) };
+const SIN_AJUSTE: Ajuste = { tipo: "tabla", puntos: "0" };
+
+/** Puntos en cero ("0", "0.0"). Solo decide el camino; la validación de los puntos es del dominio. */
+const sinPuntos = (a: Ajuste) => a.tipo === "tabla" && a.puntos.trim() !== "" && Number(a.puntos) === 0;
+
+function comoResultado(m: ModalidadAjustada): Resultado<CalendarioModalidad> | null {
+  if (m.tipo === "sin_tasa") return null;
+  return m.tipo === "calendario" ? exito(m.calendario) : fallo(m.error);
+}
+
+/**
+ * Calendarios de las dos modalidades y escenario de reinversión para la misma
+ * solicitud. Con puntos extra o plazo especial, los calendarios usan la tasa
+ * ajustada (calendariosAjustados) y el escenario de reinversión se omite,
+ * porque solo sabe usar tasas de tabla.
+ */
+export function datosPagina2(semilla: Semilla, solicitud: SolicitudTasa, ajuste: Ajuste = SIN_AJUSTE): DatosPagina2 {
+  if (sinPuntos(ajuste)) {
+    return { calendarios: calendarios(semilla, solicitud), escenario: escenarioReinversion(semilla, solicitud) };
+  }
+  const a = calendariosAjustados(semilla, solicitud, ajuste);
+  return {
+    calendarios: { mensual: comoResultado(a.mensual), finalDelPlazo: comoResultado(a.finalDelPlazo) },
+    escenario: { tipo: "omitido", motivo: "TASA_NO_DISPONIBLE" },
+  };
 }
 
 export interface TarjetaPdf {
@@ -99,12 +122,12 @@ function tarjeta(
   esquema: Esquema,
   titulo: string,
   elegida: boolean,
-  r: Resultado<CalendarioModalidad>,
+  r: Resultado<CalendarioModalidad> | null,
   t: TextosPagina2,
   moneda: Moneda,
 ): TarjetaPdf {
   const pesos = (texto: string) => dinero(texto, moneda);
-  if (!r.ok) return { esquema, titulo, elegida, detalle: null, nota: t.modalidadNoDisponible };
+  if (r === null || !r.ok) return { esquema, titulo, elegida, detalle: null, nota: t.modalidadNoDisponible };
   const c = r.valor;
   return {
     esquema,
@@ -168,12 +191,16 @@ function dibujo(
 }
 
 function graficaComparacion(
-  m1: Resultado<CalendarioModalidad>,
-  m2: Resultado<CalendarioModalidad>,
+  m1: Resultado<CalendarioModalidad> | null,
+  m2: Resultado<CalendarioModalidad> | null,
   plazo: number,
   t: TextosPagina2,
   moneda: Moneda,
 ): GraficaPdf {
+  // Sin tasa acordada para una de las modalidades no hay qué comparar: la gráfica se omite.
+  if (m1 === null || m2 === null) {
+    return { titulo: t.tituloGrafica1, rotulo: null, nota: null, dibujo: null, omision: t.modalidadNoDisponible };
+  }
   const series: SerieDatos[] = [];
   for (const [r, nombre, color, trazo] of [
     [m1, t.serieCobrado, "marino", "continuo"],
@@ -225,7 +252,7 @@ function graficaEscenario(e: EscenarioReinversion, t: TextosPagina2, moneda: Mon
 }
 
 /** Tarjetas y gráficas de la página 2 para una cotización ya hecha. */
-export function modeloPagina2(c: Cotizacion, datos: DatosPagina2, textos: TextosPagina2): ModeloPagina2 {
+export function modeloPagina2(c: Cotizacion | CotizacionAjustada, datos: DatosPagina2, textos: TextosPagina2): ModeloPagina2 {
   const { mensual, finalDelPlazo } = datos.calendarios;
   const elegido = c.solicitud.esquema;
   const { moneda } = c.solicitud;

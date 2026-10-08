@@ -54,6 +54,31 @@ function rendimientosPorMes(
   return Array.from({ length: plazo }, (_, i) => acumulado(i + 1).minus(acumulado(i)));
 }
 
+/**
+ * El calendario de una modalidad con una tasa anual ya decidida (de la tabla,
+ * de la tabla más puntos extra, o acordada en un plazo especial). Solo
+ * aritmética: no valida nada.
+ */
+export function calendarioDesdeTasa(monto: Decimal, tasa: Decimal, plazo: number, esquema: Esquema): CalendarioModalidad {
+  // La misma ganancia total que la cotización (calcularRendimientos).
+  const gananciaTotal = aCentavos(monto.times(tasa).times(plazo).div(MESES_POR_ANIO));
+
+  let acumulado = new Decimal(0);
+  const filas = rendimientosPorMes(esquema, monto, tasa, plazo, gananciaTotal).map((rendimiento, i) => {
+    acumulado = acumulado.plus(rendimiento);
+    return { mes: i + 1, rendimiento: rendimiento.toFixed(2), acumulado: acumulado.toFixed(2) };
+  });
+
+  return {
+    esquema,
+    tasa: tasa.toFixed(),
+    capitalInicial: monto.toFixed(2),
+    rendimientoEstimado: gananciaTotal.toFixed(2),
+    total: monto.plus(gananciaTotal).toFixed(2),
+    filas,
+  };
+}
+
 /** Cotiza la solicitud con el esquema indicado y arma su calendario de pagos. */
 export function calendarioModalidad(
   semilla: Semilla,
@@ -64,28 +89,7 @@ export function calendarioModalidad(
   if (!r.ok) return fallo(r.error);
 
   const c = r.valor;
-  const monto = new Decimal(c.solicitud.monto);
-  const tasa = new Decimal(c.tasa);
-  // La misma ganancia total que la cotización (calcularRendimientos).
-  const gananciaTotal = aCentavos(monto.times(tasa).times(c.solicitud.plazo).div(MESES_POR_ANIO));
-
-  let acumulado = new Decimal(0);
-  const filas = rendimientosPorMes(esquema, monto, tasa, c.solicitud.plazo, gananciaTotal).map((rendimiento, i) => {
-    acumulado = acumulado.plus(rendimiento);
-    return { mes: i + 1, rendimiento: rendimiento.toFixed(2), acumulado: acumulado.toFixed(2) };
-  });
-
-  return exito(
-    {
-      esquema,
-      tasa: c.tasa,
-      capitalInicial: monto.toFixed(2),
-      rendimientoEstimado: gananciaTotal.toFixed(2),
-      total: monto.plus(gananciaTotal).toFixed(2),
-      filas,
-    },
-    r.avisos,
-  );
+  return exito(calendarioDesdeTasa(new Decimal(c.solicitud.monto), new Decimal(c.tasa), c.solicitud.plazo, esquema), r.avisos);
 }
 
 /** Las dos modalidades para la misma entidad, monto y plazo, cada una con su resultado. */

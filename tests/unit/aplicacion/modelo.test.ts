@@ -385,15 +385,15 @@ describe.each(ENTIDADES)("modeloVistaPrevia ($clave)", ({ clave }) => {
 
   it("tramo con límite superior", () => {
     const v = modeloVistaPrevia(cotizarBien({ entidad: clave, monto: "150000" }), textos);
-    expect(v.tramo.rango).toBe("Desde $30,000.00 MXN hasta $200,000.00 MXN");
+    expect(v.tramo!.rango).toBe("Desde $30,000.00 MXN hasta $200,000.00 MXN");
   });
 
   it("un estatus CONFIRMADA muestra su explicación (semilla modificada en la prueba)", () => {
     const j = copiaSemilla();
     j.tasas_mxn.tramos[5].estatus = "CONFIRMADA";
     const v = modeloVistaPrevia(cotizarBien({ entidad: clave }, cargar(j)), textos);
-    expect(v.tramo.estatus).toBe("CONFIRMADA");
-    expect(v.tramo.explicacionEstatus).toBe("Tasa confirmada.");
+    expect(v.tramo!.estatus).toBe("CONFIRMADA");
+    expect(v.tramo!.explicacionEstatus).toBe("Tasa confirmada.");
   });
 
   it("trae los avisos no bloqueantes tal cual vienen en la cotización (aviso fabricado a mano)", () => {
