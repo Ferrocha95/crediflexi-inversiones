@@ -1,17 +1,15 @@
 # Estado del proyecto — App interna de captación (Crediflexi / Rami Sise)
 
-**Actualizado:** 8 de octubre de 2026 (secciones 0, 2, 3, 4, 6 y 8 con lo verificado en git ese día). **Dueño:** Fernando Rocha (ejecutivo de inversiones).
+**Actualizado:** 8 de octubre de 2026, al cerrar el Sprint 5 (secciones 0, 2, 3, 4 y 6 con lo verificado en git ese día). **Dueño:** Fernando Rocha (ejecutivo de inversiones).
 **Para quién es este documento:** para retomar el trabajo en una conversación nueva sin perder nada. Si algo de aquí contradice lo que ves en el repositorio, manda el repositorio (`git log`, `git status`) y se corrige este archivo.
 
 ## 0. Cómo retomar (primeros pasos en una conversación nueva)
 
 1. Pedirle a Fernando que corra, dentro de `C:\dev\crediflexi` (el prompt debe terminar en `C:\dev\crediflexi>`), estos tres comandos, uno a la vez: `git branch`, `git log --oneline -8` y `git status`.
-2. Verificado con git el 8 de octubre de 2026:
-   - `origin/main` = `654d5a8` (Sprint 2b hasta la etapa D y el tope ZIP).
-   - `main` local = `e84a959`: además trae el Sprint 3a, adelantado solo en local y **sin subir** (5 commits por delante de `origin/main`).
-   - La rama `sprint-4` = `d66a504` sale de ese `main` y trae el Sprint 4, sin fusionar ni subir.
-   - `sprint-3a` no tiene upstream.
-3. Preguntarle a Fernando si ya revisó el Sprint 4 y si quiere fusionarlo a `main` y subir (`git push` solo con su permiso).
+2. Verificado con git el 8 de octubre de 2026 (`git branch -vv`, sin `fetch`):
+   - `main` = `origin/main` = `9c3e7a3`: trae hasta el Sprint 4 completo (commits 1 a 8).
+   - La rama `sprint-5` sale de ese `main` y trae el Sprint 5 (4 commits: `9bb5e82`, `ff5ffa0`, `928a2af` y el de pendientes), sin fusionar ni subir.
+3. Preguntarle a Fernando si ya revisó el Sprint 5 y si quiere fusionarlo a `main` y subir (`git push` solo con su permiso).
 4. Seguir el protocolo de la sección 9.
 
 ## 1. Qué es y para qué sirve
@@ -34,14 +32,17 @@ Una mesa de trabajo interna para cotizar, llevar el pipeline, planear la semana,
 | 2b, etapa A | Tabla `prospectos` con seguridad por fila (migración `20261005120000_prospectos.sql`), 79 pruebas de seguridad nuevas, mutaciones 10 a 18 | ✅ en `main` y en `origin/main` (`f899646`) |
 | Calendario del PDF | Página 2 del PDF: calendario de las dos modalidades y comparación; el PDF pasa a 2 páginas | ✅ en `main` y en `origin/main` (`d3fe522`, `8984277`, `edfed10`, `2d35d74`; fusionado con `6e04a2b`) |
 | 2b, etapas B1, B2, C y D | Sesión con Supabase (proxy, acceso, usuarios sintéticos), seguridad por usuario activo, pipeline (alta, edición, archivo, filtros, semana), Excel del pipeline (exportar e importar) y tope real contra bombas ZIP | ✅ en `main` y en `origin/main` (`161e05c`, `d8ee80e`, `a8fdfc3`, `5c9dd04`, `654d5a8`) |
-| 3a | USD solo para Rami Sise (semilla 0.7); puntos extra y plazo especial; PDF con SIPRES (solo Rami Sise), aviso del fondo, Modalidad 2 anualizada, sin reinversión y terminología "ganancia" (textos 0.5); comparativo de tasas en la página 2 (`seed/benchmark.json` 0.2) | ✅ en `main` local, **sin subir** (`c975adc` a `e84a959`) |
-| 4 | Motor de comisiones (`src/domain/comisiones`, semilla 0.8), simulador `/comisiones` (interno y externo, desbloqueo al 80%, bono, calendario por quincena) y modo reclutamiento `/comisiones/reclutamiento` con el PDF "Propuesta de ingresos" (textos 0.6) | ✅ en la rama `sprint-4` (`ee82598` a `d66a504`), sin fusionar ni subir |
+| 3a | USD solo para Rami Sise (semilla 0.7); puntos extra y plazo especial; PDF con SIPRES (solo Rami Sise), aviso del fondo, Modalidad 2 anualizada, sin reinversión y terminología "ganancia" (textos 0.5); comparativo de tasas en la página 2 (`seed/benchmark.json` 0.2) | ✅ en `main` y en `origin/main` (`c975adc` a `e84a959`) |
+| 4 | Motor de comisiones (`src/domain/comisiones`, semilla 0.8), simulador `/comisiones` (interno y externo, desbloqueo al 80%, bono, calendario por quincena) y modo reclutamiento `/comisiones/reclutamiento` con el PDF "Propuesta de ingresos" (textos 0.6) | ✅ en `main` y en `origin/main` (`ee82598` a `9c3e7a3`) |
+| 5 | Ajustes del dueño: bono de externos reactivado (semilla 0.9, `bonoExterno.ts`); comparativo con el esquema 0.4.1 (dos grupos, fecha por instrumento, interruptores); PDF del prospecto con textos 0.7, logos juntos, SIPRES y disclaimer para las dos entidades; modo reclutamiento con un solo dato, comparativo por plazos, escalera de bonos y PDF de una página (textos 0.7.1) | ✅ en la rama `sprint-5` (`9bb5e82` a commit 4), sin fusionar ni subir |
 
 Respaldo: se hizo un bundle de git (`C:\dev\respaldos\crediflexi-sprint0a.bundle`) y la copia remota privada en GitHub (repositorio `crediflexi-inversiones`). Se verificó una restauración desde GitHub con éxito en octubre 1.
 
 ## 3. Qué está en curso
 
-**Sprint 4** (rama `sprint-4`): terminado; falta la revisión de Fernando y decidir cuándo se fusiona a `main` y se sube. Informe: `C:\dev\informes\paso59-4.md`. Capturas y PDF de muestra: `C:\dev\informes\sprint-4`. Puntos por confirmar con él (también en `PENDIENTES_TECNICOS.md`, (qqq) a (zzz)):
+**Sprint 5** (rama `sprint-5`): terminado; falta la revisión de Fernando y decidir cuándo se fusiona a `main` y se sube. Informes: `C:\dev\informes\paso60-c1.md` a `paso60-c4.md`. Capturas y PDF de muestra: `C:\dev\informes\sprint-5`. Por confirmar (`PENDIENTES_TECNICOS.md`, (eeee) a (llll)): qué banco, qué NASDAQ, qué tasa de Caja Libertad, quién actualiza el benchmark y el periodo nuevo de Nu; el logo definitivo; la aprobación de RH de las frases y de los textos nuevos del modo reclutamiento; la fecha de pago del bono de externos.
+
+**Sprint 4** (ya en `main`). Lo que se decidió entonces sigue vigente:
 - en el modo reclutamiento, el monto de cada plazo se reparte en "inversiones por plazo" (1 a 20) con su aviso; el nombre de quien presenta se limpia, se corta a 60 caracteres y no admite lenguaje de promesa;
 - la red externa ya no suma a la meta (decisión de Fernando, semilla 0.8.1); el gerente tiene un bono de 30% de la comisión N1 de su equipo, por confirmar; su meta se mide sobre su propia captación (confirmado);
 - sueldo base de $15,000 como "Sueldo base (propuesta)", solo para el Ejecutivo interno y nunca en reclutamiento;
@@ -49,11 +50,11 @@ Respaldo: se hizo un bundle de git (`C:\dev\respaldos\crediflexi-sprint0a.bundle
 
 **Sprint 2b, etapa E** (Envío del viernes, Inicio, respaldo y documentación): no se ha hecho.
 
-**Logo de Rami Sise:** `public/logo-rami-sise.png` no existe. Los PDF de Rami Sise salen con el logo de Crediflexi y el de reclutamiento solo con el de Crediflexi (pendiente (kkk)).
+**Logos:** desde el Sprint 5 los dos PDF llevan, con las dos entidades, una sola imagen con los dos logos juntos (`public/logos-crediflexi-rami-sise.png`, provisional; pendiente (ffff)).
 
 ## 4. Orden de lo que sigue
 
-Hecho: 2a, 2b (etapas A a D), 3a y 4 (simulador de comisiones, sin guardar inversiones). Lo que sigue, en el orden original:
+Hecho: 2a, 2b (etapas A a D), 3a, 4 (simulador de comisiones, sin guardar inversiones) y 5 (ajustes del dueño al PDF y al modo reclutamiento). Lo que sigue, en el orden original:
 1. **2b, etapa E:** "Envío del viernes", Inicio, respaldo y documentación. Segundo factor (MFA) antes de salir de localhost.
 2. **2c** **plan semanal** y **proyección** con exportación a Excel.
 3. **2d** **Cartera** (mini CRM) y registro de cierres, con vencimientos a 30, 60 y 90 días. Con ella, las comisiones pueden leer las inversiones reales en vez de simularlas (pendiente (qqq)).
@@ -80,23 +81,23 @@ Hecho: 2a, 2b (etapas A a D), 3a y 4 (simulador de comisiones, sin guardar inver
 - **Decisiones y por qué:** el PowerPoint de ejemplos (`TABLA_RENDIMIENTOS_EJEMPLOS.pptx`) **se descartó**: traía 20% para $30,000 y límites distintos. **No existe el plazo de 36 meses.** USD: solo para Rami Sise (semilla 0.7, Sprint 3a), con prueba de oro propia (`tests/golden/rendimientos_usd.json`).
 - **Ajustes de tasa (Sprint 3a):** puntos extra de 0 a 5.0 en pasos de 0.5 sobre la tasa de tabla de las dos modalidades, con desglose "Tasa de tabla X% + Y puntos extra = Z%"; plazo especial de 1 a 24 meses con tasa acordada por modalidad (aviso no bloqueante si pasa de la máxima de la tabla más 5 puntos). Esos umbrales siguen en código (pendiente (ooo)).
 - **Cálculo:** interés simple. Salidas: pago mensual (monto × tasa ÷ 12), rendimiento anual equivalente (monto × tasa) y ganancia total del plazo (monto × tasa × meses ÷ 12). Cada cifra se redondea una sola vez desde su valor exacto. El anual es un equivalente a 12 meses, no lo que recibe el cliente en plazos menores a 12.
-- **Archivos de datos** (en la rama `sprint-4`):
-  - `seed/parametros_iniciales.json` **v0.8.1**: tasas, tramos, comisiones N1 a N3, incentivos con bono numérico, parámetros de comisión y bono de gerente (sin la red externa).
-  - `seed/textos_cotizacion.json` **v0.6.2**: bloques `pdf_pagina2` (con el comparativo) y `reclutamiento` (con el aviso de inversiones por plazo; sin el aviso interno de revisión).
-  - `seed/benchmark.json` **v0.2**.
+- **Archivos de datos** (en la rama `sprint-5`):
+  - `seed/parametros_iniciales.json` **v0.9**: tasas, tramos, comisiones N1 a N3, incentivos INTERNOS y EXTERNOS con bono numérico (externos: 15,000; 20,000 y 25,000 por captación nueva), parámetros de comisión y bono de gerente.
+  - `seed/textos_cotizacion.json` **v0.7.1**: textos del PDF del prospecto (línea de pago, esquema corto, "Ganancia esperada del periodo", SIPRES y disclaimer para las dos entidades, leyenda del comparativo) y bloque `reclutamiento` nuevo (un solo dato, comparativo por plazos, escalera de bonos, frases pendientes de RH).
+  - `seed/benchmark.json` **v0.4.1**: grupos "Última tasa publicada" y "Rendimiento histórico, no garantizado", fecha por instrumento e interruptores apagados.
   - `tests/golden/rendimientos_pptx.json` **v0.5** (168 celdas; el nombre quedó por historia, ya no trae datos del pptx) y `tests/golden/rendimientos_usd.json` (128 celdas).
-- **Entidades:** CREDIFLEXI, S.A.P.I. DE C.V. y RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R. Hoy usan la misma tabla de tasas en pesos. Logo del PDF: siempre Crediflexi (el de Rami Sise falta). Pitágoras es la marca comercial de los servicios financieros.
+- **Entidades:** CREDIFLEXI, S.A.P.I. DE C.V. y RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R. Hoy usan la misma tabla de tasas en pesos. Logo del PDF: los dos logos juntos, con las dos entidades (provisional). Pitágoras es la marca comercial de los servicios financieros.
 - **PDF de la cotización:** Carta, **exactamente 2 páginas** ("Página N de 2"), fuente Nunito (licencia OFL).
-  - Página 1: cifra principal, la línea "Pago de la ganancia: cada mes / al vencimiento", resumen, resultados y "Cómo se calculó".
-  - Pie de las dos páginas: aviso del fondo (acción de $1,000.00 MXN) y, solo con Rami Sise, la línea SIPRES.
-  - **Sin promesas propias**; una prueba vigila el lenguaje prohibido, con la línea SIPRES exacta como única excepción.
+  - Página 1: cifra principal, la línea "Pago de rendimiento…" con el plazo, "Esquema: Mensual / Al final del plazo", resultados ("Ganancia esperada del periodo (…)") y "Cómo se calculó".
+  - Pie de las dos páginas, con las dos entidades: la línea SIPRES y el disclaimer del fondo (acción de $1,000.00 MXN, tasas sujetas a cambio).
+  - **Sin promesas propias**; una prueba vigila el lenguaje prohibido. Únicas excepciones exactas: la línea SIPRES, el disclaimer y las dos negaciones del grupo histórico del comparativo.
 - **Página 2 del PDF:**
   - Las dos modalidades lado a lado, con su franja de tiempo. Modalidad 1 con su tabla mes a mes; Modalidad 2 anualizada, sin filas.
   - Comparación de modalidades.
-  - Comparativo de tasas (CETES, Nu, Mercado Pago): se omite en USD y con datos de más de 30 días.
+  - Comparativo de tasas (CETES 1 año, Mercado Pago, Nu, pagaré Inbursa; histórico: S&P 500 en dólares y BlackRock), con la fecha de cada instrumento junto a su barra: se omite en USD.
   - Ya **no** lleva el escenario de reinversión (`escenario.ts` quedó sin usar).
   - Bandas #00860D (verde) y #8F7104 (mostaza), con 4.5:1 de contraste con texto blanco.
-- **PDF "Propuesta de ingresos"** (modo reclutamiento): una página, con el aviso fijo "no es una oferta de empleo ni una garantía de ingresos".
+- **PDF "Propuesta de ingresos"** (modo reclutamiento): una página, con la cifra grande (comisión más bono), el comparativo por plazos, la escalera de bonos con el aviso de incorporación y el aviso fijo "no es una oferta de empleo ni una garantía de ingresos".
 - **Protecciones del cotizador:** solo atiende a Host local (no es seguridad real, es un seguro contra despliegue accidental), `npm run dev` y `start` escuchan solo en 127.0.0.1, nada de lo escrito se guarda, el PDF recalcula en el servidor y detecta si las tasas cambiaron entre la vista previa y la descarga.
 
 ## 7. Formatos de Excel (cada viernes por correo)
