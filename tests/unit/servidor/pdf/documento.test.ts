@@ -57,8 +57,6 @@ const TEXTOS_PAGINA2 = [
   P2.modalidad2,
   P2.tasaAnual,
   P2.capitalInicial,
-  P2.gananciaAnualEquivalente,
-  P2.gananciaPlazo,
   P2.totalCapitalGanancia,
   P2.columnaGananciaPeriodo,
   P2.columnaGananciaAcumulada,
@@ -68,17 +66,30 @@ const TEXTOS_PAGINA2 = [
   P2.franjaGananciaCapital,
 ];
 
-/** La línea SIPRES exacta de Rami Sise: la ÚNICA excepción a la revisión de lenguaje. */
-const LINEA_SIPRES = textos.pieSipres.RAMI_SISE;
+/** La línea SIPRES exacta (Sprint 5: en el pie de las dos entidades). */
+const LINEA_SIPRES =
+  "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES";
+
+/** El disclaimer exacto del pie de las dos páginas, para las dos entidades. */
+const DISCLAIMER =
+  "Crediflexi, fondo de inversión privado, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R., inscrita en el SIPRES de la CONDUSEF " +
+  "y sujeta a las disposiciones aplicables. Por ser un fondo de inversión privado, para invertir se requiere adquirir una acción de " +
+  "$1,000.00 MXN. Las tasas están sujetas a cambio.";
 
 const RE_PROHIBIDO =
   /(?<![\p{L}\p{N}])(garantiz\p{L}*|asegur\p{L}*|sin riesgo|libre de impuestos|neta|neto|sin comisiones|supervis\p{L}*|promesa|recib(es|ir[aá]s)|CNBV|CONDUSEF|SIPRES|SHCP)(?![\p{L}\p{N}])/iu;
 
 /**
- * Únicas excepciones exactas a la revisión de lenguaje: la línea SIPRES y las
- * dos negaciones del grupo histórico del comparativo (seed/benchmark.json).
+ * Únicas excepciones exactas a la revisión de lenguaje: la línea SIPRES y el
+ * disclaimer (CONDUSEF y SIPRES solo ahí) y las dos negaciones del grupo
+ * histórico del comparativo (seed/benchmark.json).
  */
-const EXCEPCIONES_EXACTAS = [LINEA_SIPRES, "Rendimiento histórico, no garantizado", "Rendimientos pasados no garantizan resultados futuros"];
+const EXCEPCIONES_EXACTAS = [
+  LINEA_SIPRES,
+  DISCLAIMER,
+  "Rendimiento histórico, no garantizado",
+  "Rendimientos pasados no garantizan resultados futuros",
+];
 
 /** El texto sin las excepciones exactas: lo que queda debe pasar la revisión de lenguaje. */
 const sinLineaSipres = (texto: string) => EXCEPCIONES_EXACTAS.reduce((x, e) => x.split(e).join(" "), texto);
@@ -89,9 +100,9 @@ const CASOS = [
     razonSocial: "CREDIFLEXI, S.A.P.I. DE C.V.",
     esquema: "mensual" as const,
     cifras: ["$23,750.00", "$285,000.00"],
-    etiquetas: ["Pago mensual", "Ganancia anual equivalente (12 meses)", "Ganancia total en el plazo"],
-    lineaPago: "Pago de la ganancia: cada mes",
-    sipres: false,
+    etiquetas: ["Ganancia esperada del periodo (1 mes)", "Ganancia esperada del periodo (12 meses)", "Ganancia esperada del periodo (plazo de 12 meses)"],
+    lineaPago: "Pago de rendimiento mensual: cada mes, del mes 1 al mes 12",
+    esquemaCorto: "Mensual",
   },
   {
     entidad: "RAMI_SISE",
@@ -99,12 +110,12 @@ const CASOS = [
     esquema: "final_del_plazo" as const,
     cifras: ["$26,250.00", "$315,000.00"],
     etiquetas: [
-      "Rendimiento mensual equivalente (se paga al final del plazo)",
-      "Ganancia anual equivalente (12 meses)",
-      "Ganancia total al final del plazo",
+      "Ganancia esperada del periodo (1 mes), se acumula y se paga al final del plazo",
+      "Ganancia esperada del periodo (12 meses)",
+      "Ganancia esperada del periodo (plazo de 12 meses)",
     ],
-    lineaPago: "Pago de la ganancia: al vencimiento",
-    sipres: true,
+    lineaPago: "Pago de rendimiento: al final del plazo (mes 12), junto con el capital",
+    esquemaCorto: "Al final del plazo",
   },
 ];
 
@@ -145,13 +156,37 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
     expect(porPagina[1]).toContain(`${P2.pagina} 2 ${P2.paginaDe} 2`);
   });
 
-  it("el pie de las dos páginas: aviso del fondo siempre; SIPRES solo con RAMI_SISE", { timeout: TIEMPO }, async () => {
+  it("el pie de las dos páginas trae la línea SIPRES y el disclaimer exactos, sin 'supervisada por todas las autoridades'", { timeout: TIEMPO }, async () => {
     const { porPagina } = await render(modelo(caso.entidad, caso.esquema));
     for (const p of porPagina) {
-      expect(p).toContain(textos.pieAvisoFondo);
-      if (caso.sipres) expect(p).toContain(LINEA_SIPRES);
-      else expect(p).not.toMatch(/SIPRES|CONDUSEF/i);
+      expect(p).toContain(LINEA_SIPRES);
+      expect(p).toContain(DISCLAIMER);
+      expect(p).not.toMatch(/supervisad|todas las autoridades/i);
+      // CONDUSEF y SIPRES solo dentro de esos dos textos.
+      expect(sinLineaSipres(p)).not.toMatch(/CONDUSEF|SIPRES/i);
     }
+  });
+
+  it("el esquema se escribe corto en la página 1 y nunca 'Rendimientos mensuales'", { timeout: TIEMPO }, async () => {
+    const { porPagina } = await render(modelo(caso.entidad, caso.esquema));
+    expect(porPagina[0]).toContain(`Esquema ${caso.esquemaCorto}`);
+    expect(porPagina[0]).not.toContain("Rendimientos mensuales");
+    expect(porPagina[0]).not.toMatch(/Pago de la ganancia|Pago mensual|al vencimiento/);
+  });
+
+  it("la página 2: resumen de las tarjetas con 'Ganancia esperada del periodo' y la tabla con sus encabezados de siempre", { timeout: TIEMPO }, async () => {
+    const { porPagina } = await render(modelo(caso.entidad, caso.esquema));
+    for (const t of [
+      "Ganancia esperada del periodo (12 meses)",
+      "Ganancia esperada del periodo (plazo de 12 meses)",
+      "Ganancia del periodo",
+      "Ganancia acumulada",
+      "Pago de rendimiento mensual: cada mes, del mes 1 al mes 12",
+      "Pago de rendimiento: al final del plazo (mes 12), junto con el capital",
+    ]) {
+      expect(porPagina[1]).toContain(t);
+    }
+    expect(porPagina[1]).not.toMatch(/Pago de la ganancia|Ganancia anual equivalente|Ganancia del plazo/);
   });
 
   it("la página 2 no trae restos técnicos ni lenguaje prohibido (fuera de la línea SIPRES)", { timeout: TIEMPO }, async () => {
@@ -179,7 +214,7 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
       "Tasa anual",
       caso.esquema === "mensual" ? "19.00%" : "21.00%",
       "Esquema",
-      m.solicitud.esquema,
+      caso.esquemaCorto,
       "Tus resultados",
       "Cómo se calculó",
     ]) {
@@ -255,7 +290,7 @@ describe("PDF real: la revisión de lenguaje detecta lo prohibido", () => {
     expect(t).toMatch(RE_PROHIBIDO);
   });
 
-  it.each(["Netflix", "planeta", "Rendimientos mensuales", "Pago de la ganancia: cada mes"])("no confunde %s", (t) => {
+  it.each(["Netflix", "planeta", "Rendimientos mensuales", "Pago de rendimiento mensual: cada mes, del mes 1 al mes 12"])("no confunde %s", (t) => {
     expect(t).not.toMatch(RE_PROHIBIDO);
   });
 
@@ -264,6 +299,13 @@ describe("PDF real: la revisión de lenguaje detecta lo prohibido", () => {
     const alterada = LINEA_SIPRES.replace("696338", "000000");
     expect(sinLineaSipres(alterada)).toMatch(RE_PROHIBIDO);
     expect(sinLineaSipres(`${LINEA_SIPRES} Supervisada por la CNBV.`)).toMatch(RE_PROHIBIDO);
+  });
+
+  it("el disclaimer se perdona solo exacto: alterado, o con CONDUSEF fuera de él, ya no", () => {
+    expect(sinLineaSipres(DISCLAIMER)).not.toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres(DISCLAIMER.replace("sujeta a las disposiciones aplicables", "supervisada por todas las autoridades"))).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres(`${DISCLAIMER} Registrada ante la CONDUSEF.`)).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres("Inscrita en el SIPRES")).toMatch(RE_PROHIBIDO);
   });
 
   it("las negaciones del grupo histórico se perdonan solo exactas; \"garantizado\" en cualquier otro lugar sigue prohibido", () => {
@@ -278,8 +320,8 @@ describe("PDF real: la revisión de lenguaje detecta lo prohibido", () => {
 
 describe("PDF real: las líneas de cuándo se paga la ganancia llevan el N correcto", () => {
   const lineas = (n: number) => [
-    `Pago de la ganancia: cada mes, del mes 1 al mes ${n}`,
-    `Pago de la ganancia: al vencimiento (mes ${n}), junto con el capital`,
+    `Pago de rendimiento mensual: cada mes, del mes 1 al mes ${n}`,
+    `Pago de rendimiento: al final del plazo (mes ${n}), junto con el capital`,
     `Capital: al vencimiento (mes ${n})`,
   ];
 
@@ -331,7 +373,11 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
     expect(paginas).toBe(2);
     const p2 = porPagina[1];
     expect(p2).toContain(P2.benchmarkTitulo);
+    expect(p2).toContain(
+      "Última tasa publicada de cada instrumento; la fecha de cada uno se indica junto a su barra. Actualizado al 8 de octubre de 2026.",
+    );
     expect(p2).toContain("Fuentes: Cetesdirecto, Mercado Pago, Nu México, Inbursa, BlackRock y State Street (S&P 500)");
+    expect(p2).toContain("en dólares (USD)");
     for (const t of [
       "Última tasa publicada",
       "Rendimiento histórico, no garantizado",
@@ -405,7 +451,8 @@ describe("PDF real: exactamente dos páginas en los extremos", () => {
     for (const t of TEXTOS_PAGINA2) expect(porPagina[1]).toContain(t);
     expect(porPagina[1]).toContain("$99,999,999.99");
     expect(porPagina[1]).toContain("Capital: al vencimiento (mes 24)");
-    expect(porPagina[1]).toContain(textos.pieAvisoFondo);
+    expect(porPagina[1]).toContain(DISCLAIMER);
+    expect(porPagina[1]).toContain(LINEA_SIPRES);
   });
 
   it("USD de Rami Sise a 24 meses con los opcionales al tope: dos páginas", { timeout: TIEMPO }, async () => {
@@ -421,7 +468,9 @@ describe("PDF real: exactamente dos páginas en los extremos", () => {
     const m = modeloAjustado("RAMI_SISE", "final_del_plazo", { tipo: "especial", plazo: 24, tasas: { mensual: "17", final_del_plazo: "19" } }, "99999999.99", "MXN", TOPE);
     const { paginas, porPagina } = await render(m);
     expect(paginas).toBe(2);
-    expect(porPagina[1]).toContain("Pago de la ganancia: cada mes, del mes 1 al mes 24");
+    expect(porPagina[1]).toContain("Pago de rendimiento mensual: cada mes, del mes 1 al mes 24");
+    expect(porPagina[0]).toContain("Pago de rendimiento: al final del plazo (mes 24), junto con el capital");
+    expect(porPagina[0]).toContain("Ganancia esperada del periodo (plazo de 24 meses)");
   });
 
   // Peor caso de la página 1: SIPRES, desglose de puntos y opcionales al tope.
@@ -437,8 +486,9 @@ describe("PDF real: exactamente dos páginas en los extremos", () => {
     expect(porPagina[0]).toContain(m.desgloseTasa);
     expect(porPagina[0]).toContain(m.pie.notaAdicional);
     expect(porPagina[0]).toContain(LINEA_SIPRES);
-    expect(porPagina[0]).toContain(textos.pieAvisoFondo);
+    expect(porPagina[0]).toContain(DISCLAIMER);
     expect(porPagina[1]).toContain(LINEA_SIPRES);
+    expect(porPagina[1]).toContain(DISCLAIMER);
   });
 
   it.each(CASOS)("$entidad con todos los opcionales vacíos sigue en dos páginas y sin líneas opcionales", { timeout: TIEMPO }, async (caso) => {

@@ -50,14 +50,15 @@ interface Muestra {
 }
 
 const SIN_AJUSTE: Ajuste = { tipo: "tabla", puntos: "0" };
-const DIA_DE_LOS_DATOS = new Date("2026-10-07T12:00:00-06:00");
+const DIA_DE_LOS_DATOS = new Date("2026-10-08T12:00:00-06:00");
 
 const MUESTRAS: readonly Muestra[] = [
   { archivo: "a-crediflexi-mensual-1500000-12m-mas1", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1500000", plazo: 12, ajuste: { tipo: "tabla", puntos: "1.0" }, ahora: DIA_DE_LOS_DATOS },
   { archivo: "b-ramisise-usd-mensual-10000-12m", entidad: "RAMI_SISE", moneda: "USD", esquema: "mensual", monto: "10000", plazo: 12, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
   { archivo: "c-crediflexi-especial-100000-9m", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "100000", plazo: 9, ajuste: { tipo: "especial", plazo: 9, tasas: { mensual: "17", final_del_plazo: "19" } }, ahora: DIA_DE_LOS_DATOS },
-  // 31 días después de actualizado_al: el comparativo se omite por antigüedad.
-  { archivo: "d-crediflexi-mensual-1500000-12m-benchmark-viejo", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1500000", plazo: 12, ajuste: SIN_AJUSTE, ahora: new Date("2026-11-07T12:00:00-06:00") },
+  // Un mes después de actualizado_al: sin tope de antigüedad (interruptor apagado), el comparativo se dibuja con la fecha de cada instrumento.
+  { archivo: "d-crediflexi-mensual-1500000-12m-un-mes-despues", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1500000", plazo: 12, ajuste: SIN_AJUSTE, ahora: new Date("2026-11-08T12:00:00-06:00") },
+  { archivo: "g-ramisise-usd-final-50000-24m", entidad: "RAMI_SISE", moneda: "USD", esquema: "final_del_plazo", monto: "50000", plazo: 24, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
   { archivo: "e-ramisise-final-500000-24m", entidad: "RAMI_SISE", moneda: "MXN", esquema: "final_del_plazo", monto: "500000", plazo: 24, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
   { archivo: "f-crediflexi-mensual-30000-6m", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "30000", plazo: 6, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
 ];

@@ -60,7 +60,7 @@ describe("modeloPagina2: tarjetas de las dos modalidades", () => {
     expect(m1.detalle?.etiquetaTasa).toBe("TASA ANUAL");
     expect(m1.detalle?.renglones).toEqual([
       { etiqueta: "Capital inicial", cifra: "$1,000,000.00" },
-      { etiqueta: "Ganancia del plazo", cifra: "$90,000.00" },
+      { etiqueta: "Ganancia esperada del periodo (plazo de 6 meses)", cifra: "$90,000.00" },
       { etiqueta: "Total capital + ganancia", cifra: "$1,090,000.00" },
     ]);
     expect(m1.detalle?.filas).toHaveLength(6);
@@ -73,8 +73,8 @@ describe("modeloPagina2: tarjetas de las dos modalidades", () => {
     // Anualizada: 1,000,000 × 0.20 = 200,000.00; ganancia del plazo 1,000,000 × 0.20 × 6 ÷ 12 = 100,000.00.
     expect(m2.detalle?.renglones).toEqual([
       { etiqueta: "Capital inicial", cifra: "$1,000,000.00" },
-      { etiqueta: "Ganancia anual equivalente (12 meses)", cifra: "$200,000.00" },
-      { etiqueta: "Ganancia del plazo", cifra: "$100,000.00" },
+      { etiqueta: "Ganancia esperada del periodo (12 meses)", cifra: "$200,000.00" },
+      { etiqueta: "Ganancia esperada del periodo (plazo de 6 meses)", cifra: "$100,000.00" },
       { etiqueta: "Total capital + ganancia", cifra: "$1,100,000.00" },
     ]);
     expect(m2.detalle?.filas).toEqual([]);
@@ -83,11 +83,11 @@ describe("modeloPagina2: tarjetas de las dos modalidades", () => {
   it.each([6, 12, 24])("las líneas de cuándo se paga la ganancia y el capital llevan el mes %s", (plazo) => {
     const [m1, m2] = modelo("1000000", plazo, "mensual").tarjetas;
     expect(m1.detalle?.lineas).toEqual([
-      `Pago de la ganancia: cada mes, del mes 1 al mes ${plazo}`,
+      `Pago de rendimiento mensual: cada mes, del mes 1 al mes ${plazo}`,
       `Capital: al vencimiento (mes ${plazo})`,
     ]);
     expect(m2.detalle?.lineas).toEqual([
-      `Pago de la ganancia: al vencimiento (mes ${plazo}), junto con el capital`,
+      `Pago de rendimiento: al final del plazo (mes ${plazo}), junto con el capital`,
       `Capital: al vencimiento (mes ${plazo})`,
     ]);
   });
@@ -153,7 +153,7 @@ describe("modeloPagina2: plazo especial", () => {
   it("la tarjeta dice TASA ACORDADA y las líneas llevan el mes 9", () => {
     const [m1] = modeloAjustado("100000", "mensual", ESPECIAL_9).tarjetas;
     expect(m1.detalle?.etiquetaTasa).toBe(T.tasaAcordada);
-    expect(m1.detalle?.lineas).toEqual(["Pago de la ganancia: cada mes, del mes 1 al mes 9", "Capital: al vencimiento (mes 9)"]);
+    expect(m1.detalle?.lineas).toEqual(["Pago de rendimiento mensual: cada mes, del mes 1 al mes 9", "Capital: al vencimiento (mes 9)"]);
   });
 
   it("la modalidad sin tasa acordada lleva su nota y la comparación se omite con su nota", () => {

@@ -6,35 +6,29 @@ import type { ModeloPdf } from "../../aplicacion/modelo";
 import type { ModeloReclutamiento } from "../../aplicacion/reclutamiento";
 import { DocumentoCotizacion } from "./DocumentoCotizacion";
 import { DocumentoReclutamiento } from "./DocumentoReclutamiento";
+import type { LogoPdf } from "./Encabezado";
 import { registrarFuente } from "./fuente";
+import { dimensionesPng } from "./png";
 
-export const RUTA_LOGO = path.join(process.cwd(), "public", "logo-crediflexi.png");
-/** Aún no existe (PENDIENTES_TECNICOS.md): mientras falte, el PDF de reclutamiento solo lleva el de Crediflexi. */
-export const RUTA_LOGO_RAMI_SISE = path.join(process.cwd(), "public", "logo-rami-sise.png");
+/** Los dos logos juntos, en el encabezado de los dos PDF (nombre provisional; se puede reemplazar el archivo). */
+export const RUTA_LOGOS = path.join(process.cwd(), "public", "logos-crediflexi-rami-sise.png");
+
+/** El logo como bytes (react-pdf toma una ruta de Windows, C:\..., como URL) con su medida. */
+async function leerLogo(): Promise<LogoPdf> {
+  const datos = await readFile(RUTA_LOGOS);
+  return { datos, ...dimensionesPng(datos) };
+}
 
 /** Convierte el modelo en los bytes del PDF. No guarda nada en disco. */
 export async function renderizarPdf(modelo: ModeloPdf): Promise<Uint8Array> {
   registrarFuente();
-  // El logo va como bytes: react-pdf toma una ruta de Windows (C:\...) como URL.
-  const logo = await readFile(RUTA_LOGO);
-  const bytes = await renderToBuffer(DocumentoCotizacion({ modelo, logo }));
+  const bytes = await renderToBuffer(DocumentoCotizacion({ modelo, logo: await leerLogo() }));
   return new Uint8Array(bytes);
 }
 
-/** El logo de Rami Sise si el archivo existe; null si no (sin marcador). Otro error sí se lanza. */
-async function logoOpcional(ruta: string): Promise<Buffer | null> {
-  try {
-    return await readFile(ruta);
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
-    throw e;
-  }
-}
-
 /** "Propuesta de ingresos" (modo reclutamiento) en bytes. No guarda nada en disco. */
-export async function renderizarReclutamiento(modelo: ModeloReclutamiento, rutaRamiSise: string = RUTA_LOGO_RAMI_SISE): Promise<Uint8Array> {
+export async function renderizarReclutamiento(modelo: ModeloReclutamiento): Promise<Uint8Array> {
   registrarFuente();
-  const [crediflexi, ramiSise] = await Promise.all([readFile(RUTA_LOGO), logoOpcional(rutaRamiSise)]);
-  const bytes = await renderToBuffer(DocumentoReclutamiento({ modelo, logos: { crediflexi, ramiSise } }));
+  const bytes = await renderToBuffer(DocumentoReclutamiento({ modelo, logo: await leerLogo() }));
   return new Uint8Array(bytes);
 }

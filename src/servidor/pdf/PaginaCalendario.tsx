@@ -1,5 +1,5 @@
 import "server-only";
-import { Circle, Image, Line, Path, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
+import { Circle, Line, Path, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import { Fragment } from "react";
 import { LIENZO_BENCHMARK, type BarraBenchmark, type BenchmarkPdf, type GrupoBenchmark } from "../../aplicacion/benchmark";
 import {
@@ -13,6 +13,7 @@ import {
   type TrazoSerie,
 } from "../../aplicacion/pagina2";
 import { COLOR_PDF as COLOR } from "./colores";
+import { Logo, type LogoPdf } from "./Encabezado";
 import { FAMILIA } from "./fuente";
 
 // Página 2 del PDF: la modalidad 1 con su tabla mes a mes a la izquierda; a la
@@ -23,8 +24,6 @@ import { FAMILIA } from "./fuente";
 // propios. Ningún texto nuevo baja de 7.5 pt.
 
 const ALTO_LOGO = 26;
-/** Proporción del PNG del logo (1834 × 539). */
-const ANCHO_LOGO = (ALTO_LOGO * 1834) / 539;
 /** Alto de cada fila de la tabla y de los renglones de las tarjetas. */
 const ALTO_FILA = 11;
 /** Ancho de cada columna: la mitad del ancho útil (540 pt) menos la separación. */
@@ -61,7 +60,6 @@ const e = StyleSheet.create({
     borderBottomWidth: 1.5,
     borderBottomColor: COLOR.marino,
   },
-  logo: { height: ALTO_LOGO, width: ANCHO_LOGO, backgroundColor: COLOR.blanco },
   titulo: { fontSize: 14, fontWeight: "bold", color: COLOR.marino },
 
   columnas: { marginTop: 10, flexDirection: "row", gap: 12, alignItems: "flex-start" },
@@ -91,12 +89,15 @@ const e = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    height: ALTO_FILA,
+    // Altura mínima: una etiqueta larga junto a una cifra larga (USD) se parte en dos líneas en vez de encimarse.
+    minHeight: ALTO_FILA,
+    gap: 6,
     fontSize: 8,
     lineHeight: 1,
   },
   renglonTotal: { fontWeight: "bold", borderTopWidth: 0.75, borderTopColor: COLOR.linea },
-  renglonCifra: { fontWeight: "bold" },
+  renglonEtiqueta: { flexShrink: 1 },
+  renglonCifra: { fontWeight: "bold", flexShrink: 0 },
   linea: { fontSize: 7.5, color: COLOR.marino, lineHeight: 1.3 },
   franja: { marginTop: 3, marginBottom: 4 },
 
@@ -145,7 +146,7 @@ const e = StyleSheet.create({
 
   /** Empuja el pie al final de la hoja. */
   relleno: { flexGrow: 1, minHeight: 8 },
-  pie: { fontSize: 8, color: COLOR.gris, lineHeight: 1.3 },
+  pie: { fontSize: 7.5, color: COLOR.gris, lineHeight: 1.2 },
 });
 
 const textoSvg = (fontSize: number, fontWeight: "normal" | "bold" = "normal") => ({ fontSize, fontFamily: FAMILIA, fontWeight });
@@ -195,7 +196,7 @@ function Tarjeta({ t, textos }: { t: TarjetaPdf; textos: ModeloPagina2["textos"]
             <View style={e.renglones}>
               {d.renglones.map((r, i) => (
                 <View key={r.etiqueta} style={[e.renglon, ...(i === d.renglones.length - 1 ? [e.renglonTotal] : [])]}>
-                  <Text>{r.etiqueta}</Text>
+                  <Text style={e.renglonEtiqueta}>{r.etiqueta}</Text>
                   <Text style={e.renglonCifra}>{r.cifra}</Text>
                 </View>
               ))}
@@ -302,8 +303,8 @@ function Grafica({ g }: { g: GraficaPdf }) {
 }
 
 /** Alto de una fila con su fecha debajo (dos líneas de 7.5 pt). */
-const ALTO_BARRA_CON_FECHA = 18.5;
-const altoFila = (x: BarraBenchmark) => (x.fecha === null && x.periodo === null ? ALTO_BARRA : ALTO_BARRA_CON_FECHA);
+const ALTO_BARRA_CON_FECHA = 20;
+const altoFila = (x: BarraBenchmark) => (x.detalle === null ? ALTO_BARRA : ALTO_BARRA_CON_FECHA);
 
 /**
  * Un grupo del comparativo: título y barras de mayor a menor, cada una con su
@@ -321,7 +322,6 @@ function GrupoBarras({ g }: { g: GrupoBenchmark }) {
       <Svg width={ANCHO_COLUMNA} height={alturas.reduce((a, b) => a + b, 0)} style={e.barras}>
         {g.barras.map((x, i) => {
           const y = y0[i];
-          const detalle = [x.fecha, x.periodo].filter((d) => d !== null).join(" · ");
           return (
             <Fragment key={x.nombre}>
               <Text x={0} y={y + 7.5} fill={COLOR.marino} style={textoSvg(7.5, x.tuya ? "bold" : "normal")}>
@@ -341,9 +341,9 @@ function GrupoBarras({ g }: { g: GrupoBenchmark }) {
               <Text x={ANCHO_COLUMNA} y={y + 7.5} textAnchor="end" fill={COLOR.marino} style={textoSvg(7.5, x.tuya ? "bold" : "normal")}>
                 {x.tasa}
               </Text>
-              {detalle !== "" && (
-                <Text x={0} y={y + 17} fill={COLOR.gris} style={textoSvg(7.5)}>
-                  {detalle}
+              {x.detalle !== null && (
+                <Text x={0} y={y + 17.5} fill={COLOR.gris} style={textoSvg(7.5)}>
+                  {x.detalle}
                 </Text>
               )}
             </Fragment>
@@ -406,25 +406,26 @@ export function PaginaCalendario({
   pie,
 }: {
   modelo: ModeloPagina2 & { readonly benchmark: BenchmarkPdf };
-  logo: Buffer;
-  pie: { readonly sipres: string | null; readonly avisoFondo: string };
+  logo: LogoPdf;
+  pie: { readonly sipres: string; readonly avisoFondo: string };
 }) {
   const { textos } = modelo;
   const [m1, m2] = modelo.tarjetas;
   return (
     <>
       <View style={e.encabezado}>
-        {/* El PNG tiene fondo blanco sólido: siempre va sobre blanco. */}
-        {/* eslint-disable-next-line jsx-a11y/alt-text -- Image de react-pdf, no de HTML */}
-        <Image src={{ data: logo, format: "png" }} style={e.logo} />
+        <Logo logo={logo} alto={ALTO_LOGO} />
         <Text style={e.titulo}>{textos.titulo}</Text>
       </View>
 
       <View style={e.columnas}>
         <View style={e.columna}>
           <Tarjeta t={m1} textos={textos} />
-          <Text style={e.notaCentavos}>{textos.notaCentavos}</Text>
-          <NotasBenchmark b={modelo.benchmark} />
+          {/* Juntas, sin el espacio entre bloques de la columna. */}
+          <View>
+            <Text style={e.notaCentavos}>{textos.notaCentavos}</Text>
+            <NotasBenchmark b={modelo.benchmark} />
+          </View>
         </View>
         <View style={e.columna}>
           <Tarjeta t={m2} textos={textos} />
@@ -437,7 +438,7 @@ export function PaginaCalendario({
 
       <View style={e.relleno} />
       <View>
-        {pie.sipres !== null && <Text style={e.pie}>{pie.sipres}</Text>}
+        <Text style={e.pie}>{pie.sipres}</Text>
         <Text style={e.pie}>{pie.avisoFondo}</Text>
       </View>
     </>

@@ -117,6 +117,14 @@ describe("modeloBenchmark con el archivo tal cual (interruptores apagados)", () 
     ]);
   });
 
+  it("la línea de detalle junta fecha, periodo y, en dólares, la moneda (S&P 500); tu tasa no lleva", () => {
+    const g = grafica(modeloBenchmark(bench, MXN_20, HOY, t));
+    expect(g.grupos[1].barras[0].detalle).toBe("al corte del 30 de junio de 2026 · 10 años al 30/06/2026 · en dólares (USD)");
+    expect(g.grupos[1].barras[1].detalle).toBe("al corte del 31 de diciembre de 2025 · 12 meses al 31/12/2025");
+    expect(g.grupos[0].barras[3].detalle).toBe("publicada el 8 de octubre de 2026");
+    expect(g.grupos[0].barras[0].detalle).toBeNull();
+  });
+
   it("cada grupo lleva sus propios avisos", () => {
     const g = grafica(modeloBenchmark(bench, MXN_20, HOY, t));
     expect(g.grupos[0].leyendas).toEqual(bench.avisos.tasa_vigente);

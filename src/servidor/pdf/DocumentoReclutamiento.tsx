@@ -1,7 +1,8 @@
 import "server-only";
-import { Document, Image, Page, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
+import { Document, Page, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import type { ModeloReclutamiento } from "../../aplicacion/reclutamiento";
 import { COLOR_PDF as COLOR } from "./colores";
+import { Logo, type LogoPdf } from "./Encabezado";
 import { FAMILIA } from "./fuente";
 
 // "Propuesta de ingresos" del modo reclutamiento: una sola hoja carta. Solo
@@ -11,8 +12,6 @@ import { FAMILIA } from "./fuente";
 const MARGEN = 36;
 const ANCHO_UTIL = 612 - 2 * MARGEN;
 const ALTO_LOGO = 40;
-/** Proporción del PNG del logo de Crediflexi (1834 × 539). */
-const ANCHO_LOGO = (ALTO_LOGO * 1834) / 539;
 const SEPARACION = 10;
 const ANCHO_TARJETA = (ANCHO_UTIL - 2 * SEPARACION) / 3;
 
@@ -32,9 +31,6 @@ const e = StyleSheet.create({
     lineHeight: 1.3,
   },
   encabezado: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  logos: { flexDirection: "row", alignItems: "center", gap: 16 },
-  logo: { height: ALTO_LOGO, width: ANCHO_LOGO, backgroundColor: COLOR.blanco },
-  logoSecundario: { height: ALTO_LOGO, maxWidth: 160, objectFit: "contain", backgroundColor: COLOR.blanco },
   fecha: { alignItems: "flex-end" },
   fechaEtiqueta: { fontSize: 8, color: COLOR.gris },
   fechaValor: { fontSize: 11, color: COLOR.gris, fontWeight: "bold" },
@@ -82,27 +78,13 @@ const e = StyleSheet.create({
   },
 });
 
-export interface LogosReclutamiento {
-  readonly crediflexi: Buffer;
-  /** null si public/logo-rami-sise.png no existe: entonces no se dibuja ningún marcador. */
-  readonly ramiSise: Buffer | null;
-}
-
-export function DocumentoReclutamiento({ modelo: m, logos }: { modelo: ModeloReclutamiento; logos: LogosReclutamiento }) {
+export function DocumentoReclutamiento({ modelo: m, logo }: { modelo: ModeloReclutamiento; logo: LogoPdf }) {
   const t = m.textos;
   return (
     <Document title={t.pdfTitulo} language="es-MX">
       <Page size="LETTER" style={e.pagina}>
         <View style={e.encabezado}>
-          <View style={e.logos}>
-            {/* Los PNG tienen fondo blanco sólido: siempre van sobre blanco. */}
-            {/* eslint-disable-next-line jsx-a11y/alt-text -- Image de react-pdf, no de HTML */}
-            <Image src={{ data: logos.crediflexi, format: "png" }} style={e.logo} />
-            {logos.ramiSise !== null && (
-              // eslint-disable-next-line jsx-a11y/alt-text -- Image de react-pdf, no de HTML
-              <Image src={{ data: logos.ramiSise, format: "png" }} style={e.logoSecundario} />
-            )}
-          </View>
+          <Logo logo={logo} alto={ALTO_LOGO} />
           <View style={e.fecha}>
             <Text style={e.fechaEtiqueta}>{t.pdfFecha}</Text>
             <Text style={e.fechaValor}>{m.fecha}</Text>

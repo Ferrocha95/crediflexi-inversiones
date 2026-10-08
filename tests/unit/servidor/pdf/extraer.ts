@@ -48,3 +48,38 @@ export async function paginaEnPng(bytes: Uint8Array, numero: number, escala: num
   await tarea.destroy();
   return lienzo.encode("png");
 }
+
+/** Cada texto de una página con su tamaño de letra en puntos (escala de la matriz de texto). */
+export async function textosConTamano(bytes: Uint8Array, numero: number): Promise<readonly { readonly texto: string; readonly tamano: number }[]> {
+  const tarea = getDocument({ data: new Uint8Array(bytes), verbosity: 0 });
+  const contenido = await (await (await tarea.promise).getPage(numero)).getTextContent();
+  const items = contenido.items.flatMap((item) =>
+    "str" in item && item.str.trim() !== "" ? [{ texto: item.str, tamano: Math.hypot(item.transform[0], item.transform[1]) }] : [],
+  );
+  await tarea.destroy();
+  return items;
+}
+
+/** Las imágenes que se pintan en cada página, con su tamaño en píxeles (la máscara de transparencia no cuenta). */
+export async function imagenesPorPagina(bytes: Uint8Array): Promise<readonly (readonly { readonly ancho: number; readonly alto: number }[])[]> {
+  const { OPS } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const tarea = getDocument({ data: new Uint8Array(bytes), verbosity: 0 });
+  const pdf = await tarea.promise;
+  const resultado: { ancho: number; alto: number }[][] = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const pagina = await pdf.getPage(i);
+    const ops = await pagina.getOperatorList();
+    const imagenes: { ancho: number; alto: number }[] = [];
+    for (const [j, f] of ops.fnArray.entries()) {
+      if (f !== OPS.paintImageXObject) continue;
+      const id = ops.argsArray[j][0] as string;
+      // Las imágenes que se repiten entre páginas viven en commonObjs (id "g_..."); las demás, en objs.
+      const objetos = id.startsWith("g_") ? pagina.commonObjs : pagina.objs;
+      const img = await new Promise<{ width: number; height: number }>((r) => objetos.get(id, r));
+      imagenes.push({ ancho: img.width, alto: img.height });
+    }
+    resultado.push(imagenes);
+  }
+  await tarea.destroy();
+  return resultado;
+}

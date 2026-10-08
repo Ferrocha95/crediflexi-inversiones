@@ -26,6 +26,10 @@ export function VistaPrevia({ vista }: { vista: ModeloVistaPrevia }) {
 
       <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
+          <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.esquema}</dt>
+          <dd className="font-semibold">{vista.solicitud.esquema}</dd>
+        </div>
+        <div>
           <dt className="text-sm font-semibold text-hielo-tenue">{vista.plazoEspecial ? TEXTOS.tasaAcordada : TEXTOS.tasaAnual}</dt>
           <dd className="text-2xl font-extrabold tabular-nums">{vista.tasa}</dd>
           {vista.desgloseTasa !== null && (

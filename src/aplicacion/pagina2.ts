@@ -126,8 +126,8 @@ export interface ModeloPagina2 {
  */
 export const LIENZO_GRAFICA = {
   ancho: 264,
-  alto: 150,
-  area: { izquierda: 50, derecha: 198, arriba: 10, abajo: 126 },
+  alto: 120,
+  area: { izquierda: 50, derecha: 198, arriba: 10, abajo: 96 },
   /** Distancia mínima entre las etiquetas finales (alto de una línea de 7 pt). */
   separacionEtiquetas: 9,
 } as const;
@@ -169,7 +169,7 @@ function tarjeta(
   const meses = c.filas.length;
   const n = { meses: String(meses) };
   const capital = { etiqueta: t.capitalInicial, cifra: pesos(c.capitalInicial) };
-  const plazo = { etiqueta: t.gananciaPlazo, cifra: pesos(c.rendimientoEstimado) };
+  const plazo = { etiqueta: rellenar(t.gananciaPlazo, n), cifra: pesos(c.rendimientoEstimado) };
   const total = { etiqueta: t.totalCapitalGanancia, cifra: pesos(c.total) };
   const comun = { tasa: formatearPorcentaje(new Decimal(c.tasa)), etiquetaTasa: especial ? t.tasaAcordada : t.tasaAnual, franja: franja(esquema, meses, t) };
 

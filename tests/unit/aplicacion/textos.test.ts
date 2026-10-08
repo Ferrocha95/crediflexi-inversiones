@@ -36,9 +36,9 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 }
 
 describe("cargarTextos: el archivo real", () => {
-  it("carga seed/textos_cotizacion.json versión 0.6.2", () => {
+  it("carga seed/textos_cotizacion.json versión 0.7", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.6.2");
+    expect(t.version).toBe("0.7");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente " +
@@ -66,36 +66,55 @@ describe("cargarTextos: el archivo real", () => {
   });
 });
 
-describe("cargarTextos: textos nuevos de la versión 0.5", () => {
-  it("las etiquetas de los resultados por esquema usan 'ganancia' (Rendimiento anual -> Ganancia anual equivalente)", () => {
+describe("cargarTextos: textos del dueño (Sprint 5, versión 0.7)", () => {
+  it("las etiquetas de los resultados: 'Ganancia esperada del periodo' (1 mes, 12 meses y plazo de {meses} meses)", () => {
     expect(cargarBien(textosJson).etiquetasResultados).toEqual({
       mensual: {
-        rendimiento_mensual_pesos: "Pago mensual",
-        rendimiento_anual_pesos: "Ganancia anual equivalente (12 meses)",
-        ganancia_total_plazo: "Ganancia total en el plazo",
+        rendimiento_mensual_pesos: "Ganancia esperada del periodo (1 mes)",
+        rendimiento_anual_pesos: "Ganancia esperada del periodo (12 meses)",
+        ganancia_total_plazo: "Ganancia esperada del periodo (plazo de {meses} meses)",
       },
       final_del_plazo: {
-        rendimiento_mensual_pesos: "Rendimiento mensual equivalente (se paga al final del plazo)",
-        rendimiento_anual_pesos: "Ganancia anual equivalente (12 meses)",
-        ganancia_total_plazo: "Ganancia total al final del plazo",
+        rendimiento_mensual_pesos: "Ganancia esperada del periodo (1 mes), se acumula y se paga al final del plazo",
+        rendimiento_anual_pesos: "Ganancia esperada del periodo (12 meses)",
+        ganancia_total_plazo: "Ganancia esperada del periodo (plazo de {meses} meses)",
       },
     });
   });
 
-  it("la línea de cuándo se paga la ganancia (página 1 y vista previa), sin promesas", () => {
+  it("la línea de pago (página 1 y vista previa): 'Pago de rendimiento…' con {meses}", () => {
     expect(cargarBien(textosJson).lineaPago).toEqual({
-      mensual: "Pago de la ganancia: cada mes",
-      final_del_plazo: "Pago de la ganancia: al vencimiento",
+      mensual: "Pago de rendimiento mensual: cada mes, del mes 1 al mes {meses}",
+      final_del_plazo: "Pago de rendimiento: al final del plazo (mes {meses}), junto con el capital",
     });
   });
 
-  it("el pie: SIPRES solo para RAMI_SISE y el aviso del fondo para todas", () => {
+  it("el esquema corto: 'Mensual' o 'Al final del plazo' (página 1 y vista previa)", () => {
+    expect(cargarBien(textosJson).esquemaCorto).toEqual({ mensual: "Mensual", final_del_plazo: "Al final del plazo" });
+  });
+
+  it("el pie, para las dos entidades: la línea SIPRES y el disclaimer exactos, sin 'supervisada'", () => {
     const t = cargarBien(textosJson);
-    expect(t.pieSipres).toEqual({
-      RAMI_SISE:
-        "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES",
-    });
-    expect(t.pieAvisoFondo).toBe("Fondo de inversión privado: para invertir se requiere adquirir una acción de $1,000.00 MXN.");
+    expect(t.pieSipres).toBe(
+      "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES",
+    );
+    expect(t.pieAvisoFondo).toBe(
+      "Crediflexi, fondo de inversión privado, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R., inscrita en el SIPRES de la CONDUSEF " +
+        "y sujeta a las disposiciones aplicables. Por ser un fondo de inversión privado, para invertir se requiere adquirir una acción de " +
+        "$1,000.00 MXN. Las tasas están sujetas a cambio.",
+    );
+    expect(JSON.stringify(textosJson)).not.toMatch(/supervisad|todas las autoridades|CNBV/i);
+  });
+
+  it.each(["linea_pago.mensual", "etiquetas_resultados.final_del_plazo.ganancia_total_plazo"])("%s solo admite {meses}", (campo) => {
+    const j = copia() as unknown as Record<string, Record<string, unknown>>;
+    const ruta = campo.split(".");
+    const padre = ruta.slice(0, -1).reduce<Record<string, unknown>>((o, k) => o[k] as Record<string, unknown>, j);
+    padre[ruta[ruta.length - 1]] = "Mes {meses}";
+    expect(cargarBien(j)).toBeDefined();
+    padre[ruta[ruta.length - 1]] = "Mes {meses} de {razon_social}";
+    const detalle = errorDe(j).detalles.find((d) => d.includes("{razon_social}"));
+    expect(detalle).toContain(campo);
   });
 
   it("ningún texto dice recibes ni recibirás", () => {
@@ -110,7 +129,7 @@ describe("cargarTextos: textos nuevos de la versión 0.5", () => {
 
   it("pie_sipres rechaza un texto vacío", () => {
     const j = copia();
-    (j as { pie_sipres: Record<string, string> }).pie_sipres.RAMI_SISE = " ";
+    (j as { pie_sipres: string }).pie_sipres = " ";
     expect(errorDe(j).detalles.join("\n")).toContain("pie_sipres");
   });
 });
@@ -325,7 +344,6 @@ const CLAVES_PAGINA2 = [
   "tasa_acordada",
   "capital_inicial",
   "ganancia_anual_equivalente",
-  "ganancia_plazo",
   "total_capital_ganancia",
   "franja_ganancia",
   "franja_mas_capital",
@@ -346,11 +364,12 @@ const CLAVES_PAGINA2 = [
   "benchmark_tu_tasa",
   "benchmark_desactualizado",
   "benchmark_solo_pesos",
+  "benchmark_en_dolares",
   "pagina",
   "pagina_de",
 ] as const;
 
-const CLAVES_PAGINA2_CON_MESES = ["pago_ganancia_mensual", "pago_ganancia_vencimiento", "capital_vencimiento"] as const;
+const CLAVES_PAGINA2_CON_MESES = ["ganancia_plazo", "pago_ganancia_mensual", "pago_ganancia_vencimiento", "capital_vencimiento"] as const;
 /** Claves del comparativo con su único marcador. */
 const CLAVES_PAGINA2_BENCHMARK = [
   ["benchmark_actualizado", "fecha"],
@@ -366,14 +385,14 @@ describe("cargarTextos: el bloque pdf_pagina2", () => {
     expect(p.tasaAnual).toBe("TASA ANUAL");
     expect(p.tasaAcordada).toBe("TASA ACORDADA");
     expect(p.capitalInicial).toBe("Capital inicial");
-    expect(p.gananciaAnualEquivalente).toBe("Ganancia anual equivalente (12 meses)");
-    expect(p.gananciaPlazo).toBe("Ganancia del plazo");
+    expect(p.gananciaAnualEquivalente).toBe("Ganancia esperada del periodo (12 meses)");
+    expect(p.gananciaPlazo).toBe("Ganancia esperada del periodo (plazo de {meses} meses)");
     expect(p.totalCapitalGanancia).toBe("Total capital + ganancia");
     expect(p.columnaMes).toBe("Mes");
     expect(p.columnaGananciaPeriodo).toBe("Ganancia del periodo");
     expect(p.columnaGananciaAcumulada).toBe("Ganancia acumulada");
-    expect(p.pagoGananciaMensual).toBe("Pago de la ganancia: cada mes, del mes 1 al mes {meses}");
-    expect(p.pagoGananciaVencimiento).toBe("Pago de la ganancia: al vencimiento (mes {meses}), junto con el capital");
+    expect(p.pagoGananciaMensual).toBe("Pago de rendimiento mensual: cada mes, del mes 1 al mes {meses}");
+    expect(p.pagoGananciaVencimiento).toBe("Pago de rendimiento: al final del plazo (mes {meses}), junto con el capital");
     expect(p.capitalVencimiento).toBe("Capital: al vencimiento (mes {meses})");
     expect([p.franjaGanancia, p.franjaMasCapital, p.franjaGananciaCapital]).toEqual(["ganancia", "+ capital", "ganancia + capital"]);
     expect(p.insignia).toBe("Tu cotización");
@@ -384,13 +403,16 @@ describe("cargarTextos: el bloque pdf_pagina2", () => {
     const p = cargarBien(textosJson).pdfPagina2;
     expect(p.benchmarkTitulo).toBe("Tu tasa frente a otras opciones");
     expect(p.benchmarkTuTasa).toBe("Tu tasa");
-    expect(p.benchmarkActualizado).toBe("Actualizado al {fecha}");
+    expect(p.benchmarkActualizado).toBe(
+      "Última tasa publicada de cada instrumento; la fecha de cada uno se indica junto a su barra. Actualizado al {fecha}.",
+    );
+    expect(p.benchmarkEnDolares).toBe("en dólares (USD)");
     expect(p.benchmarkFuentes).toBe("Fuentes: {fuentes}");
     expect(p.benchmarkDesactualizado).toBe("Comparativo no disponible: datos desactualizados");
     expect(p.benchmarkSoloPesos).toBe("Comparativo no disponible en dólares: las opciones comparadas son en pesos (MXN).");
   });
 
-  it("trae las 35 claves, todas con texto", () => {
+  it("trae las 36 claves, todas con texto", () => {
     const p = cargarBien(textosJson).pdfPagina2;
     expect(Object.keys(p)).toHaveLength(CLAVES_PAGINA2.length + CLAVES_PAGINA2_CON_MESES.length + CLAVES_PAGINA2_BENCHMARK.length);
     for (const v of Object.values(p)) expect(v.trim()).not.toBe("");

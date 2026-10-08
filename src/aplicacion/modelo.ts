@@ -78,7 +78,7 @@ export interface ModeloVistaPrevia {
   readonly plazoEspecial: boolean;
   /** Aviso no bloqueante: la tasa acordada pasa de la máxima de la tabla más 5 puntos. */
   readonly tasaAcordadaAlta: AvisoTasaAcordada | null;
-  /** "Pago de la ganancia: cada mes" o "al vencimiento" (archivo de textos). */
+  /** Cuándo se paga el rendimiento, con el plazo de la cotización (archivo de textos). */
   readonly lineaPago: string;
   readonly salidas: readonly {
     readonly clave: Salida;
@@ -102,7 +102,7 @@ export function modeloVistaPrevia(
     solicitud: {
       entidad: c.solicitud.entidad,
       moneda,
-      esquema: textos.nombreEsquema[c.solicitud.esquema],
+      esquema: textos.esquemaCorto[c.solicitud.esquema],
       monto: monto(c.solicitud.monto, moneda),
       plazo: meses(c.solicitud.plazo),
     },
@@ -119,10 +119,10 @@ export function modeloVistaPrevia(
     desgloseTasa: desgloseDeTasa(c),
     plazoEspecial: c.origenTasa === "especial",
     tasaAcordadaAlta: extras.tasaAcordadaAlta ?? null,
-    lineaPago: textos.lineaPago[c.solicitud.esquema],
+    lineaPago: rellenar(textos.lineaPago[c.solicitud.esquema], { meses: String(c.solicitud.plazo) }),
     salidas: c.salidas.map((s) => ({
       clave: s.clave,
-      etiqueta: textos.etiquetasResultados[c.solicitud.esquema][s.clave],
+      etiqueta: rellenar(textos.etiquetasResultados[c.solicitud.esquema][s.clave], { meses: String(c.solicitud.plazo) }),
       cifra: dinero(s.redondeado, moneda),
       formula: s.desglose.formula,
       operacion: s.desglose.operacion,
@@ -202,10 +202,10 @@ export interface ModeloPdf {
     readonly preparadoPor: string | null;
     readonly vigencia: string | null;
     readonly notaAdicional: string | null;
-    /** Aviso del fondo: va en el pie de las dos páginas. */
+    /** Disclaimer del fondo: va en el pie de las dos páginas, con las dos entidades. */
     readonly avisoFondo: string;
-    /** Línea SIPRES de la entidad (solo RAMI_SISE en los textos 0.5); null si no lleva. */
-    readonly sipres: string | null;
+    /** Línea SIPRES: va en el pie de las dos páginas, con las dos entidades (textos 0.7). */
+    readonly sipres: string;
   };
   /** Página 2: calendario de las dos modalidades, comparación y comparativo de tasas. */
   readonly pagina2: ModeloPagina2 & { readonly benchmark: BenchmarkPdf };
@@ -248,7 +248,7 @@ export function modeloPdf(
 
   const cifras: CifraPdf[] = c.salidas.map((s) => ({
     clave: s.clave,
-    etiqueta: textos.etiquetasResultados[c.solicitud.esquema][s.clave],
+    etiqueta: rellenar(textos.etiquetasResultados[c.solicitud.esquema][s.clave], { meses: String(c.solicitud.plazo) }),
     cifra: dinero(s.redondeado, c.solicitud.moneda),
     formula: s.desglose.formula,
     operacion: s.desglose.operacion,
@@ -268,7 +268,7 @@ export function modeloPdf(
     encabezado: { razonSocial },
     solicitud: {
       moneda,
-      esquema: textos.nombreEsquema[c.solicitud.esquema],
+      esquema: textos.esquemaCorto[c.solicitud.esquema],
       monto: monto(c.solicitud.monto, moneda),
       plazo: meses(c.solicitud.plazo),
     },
@@ -279,7 +279,7 @@ export function modeloPdf(
     },
     desgloseTasa:
       desglose === null ? null : rellenar(desglosePuntos, { tasa_tabla: desglose.tasaTabla, puntos: desglose.puntos, tasa: desglose.tasa }),
-    lineaPago: textos.lineaPago[c.solicitud.esquema],
+    lineaPago: rellenar(textos.lineaPago[c.solicitud.esquema], { meses: String(c.solicitud.plazo) }),
     textos: textosPdf,
     cifraPrincipal: { clave: principal.clave, etiqueta: principal.etiqueta, cifra: principal.cifra },
     cifras,
@@ -296,7 +296,7 @@ export function modeloPdf(
       vigencia: vigencia === "" ? null : rellenar(textos.lineaVigencia, { vigencia }),
       notaAdicional: oNulo(notaAdicional),
       avisoFondo: textos.pieAvisoFondo,
-      sipres: textos.pieSipres[entidad] ?? null,
+      sipres: textos.pieSipres,
     },
     pagina2: {
       ...modeloPagina2(c, datos, textos.pdfPagina2),

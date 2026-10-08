@@ -92,6 +92,8 @@ export interface BarraBenchmark {
   /** Periodo del rendimiento histórico, tal cual del archivo ("10 años al 30/06/2026"). */
   readonly periodo: string | null;
   readonly moneda: Moneda;
+  /** La línea debajo del nombre: fecha, periodo y, si es en dólares, "en dólares (USD)"; null en tu tasa. */
+  readonly detalle: string | null;
 }
 
 export interface GrupoBenchmark {
@@ -204,6 +206,7 @@ export function modeloBenchmark(
           fecha: f.fecha,
           periodo: f.periodo,
           moneda: f.moneda,
+          detalle: f.tuya ? null : [f.fecha, f.periodo, f.moneda === "USD" ? t.benchmarkEnDolares : null].filter((d) => d !== null).join(" · ") || null,
         })),
         leyendas: b.avisos[clave],
       },

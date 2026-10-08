@@ -37,6 +37,11 @@ export const MARCADORES_POR_CAMPO = {
   moneda_deshabilitada: ["moneda"],
   "pdf.linea_tasas": ["version_tasas", "fecha_tasas"],
   "pdf.desglose_puntos": ["tasa_tabla", "puntos", "tasa"],
+  "linea_pago.mensual": ["meses"],
+  "linea_pago.final_del_plazo": ["meses"],
+  "etiquetas_resultados.mensual.ganancia_total_plazo": ["meses"],
+  "etiquetas_resultados.final_del_plazo.ganancia_total_plazo": ["meses"],
+  "pdf_pagina2.ganancia_plazo": ["meses"],
   "pdf_pagina2.pago_ganancia_mensual": ["meses"],
   "pdf_pagina2.pago_ganancia_vencimiento": ["meses"],
   "pdf_pagina2.capital_vencimiento": ["meses"],
@@ -57,16 +62,18 @@ export interface TextosCotizacion {
   readonly lineaVigencia: string;
   /** Explicación del estatus del tramo: solo se muestra en pantalla, nunca en el PDF. */
   readonly estatusTramo: Readonly<Record<Estatus, string>>;
-  /** Nombre del esquema en la pantalla y en el PDF. */
+  /** Nombre del esquema en el selector de la pantalla. */
   readonly nombreEsquema: Readonly<Record<Esquema, string>>;
+  /** "Mensual" o "Al final del plazo": el valor de "Esquema" en la página 1 y en la vista previa. */
+  readonly esquemaCorto: Readonly<Record<Esquema, string>>;
   readonly monedaDeshabilitada: string;
-  /** Aviso del fondo, en el pie de las dos páginas del PDF (todas las entidades). */
+  /** Disclaimer del fondo, en el pie de las dos páginas del PDF (las dos entidades). */
   readonly pieAvisoFondo: string;
-  /** Línea SIPRES por entidad; la entidad que no aparece no lleva bloque SIPRES. */
-  readonly pieSipres: Readonly<Record<string, string>>;
-  /** Etiqueta de cada resultado, por esquema (pantalla y PDF). */
+  /** Línea SIPRES, en el pie de las dos páginas del PDF (las dos entidades). */
+  readonly pieSipres: string;
+  /** Etiqueta de cada resultado, por esquema (pantalla y PDF); la de la ganancia del plazo lleva {meses}. */
   readonly etiquetasResultados: Readonly<Record<Esquema, Readonly<Record<Salida, string>>>>;
-  /** "Pago de la ganancia: cada mes" o "al vencimiento", por esquema (página 1 y vista previa). */
+  /** Plantilla con {meses}: cuándo se paga el rendimiento, por esquema (página 1 y vista previa). */
   readonly lineaPago: Readonly<Record<Esquema, string>>;
   /** Textos fijos del PDF. */
   readonly pdf: TextosPdf;
@@ -176,6 +183,7 @@ export interface TextosPagina2 {
   readonly tasaAcordada: string;
   readonly capitalInicial: string;
   readonly gananciaAnualEquivalente: string;
+  /** Plantilla con {meses}. */
   readonly gananciaPlazo: string;
   readonly totalCapitalGanancia: string;
   /** Plantillas con {meses}: cuándo se paga la ganancia y el capital. */
@@ -206,7 +214,7 @@ export interface TextosPagina2 {
   readonly benchmarkTitulo: string;
   /** Rótulo de la barra de la tasa cotizada. */
   readonly benchmarkTuTasa: string;
-  /** Plantilla con {fecha}: "Actualizado al 7 de octubre de 2026". */
+  /** Plantilla con {fecha}: la leyenda general del comparativo, con la fecha de actualización. */
   readonly benchmarkActualizado: string;
   /** Plantilla con {fuentes}: los nombres cortos de las fuentes. */
   readonly benchmarkFuentes: string;
@@ -214,6 +222,8 @@ export interface TextosPagina2 {
   readonly benchmarkDesactualizado: string;
   /** Reemplaza al comparativo en una cotización en dólares. */
   readonly benchmarkSoloPesos: string;
+  /** Junto a la fecha de un instrumento en dólares (S&P 500). */
+  readonly benchmarkEnDolares: string;
   /** "Página" y "de", para el pie "Página 1 de 2". */
   readonly pagina: string;
   readonly paginaDe: string;
@@ -254,6 +264,7 @@ const CLAVES_PAGINA2 = {
   benchmark_fuentes: "benchmarkFuentes",
   benchmark_desactualizado: "benchmarkDesactualizado",
   benchmark_solo_pesos: "benchmarkSoloPesos",
+  benchmark_en_dolares: "benchmarkEnDolares",
   pagina: "pagina",
   pagina_de: "paginaDe",
 } as const satisfies Readonly<Record<string, keyof TextosPagina2>>;
@@ -297,13 +308,13 @@ function claveDesconocida(iss: { code: string; keys?: readonly string[] }): stri
   return `Clave desconocida: ${iss.keys.map((k) => `"${k}"`).join(", ")}. Revisa que esté bien escrita o quítala.`;
 }
 
-/** Las etiquetas de las tres salidas de un esquema. */
-const etiquetasDeResultados = (campo: string) =>
+/** Las etiquetas de las tres salidas de un esquema; la de la ganancia del plazo admite {meses}. */
+const etiquetasDeResultados = (campo: "etiquetas_resultados.mensual" | "etiquetas_resultados.final_del_plazo") =>
   z.strictObject(
     {
       rendimiento_mensual_pesos: texto(`${campo}.rendimiento_mensual_pesos`),
       rendimiento_anual_pesos: texto(`${campo}.rendimiento_anual_pesos`),
-      ganancia_total_plazo: texto(`${campo}.ganancia_total_plazo`),
+      ganancia_total_plazo: texto(`${campo}.ganancia_total_plazo`, MARCADORES_POR_CAMPO[`${campo}.ganancia_total_plazo`]),
     },
     { error: claveDesconocida },
   );
@@ -330,9 +341,16 @@ const esquemaTextos = z
         },
         { error: claveDesconocida },
       ),
+      esquema_corto: z.strictObject(
+        {
+          mensual: texto("esquema_corto.mensual"),
+          final_del_plazo: texto("esquema_corto.final_del_plazo"),
+        },
+        { error: claveDesconocida },
+      ),
       moneda_deshabilitada: texto("moneda_deshabilitada", MARCADORES_POR_CAMPO.moneda_deshabilitada),
       pie_aviso_fondo: texto("pie_aviso_fondo"),
-      pie_sipres: z.record(z.string().min(1), texto("pie_sipres")),
+      pie_sipres: texto("pie_sipres"),
       etiquetas_resultados: z.strictObject(
         {
           mensual: etiquetasDeResultados("etiquetas_resultados.mensual"),
@@ -341,7 +359,10 @@ const esquemaTextos = z
         { error: claveDesconocida },
       ),
       linea_pago: z.strictObject(
-        { mensual: texto("linea_pago.mensual"), final_del_plazo: texto("linea_pago.final_del_plazo") },
+        {
+          mensual: texto("linea_pago.mensual", MARCADORES_POR_CAMPO["linea_pago.mensual"]),
+          final_del_plazo: texto("linea_pago.final_del_plazo", MARCADORES_POR_CAMPO["linea_pago.final_del_plazo"]),
+        },
         { error: claveDesconocida },
       ),
       pdf: z.strictObject(
@@ -411,6 +432,7 @@ const esquemaTextos = z
       lineaVigencia: t.linea_vigencia,
       estatusTramo: t.estatus_tramo,
       nombreEsquema: t.nombre_esquema,
+      esquemaCorto: t.esquema_corto,
       monedaDeshabilitada: t.moneda_deshabilitada,
       pieAvisoFondo: t.pie_aviso_fondo,
       pieSipres: t.pie_sipres,

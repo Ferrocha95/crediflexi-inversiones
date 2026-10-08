@@ -2,7 +2,6 @@ import "server-only";
 import {
   Defs,
   Document,
-  Image,
   LinearGradient,
   Page,
   Rect,
@@ -14,6 +13,7 @@ import {
 } from "@react-pdf/renderer";
 import type { ModeloPdf } from "../../aplicacion/modelo";
 import { COLOR_PDF as COLOR } from "./colores";
+import { Logo, type LogoPdf } from "./Encabezado";
 import { FAMILIA } from "./fuente";
 import { PaginaCalendario } from "./PaginaCalendario";
 
@@ -23,8 +23,6 @@ import { PaginaCalendario } from "./PaginaCalendario";
 const MARGEN = 36;
 const ANCHO_UTIL = 612 - 2 * MARGEN; // Carta: 612 × 792 pt.
 const ALTO_LOGO = 46;
-/** Proporción del PNG del logo (1834 × 539). */
-const ANCHO_LOGO = (ALTO_LOGO * 1834) / 539;
 /** Separa la tasa y el plazo debajo de la cifra principal (signo tipográfico, no texto). */
 const SEPARADOR = " \u00B7 ";
 const HUECO_MAXIMO = 22;
@@ -42,7 +40,6 @@ const e = StyleSheet.create({
   },
 
   encabezado: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  logo: { height: ALTO_LOGO, width: ANCHO_LOGO, backgroundColor: COLOR.blanco },
   fecha: { alignItems: "flex-end" },
   fechaEtiqueta: { fontSize: 8, color: COLOR.gris },
   fechaValor: { fontSize: 11, color: COLOR.gris, fontWeight: "bold" },
@@ -186,7 +183,7 @@ function Casilla({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   );
 }
 
-export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo: Buffer }) {
+export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo: LogoPdf }) {
   const { textos: t, cifraPrincipal, pie, pagina2 } = modelo;
   const numero = (n: number) => <NumeroPagina pagina={pagina2.textos.pagina} de={pagina2.textos.paginaDe} numero={n} />;
   const hayFranja = pie.preparadoPor !== null || pie.vigencia !== null;
@@ -195,9 +192,7 @@ export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo:
     <Document title={t.titulo} author={modelo.encabezado.razonSocial} language="es-MX">
       <Page size="LETTER" style={e.pagina}>
         <View style={e.encabezado}>
-          {/* El PNG tiene fondo blanco sólido: siempre va sobre blanco. */}
-          {/* eslint-disable-next-line jsx-a11y/alt-text -- Image de react-pdf, no de HTML */}
-          <Image src={{ data: logo, format: "png" }} style={e.logo} />
+          <Logo logo={logo} alto={ALTO_LOGO} />
           <View style={e.fecha}>
             <Text style={e.fechaEtiqueta}>{t.fecha}</Text>
             <Text style={e.fechaValor}>{modelo.fecha}</Text>
@@ -280,7 +275,8 @@ export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo:
           <Text style={e.pieBase}>{pie.base}</Text>
           {pie.notaAdicional !== null && <Text style={e.pieNota}>{pie.notaAdicional}</Text>}
           {/* SIPRES (si la entidad lo lleva) y el aviso del fondo, en un solo párrafo para ahorrar renglones. */}
-          <Text style={e.pieNota}>{[pie.sipres, pie.avisoFondo].filter((x) => x !== null).join(" ")}</Text>
+          <Text style={e.pieNota}>{pie.sipres}</Text>
+          <Text style={e.pieNota}>{pie.avisoFondo}</Text>
         </View>
         {numero(1)}
       </Page>

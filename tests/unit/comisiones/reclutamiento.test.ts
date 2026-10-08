@@ -1,4 +1,3 @@
-import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // La acción lee el encabezado Host con headers() de next/headers; aquí se simula.
@@ -23,7 +22,7 @@ import { leerParametrosReclutamiento } from "../../../src/servidor/parametros";
 import { manejarPdfReclutamiento, MENSAJES_PDF_RECLUTAMIENTO } from "../../../src/servidor/pdf/manejadorReclutamiento";
 import { renderizarReclutamiento } from "../../../src/servidor/pdf/renderizar";
 import { MENSAJE_FORMA_RECLUTAMIENTO, type RespuestaReclutamiento } from "../../../src/servidor/reclutamiento";
-import { extraerTexto } from "../servidor/pdf/extraer";
+import { extraerTexto, imagenesPorPagina } from "../servidor/pdf/extraer";
 
 const ESCENARIOS = textosJson.reclutamiento.escenarios_ejemplo;
 const base = { peticion: 4, presenta: "Persona Sintética Uno", escenarios: ESCENARIOS };
@@ -214,29 +213,14 @@ describe("PDF de reclutamiento (documento real)", () => {
   });
 });
 
-describe("PDF de reclutamiento: logos", () => {
-  async function imagenes(rutaRamiSise: string) {
+describe("PDF de reclutamiento: los dos logos juntos", () => {
+  it("lleva una sola imagen en el encabezado: la combinada de 601 × 145 (public/logos-crediflexi-rami-sise.png)", { timeout: TIEMPO }, async () => {
     const p = await leerParametrosReclutamiento();
     if (!p.ok) throw new Error(p.error.mensaje);
     const { modeloReclutamiento } = await import("../../../src/aplicacion/reclutamiento");
     const m = modeloReclutamiento(p.valor.semilla, p.valor.textos, { presenta: "", escenarios: ESCENARIOS }, AHORA);
     if (!m.ok) throw new Error(m.error.mensaje);
-    const bytes = await renderizarReclutamiento(m.valor, rutaRamiSise);
-    // Imágenes que se pintan en la hoja (un PNG con transparencia trae además su máscara, que no cuenta).
-    const { getDocument, OPS } = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const tarea = getDocument({ data: new Uint8Array(bytes), verbosity: 0 });
-    const ops = await (await (await tarea.promise).getPage(1)).getOperatorList();
-    const pintadas = ops.fnArray.filter((f) => f === OPS.paintImageXObject).length;
-    await tarea.destroy();
-    return { imagenes: pintadas, paginas: (await extraerTexto(bytes)).paginas };
-  }
-
-  it("sin public/logo-rami-sise.png solo lleva el logo de Crediflexi (sin marcador)", { timeout: TIEMPO }, async () => {
-    expect(await imagenes(path.join(process.cwd(), "public", "no-existe-logo.png"))).toEqual({ imagenes: 1, paginas: 1 });
-  });
-
-  it("si el archivo existe, lleva también el de Rami Sise", { timeout: TIEMPO }, async () => {
-    // Un PNG cualquiera del proyecto hace de logo de Rami Sise solo en esta prueba.
-    expect(await imagenes(path.join(process.cwd(), "public", "logo-blanco.png"))).toEqual({ imagenes: 2, paginas: 1 });
+    const bytes = await renderizarReclutamiento(m.valor);
+    expect(await imagenesPorPagina(bytes)).toEqual([[{ ancho: 601, alto: 145 }]]);
   });
 });
