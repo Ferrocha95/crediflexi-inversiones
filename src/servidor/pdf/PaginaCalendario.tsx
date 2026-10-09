@@ -131,8 +131,10 @@ const e = StyleSheet.create({
   tablaFila: { flexDirection: "row", alignItems: "center", height: ALTO_FILA, paddingHorizontal: 4, fontSize: 7.5, lineHeight: 1 },
   tablaFilaAlterna: { backgroundColor: COLOR.fondoTenue },
   colFecha: { width: 50 },
-  colDias: { width: 24, textAlign: "right" },
-  colCifra: { flex: 1, textAlign: "right" },
+  colDias: { width: 18, textAlign: "right" },
+  /** Sprint 6b: con las columnas de fecha y días, el acumulado lleva un poco más de ancho para que su encabezado no se corte. */
+  colCifra: { flex: 1, textAlign: "right", paddingLeft: 3 },
+  colAcumulado: { flex: 1.15, textAlign: "right" },
   notaTarjeta: { fontSize: 8, color: COLOR.gris, lineHeight: 1.3 },
 
   notaCentavos: { marginTop: 4, fontSize: 7, color: COLOR.gris, lineHeight: 1.2 },
@@ -201,14 +203,14 @@ function TablaMensual({ filas, textos }: { filas: NonNullable<TarjetaPdf["detall
         <Text style={e.colFecha}>{textos.columnaFechaPago}</Text>
         <Text style={e.colDias}>{textos.columnaDias}</Text>
         <Text style={e.colCifra}>{textos.columnaRendimientoMensual}</Text>
-        <Text style={e.colCifra}>{textos.columnaRendimientoAcumulado}</Text>
+        <Text style={e.colAcumulado}>{textos.columnaRendimientoAcumulado}</Text>
       </View>
       {filas.map((f, i) => (
         <View key={f.fecha} style={[e.tablaFila, ...(i % 2 === 1 ? [e.tablaFilaAlterna] : [])]}>
           <Text style={e.colFecha}>{f.fecha}</Text>
           <Text style={e.colDias}>{f.dias}</Text>
           <Text style={e.colCifra}>{f.rendimiento}</Text>
-          <Text style={e.colCifra}>{f.acumulado}</Text>
+          <Text style={e.colAcumulado}>{f.acumulado}</Text>
         </View>
       ))}
     </>

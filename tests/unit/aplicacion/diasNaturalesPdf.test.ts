@@ -184,7 +184,10 @@ describe("PDF renderizado", () => {
       expect(p1).toContain("Persona Sintética Uno Fecha de inicio: 15 de octubre de 2026");
       expect(p1).toContain("Rendimientos calculados a días naturales (días reales ÷ 365).");
       expect(p1).toContain("monto × tasa anual neta × días ÷ 365");
-      for (const x of ["Fecha de pago", "Días", "15/11/2026", "15/03/2027", "Vencimiento: 15/04/2027", P2.notaDiaInhabil, "$99,726.03"]) {
+      // Los cuatro encabezados completos: con las columnas de fecha y días, el último no debe cortarse ("Rendimiento…").
+      for (const x of [P2.columnaFechaPago, P2.columnaDias, P2.columnaRendimientoMensual, P2.columnaRendimientoAcumulado]) expect(p2).toContain(x);
+      expect(p2).not.toContain("Rendimiento…");
+      for (const x of ["15/11/2026", "15/03/2027", "Vencimiento: 15/04/2027", P2.notaDiaInhabil, "$99,726.03"]) {
         expect(p2).toContain(x);
       }
     },
