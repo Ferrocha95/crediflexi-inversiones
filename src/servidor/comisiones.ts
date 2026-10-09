@@ -37,6 +37,16 @@ const esquemaCampos = z.strictObject({
       }),
     )
     .max(MAXIMO_INVERSIONES),
+  /** Solo internos: inversiones de sus externos para la comisión por externos (sin fecha). */
+  externos: z
+    .array(
+      z.strictObject({
+        tipo: z.enum(TIPOS_INVERSION),
+        monto: z.string().max(40),
+        plazo: z.number().int().min(0).max(600).nullable(),
+      }),
+    )
+    .max(MAXIMO_INVERSIONES),
 });
 
 /** Respuesta de la acción: solo texto y números (sin Decimal ni semilla). */

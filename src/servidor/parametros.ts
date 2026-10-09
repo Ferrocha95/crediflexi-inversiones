@@ -4,7 +4,7 @@ import path from "node:path";
 import { cargarBenchmark, type Benchmark } from "../aplicacion/benchmark";
 import { cargarRazonesSociales } from "../aplicacion/entidades";
 import { error, ok, type ResultadoApp } from "../aplicacion/resultado";
-import { cargarTextos, type TextosCotizacion, type TextosReclutamiento } from "../aplicacion/textos";
+import { cargarTextos, type TextosComisiones, type TextosCotizacion, type TextosReclutamiento } from "../aplicacion/textos";
 import { cargarSemillaComisiones, type SemillaComisiones } from "../domain/comisiones/semilla";
 import { cargarSemilla } from "../domain/tasas/semilla";
 import type { Semilla } from "../domain/tasas/semilla.esquema";
@@ -108,6 +108,15 @@ export async function leerSemillaComisiones(ruta: string = RUTA_SEMILLA): Promis
   const s = cargarSemillaComisiones(json.valor);
   if (!s.ok) return error("SEMILLA_INVALIDA", `${nombreVisible(ruta)}: ${s.error.mensaje}`, s.error.detalles);
   return ok(s.valor);
+}
+
+/** Lee en cada llamada los textos del simulador /comisiones (bloque comisiones del archivo de textos). */
+export async function leerTextosComisiones(ruta: string = RUTA_TEXTOS): Promise<ResultadoApp<TextosComisiones>> {
+  const json = await leerJson(ruta);
+  if (!json.ok) return json;
+  const textos = cargarTextos(json.valor, nombreVisible(ruta));
+  if (!textos.ok) return textos;
+  return ok(textos.valor.comisiones);
 }
 
 export interface ParametrosReclutamiento {

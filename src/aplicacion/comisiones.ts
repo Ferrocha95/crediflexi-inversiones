@@ -1,16 +1,17 @@
 import { Decimal, ROUND_HALF_UP } from "../domain/comun/decimal";
 import { formatearPesos } from "../domain/comun/formato";
 import { bonoDeGerente } from "../domain/comisiones/bonoGerente";
-import type { SolicitudComision } from "../domain/comisiones/comision";
+import type { ComisionInversion, SolicitudComision } from "../domain/comisiones/comision";
 import { liquidarMes, type InversionDelMes, type Liquidacion } from "../domain/comisiones/liquidacion";
-import type { RolConMeta, SemillaComisiones, TipoInversion } from "../domain/comisiones/semilla";
+import { comisionPorRedExterna } from "../domain/comisiones/redExterna";
+import type { IncentivoExterno, IncentivoInterno, RolConMeta, SemillaComisiones, TipoInversion } from "../domain/comisiones/semilla";
 import { fechaDeTextoIso } from "./fecha";
 import { normalizarMonto } from "./monto";
 import { error, ok, type ResultadoApp } from "./resultado";
 
 // Pantalla /comisiones: convierte lo escrito en la entrada del motor y el
-// resultado en texto. No calcula: las cifras salen de liquidarMes y, para el
-// gerente, de bonoDeGerente.
+// resultado en texto. No calcula: las cifras salen de liquidarMes, para el
+// gerente de bonoDeGerente y, para Mis externos, de comisionPorRedExterna.
 
 /** Lo que manda la pantalla: montos tal como se escriben ("1,500,000"). */
 export interface CamposComisiones {
@@ -24,11 +25,36 @@ export interface CamposComisiones {
     readonly fecha: string;
   }[];
   /** Solo GERENTE: inversiones de su equipo para el bono de gerente (por confirmar). Sin fecha. */
-  readonly equipo: readonly {
-    readonly tipo: TipoInversion;
-    readonly monto: string;
-    readonly plazo: number | null;
-  }[];
+  readonly equipo: readonly InversionSinFecha[];
+  /** Solo internos: inversiones de sus externos para la comisión por externos (supuesto por confirmar). Sin fecha. */
+  readonly externos: readonly InversionSinFecha[];
+}
+
+export interface InversionSinFecha {
+  readonly tipo: TipoInversion;
+  readonly monto: string;
+  readonly plazo: number | null;
+}
+
+/** Comisión de una inversión de otra persona (equipo o externos), sin fecha ni pago. */
+export interface LineaSinFechaModelo {
+  readonly numero: number;
+  readonly tipo: TipoInversion;
+  readonly monto: string;
+  readonly plazo: string;
+  readonly tasa: string;
+  readonly comision: string;
+}
+
+/** Una fila de la tabla de incentivos, en pesos enteros ("$1,000,000"). */
+export interface FilaIncentivoModelo {
+  readonly cumplimiento: string;
+  readonly desde: string;
+  /** null en el último rango ("En adelante"). */
+  readonly hasta: string | null;
+  readonly bono: string;
+  /** La fila que alcanza la captación del mes (como mucho una). */
+  readonly alcanzada: boolean;
 }
 
 export interface LineaComisionModelo {
@@ -74,8 +100,36 @@ export interface ModeloComisiones {
   /** Qué pasa con la comisión bloqueada al cierre del mes (parámetro, por confirmar). */
   readonly notaBloqueo: string | null;
   readonly bono: string | null;
-  /** Solo perfil interno con rol EJECUTIVO (propuesta); null en los demás casos. */
+  /** Solo perfil interno con rol EJECUTIVO (propuesta), en pesos enteros; null en los demás casos. */
   readonly sueldoBase: string | null;
+  /**
+   * Tabla de incentivos: filas EXTERNOS (por captación nueva) para el externo
+   * y filas INTERNOS (por captación para la meta) para el EJECUTIVO; null en GERENTE.
+   */
+  readonly incentivos: {
+    readonly tipo: "interno" | "externo";
+    readonly filas: readonly FilaIncentivoModelo[];
+    /** Solo externo: la meta interna de un ejecutivo, como referencia (el externo no tiene meta). */
+    readonly metaReferencia: string | null;
+    /** Solo EJECUTIVO: desde qué porcentaje y monto se desbloquean las comisiones. */
+    readonly desbloqueo: { readonly porcentaje: string; readonly umbral: string } | null;
+  } | null;
+  /** Solo internos con inversiones de sus externos: comisión por externos (supuesto por confirmar). */
+  readonly redExterna: {
+    readonly lineas: readonly LineaSinFechaModelo[];
+    readonly base: string;
+    readonly porcentaje: string;
+    readonly comision: string;
+    /** "30% × $25,215.00 = $7,564.50". */
+    readonly operacion: string;
+    readonly desbloqueada: boolean;
+    readonly pagable: string;
+    readonly bloqueada: string;
+    /** Umbral de desbloqueo del propio interno, en pesos enteros. */
+    readonly umbral: string;
+    /** Qué pasa con lo bloqueado al cierre del mes; null si está desbloqueada. */
+    readonly notaBloqueo: string | null;
+  } | null;
   /** Solo GERENTE con inversiones del equipo; aparte de su comisión y de su meta. */
   readonly bonoGerente: {
     readonly base: string;
@@ -83,14 +137,7 @@ export interface ModeloComisiones {
     readonly bono: string;
     /** "30% × $25,215.00 = $7,564.50". */
     readonly operacion: string;
-    readonly lineas: readonly {
-      readonly numero: number;
-      readonly tipo: TipoInversion;
-      readonly monto: string;
-      readonly plazo: string;
-      readonly tasa: string;
-      readonly comision: string;
-    }[];
+    readonly lineas: readonly LineaSinFechaModelo[];
   } | null;
   readonly pagos: readonly { readonly fecha: string; readonly monto: string; readonly inversiones: readonly number[] }[];
   /** Días del calendario de pago, para escribir la regla en pantalla. */
@@ -119,7 +166,55 @@ export function opcionesComisiones(s: SemillaComisiones): OpcionesComisiones {
 
 const pesos = (d: Decimal) => formatearPesos(d);
 const pesosONulo = (d: Decimal | null) => (d === null ? null : pesos(d));
+/** Pesos sin centavos cuando son cero, para los montos fijos de la semilla ("$1,000,000"). */
+const pesosEnteros = (d: Decimal) => formatearPesos(d).replace(/\.00$/, "");
 const porcentajeEntero = (d: Decimal) => `${d.times(100).toFixed(0, Decimal.ROUND_DOWN)}%`;
+// El parámetro viene como clave ("se_pierde (...)"): se muestra con espacios.
+const notaLegible = (nota: string) => nota.replace(/^([a-z]+)_([a-z]+)/, "$1 $2");
+
+const lineasSinFecha = (lineas: readonly ComisionInversion[]): LineaSinFechaModelo[] =>
+  lineas.map((x, i) => ({
+    numero: i + 1,
+    tipo: x.tipo,
+    monto: pesos(x.monto),
+    plazo: `${x.plazo} meses`,
+    tasa: porcentajeComision(x.tasa),
+    comision: pesos(x.comision),
+  }));
+
+/** Lee montos y plazos de una lista sin fecha (equipo o externos); el error dice cuál inversión. */
+function solicitudesSinFecha(lista: readonly InversionSinFecha[], nombre: string): ResultadoApp<SolicitudComision[]> {
+  const solicitudes: SolicitudComision[] = [];
+  for (const [i, inv] of lista.entries()) {
+    const prefijo = `${nombre} ${i + 1}: `;
+    const monto = normalizarMonto(inv.monto);
+    if (!monto.ok) return error("COMISION_INVALIDA", prefijo + monto.error.mensaje);
+    if (inv.plazo === null) return error("COMISION_INVALIDA", `${prefijo}elige el plazo.`);
+    solicitudes.push({ tipo: inv.tipo, monto: monto.valor, plazo: inv.plazo });
+  }
+  return ok(solicitudes);
+}
+
+/** Tabla de incentivos del perfil: la fila alcanzada la marca el motor (filaIncentivo). */
+function incentivosDe(s: SemillaComisiones, l: Liquidacion, rol: RolConMeta | null): ModeloComisiones["incentivos"] {
+  const fila = (f: IncentivoInterno | IncentivoExterno, i: number): FilaIncentivoModelo => ({
+    cumplimiento: f.cumplimiento,
+    desde: pesosEnteros(f.desde),
+    hasta: f.hasta === null ? null : pesosEnteros(f.hasta),
+    bono: pesosEnteros(f.bono),
+    alcanzada: l.filaIncentivo === i,
+  });
+  if (l.perfil === "externo") {
+    return { tipo: "externo", filas: s.incentivosExternos.map(fila), metaReferencia: pesosEnteros(s.metas.EJECUTIVO), desbloqueo: null };
+  }
+  if (rol !== "EJECUTIVO" || l.desbloqueo === null) return null;
+  return {
+    tipo: "interno",
+    filas: s.incentivosInternos.map(fila),
+    metaReferencia: null,
+    desbloqueo: { porcentaje: porcentajeEntero(s.umbralDesbloqueo), umbral: pesosEnteros(l.desbloqueo.umbral) },
+  };
+}
 
 /** Fecha de pago de cada línea (índice -> fecha), a partir de los pagos agrupados. */
 function fechasDePago(l: Liquidacion): Map<number, string> {
@@ -159,14 +254,13 @@ export function modeloComisiones(s: SemillaComisiones, c: CamposComisiones): Res
   if (!gerente && c.equipo.length > 0) {
     return error("COMISION_INVALIDA", "Las inversiones del equipo solo aplican al rol Gerente. Quítalas o cambia el rol.");
   }
-  const equipo: SolicitudComision[] = [];
-  for (const [i, inv] of c.equipo.entries()) {
-    const prefijo = `Inversión del equipo ${i + 1}: `;
-    const monto = normalizarMonto(inv.monto);
-    if (!monto.ok) return error("COMISION_INVALIDA", prefijo + monto.error.mensaje);
-    if (inv.plazo === null) return error("COMISION_INVALIDA", `${prefijo}elige el plazo.`);
-    equipo.push({ tipo: inv.tipo, monto: monto.valor, plazo: inv.plazo });
+  if (c.perfil !== "interno" && c.externos.length > 0) {
+    return error("COMISION_INVALIDA", "Las inversiones de Mis externos solo aplican al perfil Interno. Quítalas o cambia el perfil.");
   }
+  const equipo = solicitudesSinFecha(c.equipo, "Inversión del equipo");
+  if (!equipo.ok) return equipo;
+  const externos = solicitudesSinFecha(c.externos, "Inversión de tus externos");
+  if (!externos.ok) return externos;
 
   const l = liquidarMes(s, {
     perfil: c.perfil,
@@ -178,8 +272,8 @@ export function modeloComisiones(s: SemillaComisiones, c: CamposComisiones): Res
   const pagoDe = fechasDePago(v);
 
   let bonoGerente: ModeloComisiones["bonoGerente"] = null;
-  if (gerente && equipo.length > 0) {
-    const b = bonoDeGerente(s, equipo);
+  if (gerente && equipo.valor.length > 0) {
+    const b = bonoDeGerente(s, equipo.valor);
     if (!b.ok) return error("COMISION_INVALIDA", b.error.mensaje, b.error.detalles);
     const porcentaje = porcentajeEntero(b.valor.porcentaje);
     bonoGerente = {
@@ -187,14 +281,27 @@ export function modeloComisiones(s: SemillaComisiones, c: CamposComisiones): Res
       porcentaje,
       bono: pesos(b.valor.bono),
       operacion: `${porcentaje} × ${pesos(b.valor.base)} = ${pesos(b.valor.bono)}`,
-      lineas: b.valor.lineas.map((x, i) => ({
-        numero: i + 1,
-        tipo: x.tipo,
-        monto: pesos(x.monto),
-        plazo: `${x.plazo} meses`,
-        tasa: porcentajeComision(x.tasa),
-        comision: pesos(x.comision),
-      })),
+      lineas: lineasSinFecha(b.valor.lineas),
+    };
+  }
+
+  // Mis externos: sujeta al desbloqueo del propio interno; aparte de su comisión y del bono de gerente.
+  let redExterna: ModeloComisiones["redExterna"] = null;
+  if (v.desbloqueo !== null && externos.valor.length > 0) {
+    const r = comisionPorRedExterna(s, externos.valor, v.desbloqueo.desbloqueada);
+    if (!r.ok) return error("COMISION_INVALIDA", r.error.mensaje, r.error.detalles);
+    const porcentaje = porcentajeEntero(r.valor.porcentaje);
+    redExterna = {
+      lineas: lineasSinFecha(r.valor.lineas),
+      base: pesos(r.valor.base),
+      porcentaje,
+      comision: pesos(r.valor.comision),
+      operacion: `${porcentaje} × ${pesos(r.valor.base)} = ${pesos(r.valor.comision)}`,
+      desbloqueada: r.valor.desbloqueada,
+      pagable: pesos(r.valor.pagable),
+      bloqueada: pesos(r.valor.bloqueada),
+      umbral: pesosEnteros(v.desbloqueo.umbral),
+      notaBloqueo: r.valor.desbloqueada ? null : notaLegible(s.notaComisionBloqueada),
     };
   }
 
@@ -222,11 +329,12 @@ export function modeloComisiones(s: SemillaComisiones, c: CamposComisiones): Res
       captacionParaMeta: pesos(v.captacionParaMeta),
     },
     avance: avanceDe(v),
-    // El parámetro viene como clave ("se_pierde (...)"): se muestra con espacios.
-    notaBloqueo: v.notaBloqueo === null ? null : v.notaBloqueo.replace(/^([a-z]+)_([a-z]+)/, "$1 $2"),
+    notaBloqueo: v.notaBloqueo === null ? null : notaLegible(v.notaBloqueo),
     bono: pesosONulo(v.bono),
     // El sueldo base (propuesta) solo se muestra al perfil interno con rol EJECUTIVO.
-    sueldoBase: c.perfil === "interno" && c.rol === "EJECUTIVO" ? pesosONulo(v.sueldoBase) : null,
+    sueldoBase: c.perfil === "interno" && c.rol === "EJECUTIVO" && v.sueldoBase !== null ? pesosEnteros(v.sueldoBase) : null,
+    incentivos: incentivosDe(s, v, c.rol),
+    redExterna,
     bonoGerente,
     pagos: v.pagos.map((p) => ({ fecha: fechaDeTextoIso(p.fecha), monto: pesos(p.monto), inversiones: p.lineas.map((i) => i + 1) })),
     regla: s.pago,

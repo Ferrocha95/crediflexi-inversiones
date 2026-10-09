@@ -75,12 +75,8 @@ export const TEXTOS = {
   reglaCierre: (nota: string) => `Si el mes cierra sin desbloquear, la comisión bloqueada: ${nota}.`,
 
   tituloIncentivos: "Sueldo base y bono",
-  sueldoBase: "Sueldo base (propuesta)",
-  bono: "Bono por captación",
   sinBono: "El bono por captación del gerente aún no está definido.",
   fechaIncentivosPorConfirmar: "Fecha de pago del sueldo base y del bono: por confirmar.",
-  tituloBonoExterno: "Bono por captación nueva",
-  ayudaBonoExterno: "Aparte de la comisión: depende de la captación nueva del mes.",
 
   tituloBonoGerente: "Bono de gerente (por confirmar)",
   ayudaBonoGerente: "Aparte de tu comisión y de tu meta, que se mide sobre tu propia captación.",

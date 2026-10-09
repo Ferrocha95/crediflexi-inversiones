@@ -35,9 +35,9 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 }
 
 describe("cargarTextos: el archivo real", () => {
-  it("carga seed/textos_cotizacion.json versión 0.8", () => {
+  it("carga seed/textos_cotizacion.json versión 0.9", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.8");
+    expect(t.version).toBe("0.9");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual neta indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +
@@ -643,5 +643,68 @@ describe("cargarTextos: el bloque reclutamiento (0.7.1)", () => {
     const j = copia();
     (j.reclutamiento as Record<string, unknown>).revision_interna = "Uso interno";
     expect(errorDe(j).detalles.join("\n")).toContain("revision_interna");
+  });
+});
+
+describe("cargarTextos: el bloque comisiones (0.9, Sprint 6c)", () => {
+  it("trae los textos de las tablas de incentivos con sus columnas y 'En adelante' en el último rango", () => {
+    const c = cargarBien(textosJson).comisiones;
+    expect([c.columnaCumplimiento, c.columnaDesde, c.columnaHasta, c.columnaIncentivo]).toEqual(["Cumplimiento", "Desde", "Hasta", "Incentivo"]);
+    expect(c.enAdelante).toBe("En adelante");
+    expect(c.incentivoMasComision).toBe("{bono} + comisión");
+  });
+
+  it("las notas exactas: meta interna de referencia, sueldo base y desbloqueo", () => {
+    const c = cargarBien(textosJson).comisiones;
+    expect(c.notaMetaInterna).toBe("Referencia: la meta interna de un ejecutivo es de {meta} al mes.");
+    expect(c.sueldoBase).toBe("Sueldo base (propuesta)");
+    expect(c.notaDesbloqueo).toBe("Las comisiones se desbloquean desde el {porcentaje} de la meta ({umbral}).");
+  });
+
+  it("Mis externos: rotulado como supuesto por confirmar, se paga aparte y la nota de la doble captura, exacta", () => {
+    const c = cargarBien(textosJson).comisiones;
+    expect(c.tituloMisExternos).toBe("Mis externos");
+    expect(c.supuestoPorConfirmar).toBe("Supuesto por confirmar");
+    expect(c.comisionPorExternos).toBe("Comisión por tus externos ({porcentaje})");
+    expect(c.notaAparte).toBe("Se paga aparte: no se descuenta a tus externos.");
+    expect(c.notaDobleCaptura).toBe(
+      "Captura cada inversión en un solo lugar: las de tu equipo interno, en ‘Inversiones del equipo’; las de tus externos, en ‘Mis externos’.",
+    );
+  });
+
+  it("el bloque del externo no dice que el externo tenga meta", () => {
+    const c = cargarBien(textosJson).comisiones;
+    expect(`${c.tituloIncentivosExterno}\n${c.ayudaIncentivosExterno}`).not.toMatch(/tu meta|meta del externo/i);
+  });
+
+  it.each([
+    ["nota_meta_interna", "{meta}", "{umbral}"],
+    ["nota_desbloqueo", "{porcentaje} {umbral}", "{meta}"],
+    ["incentivo_mas_comision", "{bono}", "{meta}"],
+    ["comision_por_externos", "{porcentaje}", "{bono}"],
+    ["red_bloqueada", "{umbral}", "{porcentaje}"],
+    ["inversion_externo", "{n}", "{meta}"],
+  ] as const)("comisiones.%s acepta %s y rechaza %s", (clave, aceptado, rechazado) => {
+    const bien = copia();
+    (bien.comisiones as Record<string, string>)[clave] = `Texto ${aceptado}`;
+    cargarBien(bien);
+    const mal = copia();
+    (mal.comisiones as Record<string, string>)[clave] = `Texto ${rechazado}`;
+    expect(errorDe(mal).todo).toContain(`comisiones.${clave}`);
+  });
+
+  it("un texto sin marcadores no admite ninguno", () => {
+    const j = copia();
+    j.comisiones.en_adelante = "En adelante {bono}";
+    expect(errorDe(j).todo).toContain("comisiones.en_adelante");
+  });
+
+  it("falta una clave del bloque o sobra una desconocida", () => {
+    const sin = copia();
+    delete (sin.comisiones as Record<string, unknown>).en_adelante;
+    expect(errorDe(sin).todo).toContain("en_adelante");
+    const sobra = copia();
+    (sobra.comisiones as Record<string, unknown>).sin_limite = "Sin límite";
+    expect(errorDe(sobra).todo).toContain("sin_limite");
   });
 });

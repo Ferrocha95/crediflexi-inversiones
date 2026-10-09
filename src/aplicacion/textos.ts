@@ -32,6 +32,9 @@ export const MARCADORES = [
   "desde",
   "hasta",
   "monto_minimo",
+  "meta",
+  "porcentaje",
+  "umbral",
 ] as const;
 export type Marcador = (typeof MARCADORES)[number];
 
@@ -66,6 +69,14 @@ export const MARCADORES_POR_CAMPO = {
   "reclutamiento.pdf_presenta": ["presenta"],
   "reclutamiento.fecha_quincena_1": ["dia_corte", "mes", "fecha_pago"],
   "reclutamiento.fecha_quincena_2": ["dia_siguiente", "mes", "fecha_pago"],
+  "comisiones.nota_meta_interna": ["meta"],
+  "comisiones.incentivo_mas_comision": ["bono"],
+  "comisiones.nota_desbloqueo": ["porcentaje", "umbral"],
+  "comisiones.inversion_externo": ["n"],
+  "comisiones.quitar_externo": ["n"],
+  "comisiones.comision_por_externos": ["porcentaje"],
+  "comisiones.red_desbloqueada": ["umbral"],
+  "comisiones.red_bloqueada": ["umbral"],
 } as const satisfies Readonly<Record<string, readonly Marcador[]>>;
 
 /**
@@ -127,7 +138,81 @@ export interface TextosCotizacion {
   readonly pdfPagina2: TextosPagina2;
   /** Modo reclutamiento (/comisiones/reclutamiento y su PDF "Propuesta de ingresos"). */
   readonly reclutamiento: TextosReclutamiento;
+  /** Simulador /comisiones (Sprint 6c): tablas de incentivos y Mis externos. */
+  readonly comisiones: TextosComisiones;
 }
+
+/**
+ * Textos del simulador /comisiones que vienen del archivo (Sprint 6c). Las
+ * plantillas llevan sus marcadores entre llaves; la pantalla los llena con las
+ * cifras del modelo.
+ */
+export interface TextosComisiones {
+  readonly tituloIncentivosExterno: string;
+  readonly ayudaIncentivosExterno: string;
+  /** Plantilla con {meta}: la meta interna de un ejecutivo, solo como referencia. */
+  readonly notaMetaInterna: string;
+  readonly tituloMetas: string;
+  readonly columnaCumplimiento: string;
+  readonly columnaDesde: string;
+  readonly columnaHasta: string;
+  readonly columnaIncentivo: string;
+  /** El "hasta" del último rango. */
+  readonly enAdelante: string;
+  /** Plantilla con {bono}. */
+  readonly incentivoMasComision: string;
+  readonly filaAlcanzada: string;
+  readonly sueldoBase: string;
+  /** Plantilla con {porcentaje} y {umbral}. */
+  readonly notaDesbloqueo: string;
+  readonly tituloMisExternos: string;
+  readonly ayudaMisExternos: string;
+  /** Solo GERENTE: dónde capturar cada inversión, para no contarla dos veces. */
+  readonly notaDobleCaptura: string;
+  /** Plantillas con {n}. */
+  readonly inversionExterno: string;
+  readonly agregarExterno: string;
+  readonly quitarExterno: string;
+  readonly supuestoPorConfirmar: string;
+  /** Plantilla con {porcentaje}. */
+  readonly comisionPorExternos: string;
+  readonly basePorExternos: string;
+  readonly notaAparte: string;
+  /** Plantillas con {umbral}. */
+  readonly redDesbloqueada: string;
+  readonly redBloqueada: string;
+}
+
+/** Clave del archivo (snake_case) -> clave de TextosComisiones. */
+const CLAVES_COMISIONES = {
+  titulo_incentivos_externo: "tituloIncentivosExterno",
+  ayuda_incentivos_externo: "ayudaIncentivosExterno",
+  nota_meta_interna: "notaMetaInterna",
+  titulo_metas: "tituloMetas",
+  columna_cumplimiento: "columnaCumplimiento",
+  columna_desde: "columnaDesde",
+  columna_hasta: "columnaHasta",
+  columna_incentivo: "columnaIncentivo",
+  en_adelante: "enAdelante",
+  incentivo_mas_comision: "incentivoMasComision",
+  fila_alcanzada: "filaAlcanzada",
+  sueldo_base: "sueldoBase",
+  nota_desbloqueo: "notaDesbloqueo",
+  titulo_mis_externos: "tituloMisExternos",
+  ayuda_mis_externos: "ayudaMisExternos",
+  nota_doble_captura: "notaDobleCaptura",
+  inversion_externo: "inversionExterno",
+  agregar_externo: "agregarExterno",
+  quitar_externo: "quitarExterno",
+  supuesto_por_confirmar: "supuestoPorConfirmar",
+  comision_por_externos: "comisionPorExternos",
+  base_por_externos: "basePorExternos",
+  nota_aparte: "notaAparte",
+  red_desbloqueada: "redDesbloqueada",
+  red_bloqueada: "redBloqueada",
+} as const satisfies Readonly<Record<string, keyof TextosComisiones>>;
+
+type ClaveArchivoComisiones = keyof typeof CLAVES_COMISIONES;
 
 /**
  * Textos del modo reclutamiento (Sprint 5: un solo dato, comparativo por
@@ -474,6 +559,16 @@ const esquemaTextos = z
         },
         { error: claveDesconocida },
       ),
+      comisiones: z.strictObject(
+        Object.fromEntries(
+          Object.keys(CLAVES_COMISIONES).map((clave) => {
+            const campo = `comisiones.${clave}`;
+            const permitidos = (MARCADORES_POR_CAMPO as Readonly<Record<string, readonly Marcador[]>>)[campo] ?? [];
+            return [clave, texto(campo, permitidos)];
+          }),
+        ) as Record<ClaveArchivoComisiones, ReturnType<typeof texto>>,
+        { error: claveDesconocida },
+      ),
       pdf_pagina2: z.strictObject(
         Object.fromEntries(
           Object.keys(CLAVES_PAGINA2).map((clave) => {
@@ -553,6 +648,9 @@ const esquemaTextos = z
         frases: t.reclutamiento.frases,
         frasesAprobadasPorRh: t.reclutamiento.frases_aprobadas_por_rh,
       },
+      comisiones: Object.fromEntries(
+        (Object.entries(CLAVES_COMISIONES) as [ClaveArchivoComisiones, keyof TextosComisiones][]).map(([archivo, clave]) => [clave, t.comisiones[archivo]]),
+      ) as unknown as TextosComisiones,
     };
   });
 

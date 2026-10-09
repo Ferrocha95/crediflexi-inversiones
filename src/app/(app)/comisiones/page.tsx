@@ -6,7 +6,7 @@ import { opcionesComisiones } from "../../../aplicacion/comisiones";
 import { fechaIsoEnMexico } from "../../../aplicacion/fecha";
 import { Aviso } from "../../../componentes/ui/Aviso";
 import { MAXIMO_INVERSIONES } from "../../../servidor/comisiones";
-import { leerSemillaComisiones } from "../../../servidor/parametros";
+import { leerSemillaComisiones, leerTextosComisiones } from "../../../servidor/parametros";
 import { exigirUsuario } from "../../../servidor/sesion";
 import { Simulador } from "./Simulador";
 import { TEXTOS } from "./textosPantalla";
@@ -16,16 +16,17 @@ export const metadata: Metadata = {
 };
 
 /**
- * Simulador de comisiones (componente de servidor). Lee la semilla en cada
- * petición y pasa al cliente solo texto y números: ni decimal.js ni la semilla
- * llegan al navegador. Nada se guarda.
+ * Simulador de comisiones (componente de servidor). Lee la semilla y los textos
+ * en cada petición y pasa al cliente solo texto y números: ni decimal.js ni la
+ * semilla llegan al navegador. Nada se guarda.
  */
 export default async function PaginaComisiones() {
   // Cada página revisa al usuario: el layout no se vuelve a ejecutar al navegar.
   const usuario = await exigirUsuario();
   // Sin esto, next build prerenderizaría la página con la semilla del momento de la compilación.
   await connection();
-  const semilla = await leerSemillaComisiones();
+  const [semilla, textos] = await Promise.all([leerSemillaComisiones(), leerTextosComisiones()]);
+  const fallo = !semilla.ok ? semilla.error : !textos.ok ? textos.error : null;
   const rolInicial = usuario.rol === "GERENTE" ? "GERENTE" : "EJECUTIVO";
 
   return (
@@ -52,19 +53,20 @@ export default async function PaginaComisiones() {
         </p>
       </header>
 
-      {semilla.ok ? (
+      {semilla.ok && textos.ok ? (
         <Simulador
           opciones={opcionesComisiones(semilla.valor)}
+          textos={textos.valor}
           rolInicial={rolInicial}
           fechaInicial={fechaIsoEnMexico(new Date())}
           maximoInversiones={MAXIMO_INVERSIONES}
         />
       ) : (
         <Aviso role="alert" tono="error" titulo={TEXTOS.tituloErrorParametros}>
-          <p>{semilla.error.mensaje}</p>
-          {semilla.error.detalles !== undefined && semilla.error.detalles.length > 0 && (
+          <p>{fallo?.mensaje}</p>
+          {fallo?.detalles !== undefined && fallo.detalles.length > 0 && (
             <ul className="mt-2 list-disc pl-5 text-sm">
-              {semilla.error.detalles.map((d) => (
+              {fallo.detalles.map((d) => (
                 <li key={d}>{d}</li>
               ))}
             </ul>

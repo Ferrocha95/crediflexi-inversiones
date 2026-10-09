@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { Decimal } from "../../../src/domain/comun/decimal";
+import { bonoDeExterno } from "../../../src/domain/comisiones/bonoExterno";
 import { liquidarMes, type EntradaLiquidacion, type InversionDelMes } from "../../../src/domain/comisiones/liquidacion";
 import { bien, cargar, copiaSemilla, mal, semillaComisiones as s } from "./ayudas";
 
@@ -191,6 +193,24 @@ describe("liquidarMes: externo", () => {
     const l = externo([nueva(monto, 12)]);
     expect(pesos(l.bono)).toBe(bono);
     expect(l.filaIncentivo).toBe(fila);
+  });
+
+  it.each([
+    ["999999.99", null],
+    ["1000000", 0],
+    ["1500000", 1],
+    ["2000000", 2],
+  ])("filaIncentivo del externo con captación nueva %s: %s, nunca -1, y es la fila que devuelve bonoDeExterno (misma referencia)", (monto, fila) => {
+    const l = externo([nueva(monto, 12)]);
+    expect(l.filaIncentivo).toBe(fila);
+    expect(l.filaIncentivo).not.toBe(-1);
+    const { rango } = bonoDeExterno(s, new Decimal(monto));
+    if (fila === null) {
+      expect(rango).toBeNull();
+    } else {
+      // toBe compara la referencia: el rango es el mismo objeto del arreglo de la semilla.
+      expect(rango).toBe(s.incentivosExternos[fila]);
+    }
   });
 
   it("un externo nunca devuelve comisión bloqueada, con cualquier captación", () => {

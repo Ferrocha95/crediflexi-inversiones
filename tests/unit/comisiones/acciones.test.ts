@@ -29,6 +29,7 @@ const base = {
     { tipo: "nueva", monto: "400000", plazo: 6, fecha: "2026-10-09" },
   ],
   equipo: [] as unknown[],
+  externos: [] as unknown[],
 };
 
 function modelo(r: RespuestaComisiones) {
@@ -98,6 +99,29 @@ describe("acción simular (/comisiones)", () => {
 
   it("la captación de red externa ya no se acepta (forma inválida)", async () => {
     expect(error(await simular({ ...base, captacionRedExterna: "500000" })).mensaje).toBe(MENSAJE_FORMA_COMISIONES);
+  });
+
+  it("EJECUTIVO con Mis externos: la comisión por externos llega aparte (25,215.00 -> 7,564.50, desbloqueada)", async () => {
+    const r = await simular({
+      ...base,
+      externos: [
+        { tipo: "nueva", monto: "500,000", plazo: 12 },
+        { tipo: "nueva", monto: "400000", plazo: 6 },
+        { tipo: "renovacion", monto: "500000", plazo: 12 },
+      ],
+    });
+    expect(modelo(r).redExterna).toMatchObject({ base: "$25,215.00", comision: "$7,564.50", desbloqueada: true });
+  });
+
+  it("50 inversiones de Mis externos se aceptan; 51 son forma inválida", async () => {
+    const de = (n: number) => Array.from({ length: n }, () => ({ tipo: "nueva", monto: "500000", plazo: 12 }));
+    expect(modelo(await simular({ ...base, externos: de(50) })).redExterna).not.toBeNull();
+    expect(error(await simular({ ...base, externos: de(51) })).mensaje).toBe(MENSAJE_FORMA_COMISIONES);
+  });
+
+  it("una inversión de Mis externos con fecha o con claves de más: forma inválida", async () => {
+    const r = await simular({ ...base, externos: [{ tipo: "nueva", monto: "500000", plazo: 12, fecha: "2026-10-07" }] });
+    expect(error(r).mensaje).toBe(MENSAJE_FORMA_COMISIONES);
   });
 
   it("más de 50 inversiones del equipo: forma inválida", async () => {

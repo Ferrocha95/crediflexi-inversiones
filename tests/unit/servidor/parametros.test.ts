@@ -6,6 +6,7 @@ import benchmarkJson from "../../../seed/benchmark.json";
 import textosJson from "../../../seed/textos_cotizacion.json";
 import {
   leerParametrosCotizacion,
+  leerTextosComisiones,
   RUTA_BENCHMARK,
   RUTA_SEMILLA,
   RUTA_TEXTOS,
@@ -42,7 +43,7 @@ describe("leerParametrosCotizacion", () => {
     expect(r.valor.semilla.entidades).toEqual(["CREDIFLEXI", "RAMI_SISE"]);
     expect(r.valor.razonesSociales.get("CREDIFLEXI")).toBe("CREDIFLEXI, S.A.P.I. DE C.V.");
     expect(r.valor.razonesSociales.get("RAMI_SISE")).toBe("RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R.");
-    expect(r.valor.textos.version).toBe("0.8");
+    expect(r.valor.textos.version).toBe("0.9");
     expect(r.valor.benchmark.version).toBe("0.4.2");
     expect(r.valor.benchmark.actualizado_al).toBe("2026-10-08");
   });
@@ -115,5 +116,22 @@ describe("leerParametrosCotizacion", () => {
     const despues = await leerParametrosCotizacion(rutas);
     if (!antes.ok || !despues.ok) throw new Error("Se esperaba leer bien");
     expect([antes.valor.benchmark.version, despues.valor.benchmark.version]).toEqual(["0.4.2", "9.9"]);
+  });
+});
+
+describe("leerTextosComisiones", () => {
+  it("lee el bloque comisiones de los textos reales (0.9)", async () => {
+    const r = await leerTextosComisiones();
+    if (!r.ok) throw new Error(r.error.mensaje);
+    expect(r.valor.enAdelante).toBe("En adelante");
+    expect(r.valor.tituloMisExternos).toBe("Mis externos");
+  });
+
+  it("si los textos no son válidos, lo dice con el nombre del archivo", async () => {
+    const roto = structuredClone(textosJson) as Record<string, unknown>;
+    delete roto.comisiones;
+    const r = await leerTextosComisiones(await archivo("textos_sin_comisiones.json", JSON.stringify(roto)));
+    if (r.ok) throw new Error("Se esperaba un error");
+    expect(r.error.mensaje).toContain("textos_sin_comisiones.json");
   });
 });

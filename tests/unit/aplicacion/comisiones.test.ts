@@ -9,9 +9,13 @@ import { semillaComisiones as s } from "../comisiones/ayudas";
 type Inversion = CamposComisiones["inversiones"][number];
 const nueva = (monto: string, plazo: number | null, fecha = "2026-10-07"): Inversion => ({ tipo: "nueva", monto, plazo, fecha });
 
-const INTERNO: CamposComisiones = { perfil: "interno", rol: "EJECUTIVO", inversiones: [], equipo: [] };
+const INTERNO: CamposComisiones = { perfil: "interno", rol: "EJECUTIVO", inversiones: [], equipo: [], externos: [] };
 type DelEquipo = CamposComisiones["equipo"][number];
 const delEquipo = (tipo: DelEquipo["tipo"], monto: string, plazo: number | null): DelEquipo => ({ tipo, monto, plazo });
+type DeExterno = CamposComisiones["externos"][number];
+const deExterno = (tipo: DeExterno["tipo"], monto: string, plazo: number | null): DeExterno => ({ tipo, monto, plazo });
+/** Las inversiones de los externos de un interno (valores de referencia de Fernando). */
+const TRES_DE_EXTERNOS = [deExterno("nueva", "500,000", 12), deExterno("nueva", "400000", 6), deExterno("renovacion", "500000", 12)];
 
 function modelo(c: Partial<CamposComisiones>) {
   const r = modeloComisiones(s, { ...INTERNO, ...c });
@@ -66,7 +70,7 @@ describe("modeloComisiones: interno", () => {
     expect(m.avance!.fraccionUmbral).toBeCloseTo(0.8, 10);
     expect(m.pagos).toEqual([{ fecha: "16/10/2026", monto: "$18,450.00", inversiones: [1, 2] }]);
     expect(m.bono).toBe("$0.00");
-    expect(m.sueldoBase).toBe("$15,000.00");
+    expect(m.sueldoBase).toBe("$15,000");
     expect(m.notaBloqueo).toBeNull();
   });
 
@@ -136,7 +140,7 @@ describe("modeloComisiones: interno", () => {
 
   it("EJECUTIVO: el sueldo base de la propuesta aparece; el bono de gerente no", () => {
     const m = modelo({ inversiones: [nueva("500000", 12)] });
-    expect(m.sueldoBase).toBe("$15,000.00");
+    expect(m.sueldoBase).toBe("$15,000");
     expect(m.bonoGerente).toBeNull();
   });
 
@@ -205,5 +209,144 @@ describe("plazosDeComision", () => {
 describe("opcionesComisiones", () => {
   it("los plazos salen de la semilla (ya sin el porcentaje de la red)", () => {
     expect(opcionesComisiones(s)).toEqual({ plazos: [6, 12, 18, 24] });
+  });
+});
+
+describe("modeloComisiones: tabla de incentivos del externo (Sprint 6c)", () => {
+  const externo = (monto: string, extra: Inversion[] = []) =>
+    modelo({ perfil: "externo", rol: null, inversiones: [nueva(monto, 12), ...extra] });
+
+  it("cumplimiento, desde, hasta e incentivo de las filas EXTERNOS; resalta la de 1,000,000 de captación nueva", () => {
+    const m = externo("1,000,000");
+    expect(m.incentivos).toEqual({
+      tipo: "externo",
+      filas: [
+        { cumplimiento: "100% de la meta interna", desde: "$1,000,000", hasta: "$1,499,999", bono: "$15,000", alcanzada: true },
+        { cumplimiento: "150% de la meta interna", desde: "$1,500,000", hasta: "$1,999,999", bono: "$20,000", alcanzada: false },
+        { cumplimiento: "200% de la meta interna", desde: "$2,000,000", hasta: null, bono: "$25,000", alcanzada: false },
+      ],
+      metaReferencia: "$1,000,000",
+      desbloqueo: null,
+    });
+  });
+
+  it.each([
+    ["999,999.99", [false, false, false]],
+    ["1,500,000", [false, true, false]],
+    ["2,000,000", [false, false, true]],
+  ])("captación nueva %s: filas resaltadas %j", (monto, resaltadas) => {
+    expect(externo(monto).incentivos!.filas.map((f) => f.alcanzada)).toEqual(resaltadas);
+  });
+
+  it("el rango se mide con la captación NUEVA: 1,500,000 nueva + 1,000,000 de renovación resalta 150%", () => {
+    const m = externo("1,500,000", [{ tipo: "renovacion", monto: "1000000", plazo: 12, fecha: "2026-10-07" }]);
+    expect(m.incentivos!.filas.map((f) => f.alcanzada)).toEqual([false, true, false]);
+  });
+
+  it("la meta de referencia sale de la semilla (metas_mensuales.EJECUTIVO)", () => {
+    expect(externo("500000").incentivos!.metaReferencia).toBe("$1,000,000");
+  });
+});
+
+describe("modeloComisiones: tabla de metas del EJECUTIVO (Sprint 6c)", () => {
+  it("filas INTERNOS con bono $0, $5,000 y $10,000; resalta la alcanzada; sueldo base y desbloqueo al 80% ($800,000)", () => {
+    const m = modelo({ inversiones: [nueva("1,500,000", 12)] });
+    expect(m.incentivos).toEqual({
+      tipo: "interno",
+      filas: [
+        { cumplimiento: "100% de la meta", desde: "$1,000,000", hasta: "$1,499,999", bono: "$0", alcanzada: false },
+        { cumplimiento: "150% de la meta", desde: "$1,500,000", hasta: "$1,999,999", bono: "$5,000", alcanzada: true },
+        { cumplimiento: "200% de la meta", desde: "$2,000,000", hasta: null, bono: "$10,000", alcanzada: false },
+      ],
+      metaReferencia: null,
+      desbloqueo: { porcentaje: "80%", umbral: "$800,000" },
+    });
+    expect(m.sueldoBase).toBe("$15,000");
+  });
+
+  it("debajo de 1,000,000 no se resalta ninguna fila", () => {
+    expect(modelo({ inversiones: [nueva("999,999.99", 12)] }).incentivos!.filas.every((f) => !f.alcanzada)).toBe(true);
+  });
+
+  it("las renovaciones no cuentan para la fila: 900,000 nueva + 1,000,000 de renovación no llega al 100%", () => {
+    const m = modelo({ inversiones: [nueva("900000", 12), { tipo: "renovacion", monto: "1000000", plazo: 12, fecha: "2026-10-07" }] });
+    expect(m.incentivos!.filas.every((f) => !f.alcanzada)).toBe(true);
+  });
+
+  it("GERENTE: sin tabla de metas", () => {
+    expect(modelo({ rol: "GERENTE", inversiones: [nueva("2,500,000", 12)] }).incentivos).toBeNull();
+  });
+});
+
+describe("modeloComisiones: Mis externos, comisión por externos (30%, supuesto por confirmar)", () => {
+  it("interno desbloqueado (900,000 propios): 25,215.00 × 30% = 7,564.50 pagable, aparte de su comisión", () => {
+    const m = modelo({ inversiones: [nueva("500000", 12), nueva("400000", 6)], externos: TRES_DE_EXTERNOS });
+    expect(m.redExterna).toEqual({
+      lineas: [
+        { numero: 1, tipo: "nueva", monto: "$500,000.00", plazo: "12 meses", tasa: "2.706%", comision: "$13,530.00" },
+        { numero: 2, tipo: "nueva", monto: "$400,000.00", plazo: "6 meses", tasa: "1.23%", comision: "$4,920.00" },
+        { numero: 3, tipo: "renovacion", monto: "$500,000.00", plazo: "12 meses", tasa: "1.353%", comision: "$6,765.00" },
+      ],
+      base: "$25,215.00",
+      porcentaje: "30%",
+      comision: "$7,564.50",
+      operacion: "30% × $25,215.00 = $7,564.50",
+      desbloqueada: true,
+      pagable: "$7,564.50",
+      bloqueada: "$0.00",
+      umbral: "$800,000",
+      notaBloqueo: null,
+    });
+    // No se mezcla con la comisión propia ni con la meta.
+    expect(m.totales.comisionBruta).toBe("$18,450.00");
+    expect(m.totales.captacionParaMeta).toBe("$900,000.00");
+  });
+
+  it("interno bloqueado (700,000 propios < 800,000): los 7,564.50 quedan bloqueados, pagable 0.00, con la nota del cierre", () => {
+    const m = modelo({ inversiones: [nueva("700000", 12)], externos: TRES_DE_EXTERNOS });
+    expect(m.redExterna).toMatchObject({
+      comision: "$7,564.50",
+      desbloqueada: false,
+      pagable: "$0.00",
+      bloqueada: "$7,564.50",
+      umbral: "$800,000",
+      notaBloqueo: "se pierde (POR_CONFIRMAR, editable)",
+    });
+  });
+
+  it("dos nuevas de 300,001 a 6 meses: un solo redondeo final, $2,214.01", () => {
+    const m = modelo({ inversiones: [nueva("800000", 12)], externos: [deExterno("nueva", "300,001", 6), deExterno("nueva", "300001", 6)] });
+    expect(m.redExterna).toMatchObject({ base: "$7,380.02", comision: "$2,214.01" });
+  });
+
+  it("una sola nueva de 300,001 a 6 meses: $1,107.00", () => {
+    expect(modelo({ inversiones: [nueva("800000", 12)], externos: [deExterno("nueva", "300001", 6)] }).redExterna!.comision).toBe("$1,107.00");
+  });
+
+  it("GERENTE: el bloqueo se mide con su propio umbral ($1,600,000) y el bono de gerente no cambia ni se mezcla", () => {
+    const m = modelo({
+      rol: "GERENTE",
+      inversiones: [nueva("500000", 12)],
+      equipo: [delEquipo("nueva", "500,000", 12), delEquipo("nueva", "400000", 6), delEquipo("renovacion", "500000", 12)],
+      externos: [deExterno("nueva", "300001", 6)],
+    });
+    expect(m.bonoGerente).toMatchObject({ base: "$25,215.00", bono: "$7,564.50" });
+    expect(m.redExterna).toMatchObject({ base: "$3,690.01", comision: "$1,107.00", desbloqueada: false, umbral: "$1,600,000" });
+  });
+
+  it("sin inversiones de externos no hay bloque", () => {
+    expect(modelo({ inversiones: [nueva("500000", 12)] }).redExterna).toBeNull();
+  });
+
+  it("un externo no tiene Mis externos: se rechaza con un mensaje claro", () => {
+    expect(error({ perfil: "externo", rol: null, externos: [deExterno("nueva", "500000", 12)] }).mensaje).toMatch(/Mis externos.*Interno/);
+  });
+
+  it("una inversión de externos ilegible, sin plazo o menor al mínimo dice cuál es", () => {
+    expect(error({ externos: [deExterno("nueva", "abc", 12)] }).mensaje).toMatch(/^Inversión de tus externos 1: /);
+    expect(error({ externos: [deExterno("nueva", "500000", 12), deExterno("nueva", "500000", null)] }).mensaje).toBe(
+      "Inversión de tus externos 2: elige el plazo.",
+    );
+    expect(error({ externos: [deExterno("nueva", "20,000", 12)] }).mensaje).toMatch(/^Inversión de tus externos 1: .*\$30,000\.00/);
   });
 });

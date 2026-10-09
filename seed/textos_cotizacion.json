@@ -1,5 +1,5 @@
 {
-  "version": "0.8",
+  "version": "0.9",
   "glosario": {
     "rendimiento_mensual": "Rendimiento mensual",
     "rendimiento_anual": "Rendimiento anual (12 meses)",
@@ -126,5 +126,32 @@
     "pdf_presenta": "Presenta: {presenta}",
     "pdf_fecha": "Fecha",
     "descargar_pdf": "Descargar PDF"
+  },
+  "comisiones": {
+    "titulo_incentivos_externo": "Incentivos por captación nueva del mes",
+    "ayuda_incentivos_externo": "Aparte de la comisión. El incentivo depende de la captación nueva del mes, sin renovaciones; el cumplimiento es solo una referencia.",
+    "nota_meta_interna": "Referencia: la meta interna de un ejecutivo es de {meta} al mes.",
+    "titulo_metas": "Metas del mes",
+    "columna_cumplimiento": "Cumplimiento",
+    "columna_desde": "Desde",
+    "columna_hasta": "Hasta",
+    "columna_incentivo": "Incentivo",
+    "en_adelante": "En adelante",
+    "incentivo_mas_comision": "{bono} + comisión",
+    "fila_alcanzada": "Con esta captación",
+    "sueldo_base": "Sueldo base (propuesta)",
+    "nota_desbloqueo": "Las comisiones se desbloquean desde el {porcentaje} de la meta ({umbral}).",
+    "titulo_mis_externos": "Mis externos",
+    "ayuda_mis_externos": "Inversiones de tus externos, nuevas y renovaciones, sin fecha. No cuentan para tu meta.",
+    "nota_doble_captura": "Captura cada inversión en un solo lugar: las de tu equipo interno, en ‘Inversiones del equipo’; las de tus externos, en ‘Mis externos’.",
+    "inversion_externo": "Inversión de tus externos {n}",
+    "agregar_externo": "Agregar inversión de tus externos",
+    "quitar_externo": "Quitar la inversión de tus externos {n}",
+    "supuesto_por_confirmar": "Supuesto por confirmar",
+    "comision_por_externos": "Comisión por tus externos ({porcentaje})",
+    "base_por_externos": "Comisión N1 de tus externos",
+    "nota_aparte": "Se paga aparte: no se descuenta a tus externos.",
+    "red_desbloqueada": "Desbloqueada: tu captación nueva del mes ya llegó a {umbral}.",
+    "red_bloqueada": "Bloqueada: se desbloquea cuando tu captación nueva del mes llegue a {umbral}."
   }
 }

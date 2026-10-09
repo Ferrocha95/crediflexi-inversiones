@@ -2,7 +2,9 @@
 
 import { LockKeyhole, LockKeyholeOpen } from "lucide-react";
 import type { ModeloComisiones } from "../../../aplicacion/comisiones";
+import type { TextosComisiones } from "../../../aplicacion/textos";
 import { InsigniaTono } from "../../../componentes/ui/InsigniaTono";
+import { llenar } from "./plantilla";
 import { TEXTOS } from "./textosPantalla";
 
 /** "1, 2 y 3" (los números de inversión de un pago). */
@@ -52,8 +54,69 @@ function BarraAvance({ avance, captacion }: { avance: NonNullable<ModeloComision
   );
 }
 
+/**
+ * Tabla de incentivos (Cumplimiento, Desde, Hasta, Incentivo) con la fila
+ * alcanzada resaltada. Tarjetas en celular y tabla desde tableta.
+ */
+function TablaIncentivos({ incentivos, textos: t }: { incentivos: NonNullable<ModeloComisiones["incentivos"]>; textos: TextosComisiones }) {
+  const hasta = (h: string | null) => h ?? t.enAdelante;
+  const incentivo = (bono: string) => llenar(t.incentivoMasComision, { bono });
+  const alcanzada = <InsigniaTono etiqueta={t.filaAlcanzada} tono="positivo" />;
+  return (
+    <>
+      {/* Celular: una tarjeta por fila. */}
+      <ul className="flex flex-col gap-2 sm:hidden">
+        {incentivos.filas.map((f) => (
+          <li key={f.desde} className={`rounded-xl border p-3 ${f.alcanzada ? "border-verde-texto/60 bg-verde-texto/10" : "border-hielo/15 bg-marino/50"}`}>
+            <p className="flex flex-wrap items-center justify-between gap-2 font-bold">
+              {f.cumplimiento}
+              {f.alcanzada && alcanzada}
+            </p>
+            <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+              <dt className="text-hielo">{t.columnaDesde}</dt>
+              <dd className="text-right tabular-nums">{f.desde}</dd>
+              <dt className="text-hielo">{t.columnaHasta}</dt>
+              <dd className="text-right tabular-nums">{hasta(f.hasta)}</dd>
+              <dt className="text-hielo">{t.columnaIncentivo}</dt>
+              <dd className="text-right font-bold tabular-nums">{incentivo(f.bono)}</dd>
+            </dl>
+          </li>
+        ))}
+      </ul>
+      {/* Tableta y escritorio: tabla. */}
+      <div className="hidden overflow-x-auto sm:block">
+        <table className="w-full text-left text-sm">
+          <thead className="text-hielo">
+            <tr className="border-b border-hielo/20">
+              <th scope="col" className="py-2 pr-3">{t.columnaCumplimiento}</th>
+              <th scope="col" className="py-2 pr-3 text-right">{t.columnaDesde}</th>
+              <th scope="col" className="py-2 pr-3 text-right">{t.columnaHasta}</th>
+              <th scope="col" className="py-2 text-right">{t.columnaIncentivo}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {incentivos.filas.map((f) => (
+              <tr key={f.desde} className={`border-b border-hielo/10 align-top ${f.alcanzada ? "bg-verde-texto/10 font-semibold" : ""}`}>
+                <th scope="row" className="py-2 pr-3 font-semibold">
+                  <span className="flex flex-wrap items-center gap-2">
+                    {f.cumplimiento}
+                    {f.alcanzada && alcanzada}
+                  </span>
+                </th>
+                <td className="py-2 pr-3 text-right tabular-nums">{f.desde}</td>
+                <td className="py-2 pr-3 text-right tabular-nums">{hasta(f.hasta)}</td>
+                <td className="py-2 text-right font-bold tabular-nums">{incentivo(f.bono)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
 /** Resultado del simulador: muestra el modelo tal como llega del servidor; aquí no se calcula nada. */
-export function Resultado({ modelo: m }: { modelo: ModeloComisiones }) {
+export function Resultado({ modelo: m, textos: t }: { modelo: ModeloComisiones; textos: TextosComisiones }) {
   const etiquetaTipo = (t: "nueva" | "renovacion") => (t === "nueva" ? TEXTOS.nueva : TEXTOS.renovacion);
   const pago = (f: string | null) => f ?? TEXTOS.sinPago;
 
@@ -212,31 +275,89 @@ export function Resultado({ modelo: m }: { modelo: ModeloComisiones }) {
         </section>
       )}
 
-      {/* Bono de externos: aparte de la comisión; su fecha de pago no está definida y no se muestra. */}
-      {m.perfil === "externo" && m.bono !== null && (
-        <section aria-labelledby="titulo-bono-externo" className="flex flex-col gap-3">
-          <h3 id="titulo-bono-externo" className="text-lg font-bold">
-            {TEXTOS.tituloBonoExterno}
-          </h3>
-          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Cifra etiqueta={TEXTOS.tituloBonoExterno} valor={m.bono} fuerte />
+      {m.redExterna !== null && (
+        <section aria-labelledby="titulo-red-externa" className="superficie flex flex-col gap-3 rounded-2xl p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 id="titulo-red-externa" className="text-lg font-bold">
+              {llenar(t.comisionPorExternos, { porcentaje: m.redExterna.porcentaje })}
+            </h3>
+            <InsigniaTono etiqueta={t.supuestoPorConfirmar} tono="neutro" />
+          </div>
+          <ol className="flex flex-col gap-1 text-sm">
+            {m.redExterna.lineas.map((l) => (
+              <li key={l.numero} className="flex flex-wrap justify-between gap-x-3">
+                <span>
+                  {llenar(t.inversionExterno, { n: l.numero })} · {etiquetaTipo(l.tipo)} · {l.monto} · {l.plazo} · {l.tasa}
+                </span>
+                <span className="font-semibold tabular-nums">{l.comision}</span>
+              </li>
+            ))}
+          </ol>
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Cifra etiqueta={t.basePorExternos} valor={m.redExterna.base} />
+            <Cifra etiqueta={TEXTOS.comisionPagable} valor={m.redExterna.pagable} fuerte />
+            <Cifra etiqueta={TEXTOS.comisionBloqueada} valor={m.redExterna.bloqueada} />
           </dl>
-          <p className="text-sm text-hielo-tenue">{TEXTOS.ayudaBonoExterno}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            {m.redExterna.desbloqueada ? (
+              <InsigniaTono etiqueta={TEXTOS.desbloqueada} tono="positivo" Icono={LockKeyholeOpen} />
+            ) : (
+              <InsigniaTono etiqueta={TEXTOS.bloqueada} tono="atencion" Icono={LockKeyhole} />
+            )}
+            <p className="text-sm text-hielo">
+              {llenar(m.redExterna.desbloqueada ? t.redDesbloqueada : t.redBloqueada, { umbral: m.redExterna.umbral })}
+            </p>
+          </div>
+          {m.redExterna.notaBloqueo !== null && <p className="text-sm text-hielo">{TEXTOS.reglaCierre(m.redExterna.notaBloqueo)}</p>}
+          <p className="text-sm text-hielo-tenue">
+            {TEXTOS.calculo}: {m.redExterna.operacion}
+          </p>
+          <p className="text-sm text-hielo-tenue">{t.notaAparte}</p>
         </section>
       )}
 
-      {m.perfil === "interno" && (
+      {/* Externo: tabla de incentivos por captación nueva; su fecha de pago no está definida y no se muestra. */}
+      {m.incentivos?.tipo === "externo" && (
+        <section aria-labelledby="titulo-incentivos-externo" className="flex flex-col gap-3">
+          <h3 id="titulo-incentivos-externo" className="text-lg font-bold">
+            {t.tituloIncentivosExterno}
+          </h3>
+          <p className="text-sm text-hielo">{t.ayudaIncentivosExterno}</p>
+          <TablaIncentivos incentivos={m.incentivos} textos={t} />
+          {m.incentivos.metaReferencia !== null && (
+            <p className="text-sm text-hielo-tenue">{llenar(t.notaMetaInterna, { meta: m.incentivos.metaReferencia })}</p>
+          )}
+        </section>
+      )}
+
+      {/* EJECUTIVO: tabla de metas, sueldo base (propuesta) y desde dónde se desbloquea. */}
+      {m.incentivos?.tipo === "interno" && (
+        <section aria-labelledby="titulo-metas" className="flex flex-col gap-3">
+          <h3 id="titulo-metas" className="text-lg font-bold">
+            {t.tituloMetas}
+          </h3>
+          <TablaIncentivos incentivos={m.incentivos} textos={t} />
+          {m.sueldoBase !== null && (
+            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Cifra etiqueta={t.sueldoBase} valor={m.sueldoBase} />
+            </dl>
+          )}
+          {m.incentivos.desbloqueo !== null && (
+            <p className="text-sm text-hielo">
+              {llenar(t.notaDesbloqueo, { porcentaje: m.incentivos.desbloqueo.porcentaje, umbral: m.incentivos.desbloqueo.umbral })}
+            </p>
+          )}
+          <p className="text-sm text-hielo-tenue">{TEXTOS.fechaIncentivosPorConfirmar}</p>
+        </section>
+      )}
+
+      {/* GERENTE: sin tabla; su bono y su sueldo base siguen sin definir. */}
+      {m.perfil === "interno" && m.incentivos === null && (
         <section aria-labelledby="titulo-incentivos" className="flex flex-col gap-3">
           <h3 id="titulo-incentivos" className="text-lg font-bold">
             {TEXTOS.tituloIncentivos}
           </h3>
-          {m.sueldoBase !== null || m.bono !== null ? (
-            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {m.sueldoBase !== null && <Cifra etiqueta={TEXTOS.sueldoBase} valor={m.sueldoBase} />}
-              {m.bono !== null && <Cifra etiqueta={TEXTOS.bono} valor={m.bono} />}
-            </dl>
-          ) : null}
-          {m.bono === null && <p className="text-hielo">{TEXTOS.sinBono}</p>}
+          <p className="text-hielo">{TEXTOS.sinBono}</p>
           <p className="text-sm text-hielo-tenue">{TEXTOS.fechaIncentivosPorConfirmar}</p>
         </section>
       )}
