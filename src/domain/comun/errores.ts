@@ -13,7 +13,8 @@ export type CodigoError =
   | "PLAZO_NO_DISPONIBLE"
   | "PUNTOS_INVALIDOS"
   | "PLAZO_ESPECIAL_INVALIDO"
-  | "TASA_INVALIDA";
+  | "TASA_INVALIDA"
+  | "FECHA_INICIO_INVALIDA";
 
 export interface ErrorCotizacion {
   readonly codigo: CodigoError;
