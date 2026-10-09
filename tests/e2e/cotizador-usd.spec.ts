@@ -21,8 +21,10 @@ test.describe("cotizador en USD", () => {
     const plazo = page.getByLabel("Plazo", { exact: true });
     await expect(plazo).toBeEnabled();
     await plazo.selectOption({ label: "12 meses" });
-    await expect(page.getByRole("heading", { name: "Resultados" })).toBeVisible();
-    await expect(page.getByText("$70.83 USD", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Datos capturados" })).toBeVisible();
+    // Sprint 6a: el monto capturado, sí; el rendimiento calculado, no.
+    await expect(page.locator("dd").filter({ hasText: /^\$10,000\.00 USD$/ })).toBeVisible();
+    await expect(page.getByText("$70.83 USD", { exact: true })).toHaveCount(0);
 
     await entidad.selectOption({ label: "CREDIFLEXI, S.A.P.I. DE C.V." });
     await expect(moneda).toHaveValue("MXN");

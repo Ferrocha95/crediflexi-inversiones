@@ -17,7 +17,7 @@ export const MENSAJES_PDF = {
     "La petición del PDF no viene de esta misma página. Abre el cotizador con la dirección localhost y genera el PDF desde ahí.",
   formaInvalida: "La solicitud del PDF no tiene la forma esperada. Recarga la página y vuelve a intentarlo.",
   sinConfirmar:
-    'Antes de generar el PDF, revisa la vista previa y marca la casilla "Confirmo que los números son correctos".',
+    'Antes de generar el PDF, revisa la vista previa y marca la casilla "Confirmo que los datos capturados son correctos".',
   tasasCambiaron: "Las tasas cambiaron desde tu vista previa; vuelve a revisarla.",
   fallaRender: "No se pudo generar el PDF. Vuelve a intentarlo; si sigue fallando, reinicia la app.",
 } as const;

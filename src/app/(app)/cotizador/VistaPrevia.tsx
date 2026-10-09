@@ -2,10 +2,13 @@
 
 import type { ModeloVistaPrevia } from "../../../aplicacion/modelo";
 import { Aviso } from "../../../componentes/ui/Aviso";
-import { TarjetaCifra } from "../../../componentes/ui/TarjetaCifra";
 import { TEXTOS } from "./textosPantalla";
 
-/** Muestra la vista previa tal como llega del servidor: aquí no se calcula nada. */
+/**
+ * Muestra la vista previa tal como llega del servidor: aquí no se calcula nada.
+ * Desde el Sprint 6a no muestra importes ni tablas de rendimientos: solo los
+ * datos capturados, la tasa aplicada con su desglose, el tramo y los avisos.
+ */
 export function VistaPrevia({ vista }: { vista: ModeloVistaPrevia }) {
   return (
     <div className="flex flex-col gap-6">
@@ -24,74 +27,52 @@ export function VistaPrevia({ vista }: { vista: ModeloVistaPrevia }) {
         </Aviso>
       )}
 
-      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.esquema}</dt>
-          <dd className="font-semibold">{vista.solicitud.esquema}</dd>
-        </div>
-        <div>
-          <dt className="text-sm font-semibold text-hielo-tenue">{vista.etiquetaTasa}</dt>
-          <dd className="text-2xl font-extrabold tabular-nums">{vista.tasa}</dd>
-          {vista.desgloseTasa !== null && (
-            <dd className="mt-1 text-hielo">
-              {TEXTOS.desglosePuntos(vista.desgloseTasa.tasaTabla, vista.desgloseTasa.puntos, vista.desgloseTasa.tasa)}
-            </dd>
-          )}
-        </div>
-        {vista.tramo === null ? (
+      {/* Sprint 6a: solo lo capturado y la tasa aplicada; los importes y las tablas van únicamente en el PDF. */}
+      <section aria-labelledby="titulo-datos" className="flex flex-col gap-3">
+        <h3 id="titulo-datos" className="text-lg font-bold">
+          {TEXTOS.tituloDatos}
+        </h3>
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.plazoEspecial}</dt>
+            <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.monto}</dt>
+            <dd className="font-semibold tabular-nums">{vista.solicitud.monto}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-semibold text-hielo-tenue">{vista.tramo === null ? TEXTOS.plazoEspecial : TEXTOS.plazo}</dt>
             <dd className="font-semibold">{vista.solicitud.plazo}</dd>
           </div>
-        ) : (
-          <>
-            <div>
-              <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.tramoAplicado}</dt>
-              <dd className="font-semibold tabular-nums">{vista.tramo.rango}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.estatusTasa}</dt>
-              <dd className="mt-1 flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-hielo/40 px-3 py-0.5 text-sm font-semibold">
-                  {vista.tramo.estatus ?? TEXTOS.sinEstatus}
-                </span>
-                {vista.tramo.explicacionEstatus !== null && <span className="text-hielo">{vista.tramo.explicacionEstatus}</span>}
-                {vista.origenTasa === "plazo_adicional" && <p className="w-full text-sm text-hielo">{TEXTOS.origenPlazoAdicional}</p>}
+          <div>
+            <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.esquema}</dt>
+            <dd className="font-semibold">{vista.solicitud.esquema}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-semibold text-hielo-tenue">{vista.etiquetaTasa}</dt>
+            <dd className="text-2xl font-extrabold tabular-nums">{vista.tasa}</dd>
+            {vista.desgloseTasa !== null && (
+              <dd className="mt-1 text-hielo">
+                {TEXTOS.desglosePuntos(vista.desgloseTasa.tasaTabla, vista.desgloseTasa.puntos, vista.desgloseTasa.tasa)}
               </dd>
-            </div>
-          </>
-        )}
-      </dl>
-
-      <section aria-labelledby="titulo-cifras" className="flex flex-col gap-3">
-        <h3 id="titulo-cifras" className="text-lg font-bold">
-          {TEXTOS.tituloCifras}
-        </h3>
-        <p className="text-hielo">{vista.lineaPago}</p>
-        <ul className="flex flex-col gap-4">
-          {vista.salidas.map((s, i) => (
-            <li key={s.clave} className={i === 0 ? "pb-1" : "border-t border-hielo/15 pt-4"}>
-              <TarjetaCifra
-                etiqueta={s.etiqueta}
-                valor={s.cifra}
-                tono={i === 0 ? "positivo" : "neutro"}
-                tamano={i === 0 ? "grande" : "mediano"}
-                flecha={i === 0}
-              >
-                <dl className="flex flex-col gap-1">
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-semibold text-hielo-tenue">{TEXTOS.formula}:</dt>
-                    <dd>{s.formula}</dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-semibold text-hielo-tenue">{TEXTOS.operacion}:</dt>
-                    <dd className="break-all tabular-nums">{s.operacion}</dd>
-                  </div>
-                </dl>
-              </TarjetaCifra>
-            </li>
-          ))}
-        </ul>
+            )}
+          </div>
+          {vista.tramo !== null && (
+            <>
+              <div>
+                <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.tramoAplicado}</dt>
+                <dd className="font-semibold tabular-nums">{vista.tramo.rango}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.estatusTasa}</dt>
+                <dd className="mt-1 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-hielo/40 px-3 py-0.5 text-sm font-semibold">
+                    {vista.tramo.estatus ?? TEXTOS.sinEstatus}
+                  </span>
+                  {vista.tramo.explicacionEstatus !== null && <span className="text-hielo">{vista.tramo.explicacionEstatus}</span>}
+                  {vista.origenTasa === "plazo_adicional" && <p className="w-full text-sm text-hielo">{TEXTOS.origenPlazoAdicional}</p>}
+                </dd>
+              </div>
+            </>
+          )}
+        </dl>
       </section>
 
       <p className="text-sm text-hielo-tenue">{TEXTOS.versionTasas(vista.tasas.version, vista.tasas.fecha)}</p>

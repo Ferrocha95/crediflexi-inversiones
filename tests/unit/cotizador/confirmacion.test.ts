@@ -185,7 +185,7 @@ describe("puedeGenerarPdf exige las tres cosas", () => {
 
 describe("textos de la confirmación", () => {
   it("son los de la pantalla", () => {
-    expect(TEXTOS.confirmo).toBe("Confirmo que los números son correctos");
+    expect(TEXTOS.confirmo).toBe("Confirmo que los datos capturados son correctos");
     expect(TEXTOS.generarPdf).toBe("Generar PDF");
     expect(TEXTOS).not.toHaveProperty("pdfSiguienteEtapa");
   });

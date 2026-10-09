@@ -177,7 +177,7 @@ describe("manejarPdf: confirmación", () => {
   });
 
   it("el mensaje de falta de confirmación dice qué hacer", () => {
-    expect(MENSAJES_PDF.sinConfirmar).toMatch(/Confirmo que los números son correctos/);
+    expect(MENSAJES_PDF.sinConfirmar).toMatch(/Confirmo que los datos capturados son correctos/);
   });
 });
 

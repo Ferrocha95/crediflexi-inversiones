@@ -86,3 +86,24 @@ describe("pantalla: generación del PDF", () => {
     );
   });
 });
+
+describe("vista previa sin cálculo (Sprint 6a)", () => {
+  const vista = leer("src/app/(app)/cotizador/VistaPrevia.tsx");
+
+  it("no muestra importes ni tablas de rendimientos: no usa las cifras, la línea de pago ni las tarjetas de cifra", () => {
+    expect(vista).not.toMatch(/salidas|TarjetaCifra|lineaPago|formula|operacion/);
+  });
+
+  it("sí muestra los datos capturados, la tasa con su desglose, el tramo y los avisos", () => {
+    for (const t of ["vista.solicitud.monto", "vista.solicitud.plazo", "vista.solicitud.esquema", "vista.etiquetaTasa", "vista.desgloseTasa", "vista.tramo", "vista.avisos", "TEXTOS.tituloDatos"]) {
+      expect(vista).toContain(t);
+    }
+  });
+
+  it("el título de la sección es Datos capturados y la confirmación habla de los datos, no de los números", () => {
+    expect(TEXTOS_PANTALLA.tituloDatos).toBe("Datos capturados");
+    expect(TEXTOS_PANTALLA.confirmo).toBe("Confirmo que los datos capturados son correctos");
+    expect(TEXTOS_PANTALLA.motivoSinConfirmar).toBe('Marca la casilla "Confirmo que los datos capturados son correctos" para habilitar el PDF.');
+    expect(JSON.stringify(TEXTOS_PANTALLA)).not.toMatch(/números son correctos/);
+  });
+});

@@ -12,5 +12,5 @@ export async function llenarCotizador(page: Page): Promise<void> {
   const plazo = page.getByLabel("Plazo", { exact: true });
   await expect(plazo).toBeEnabled();
   await plazo.selectOption({ index: 1 });
-  await expect(page.getByRole("heading", { name: "Resultados" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Datos capturados" })).toBeVisible();
 }
