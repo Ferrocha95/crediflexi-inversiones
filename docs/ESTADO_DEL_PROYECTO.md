@@ -1,15 +1,15 @@
 # Estado del proyecto — App interna de captación (Crediflexi / Rami Sise)
 
-**Actualizado:** 8 de octubre de 2026, al cerrar el Sprint 5 (secciones 0, 2, 3, 4 y 6 con lo verificado en git ese día). **Dueño:** Fernando Rocha (ejecutivo de inversiones).
+**Actualizado:** 9 de octubre de 2026, al cerrar el Sprint 6c (secciones 0, 2, 3, 4 y 8 con lo verificado en git ese día). **Dueño:** Fernando Rocha (ejecutivo de inversiones).
 **Para quién es este documento:** para retomar el trabajo en una conversación nueva sin perder nada. Si algo de aquí contradice lo que ves en el repositorio, manda el repositorio (`git log`, `git status`) y se corrige este archivo.
 
 ## 0. Cómo retomar (primeros pasos en una conversación nueva)
 
 1. Pedirle a Fernando que corra, dentro de `C:\dev\crediflexi` (el prompt debe terminar en `C:\dev\crediflexi>`), estos tres comandos, uno a la vez: `git branch`, `git log --oneline -8` y `git status`.
-2. Verificado con git el 8 de octubre de 2026 (`git branch -vv`, sin `fetch`):
-   - `main` = `origin/main` = `1e46d30`: trae el Sprint 5 completo y el benchmark 0.4.2 (BBVA, Santander y Nasdaq-100).
-   - La rama `sprint-6a` sale de ese `main` y trae el Sprint 6a (4 commits: `35d79c1`, `b14a653`, `3c8308e` y el de pendientes), sin fusionar ni subir.
-3. Preguntarle a Fernando si ya revisó el Sprint 6a y si quiere fusionarlo a `main` y subir (`git push`, `git merge`, `git checkout`, `git switch` y `git restore` solo con su permiso por mensaje).
+2. Verificado con git el 9 de octubre de 2026 (`git branch -vv`, sin `fetch`):
+   - `main` = `origin/main` = `09ec4d5`: trae el Sprint 5, el benchmark 0.4.2 y el Sprint 6a completo.
+   - La rama `sprint-6c` sale de ese `main` y trae el Sprint 6c (3 commits: `ed2bd58`, `9aedf3c` y el de pendientes), sin fusionar ni subir.
+3. Preguntarle a Fernando si ya revisó el Sprint 6c y si quiere fusionarlo a `main` y subir (`git push`, `git merge`, `git checkout`, `git switch` y `git restore` solo con su permiso por mensaje).
 4. Seguir el protocolo de la sección 9.
 
 ## 1. Qué es y para qué sirve
@@ -35,13 +35,16 @@ Una mesa de trabajo interna para cotizar, llevar el pipeline, planear la semana,
 | 3a | USD solo para Rami Sise (semilla 0.7); puntos extra y plazo especial; PDF con SIPRES (solo Rami Sise), aviso del fondo, Modalidad 2 anualizada, sin reinversión y terminología "ganancia" (textos 0.5); comparativo de tasas en la página 2 (`seed/benchmark.json` 0.2) | ✅ en `main` y en `origin/main` (`c975adc` a `e84a959`) |
 | 4 | Motor de comisiones (`src/domain/comisiones`, semilla 0.8), simulador `/comisiones` (interno y externo, desbloqueo al 80%, bono, calendario por quincena) y modo reclutamiento `/comisiones/reclutamiento` con el PDF "Propuesta de ingresos" (textos 0.6) | ✅ en `main` y en `origin/main` (`ee82598` a `9c3e7a3`) |
 | 5 | Ajustes del dueño: bono de externos reactivado (semilla 0.9, `bonoExterno.ts`); comparativo con el esquema 0.4.1 (dos grupos, fecha por instrumento, interruptores); PDF del prospecto con textos 0.7, logos juntos, SIPRES y disclaimer para las dos entidades; modo reclutamiento con un solo dato, comparativo por plazos, escalera de bonos y PDF de una página (textos 0.7.1) | ✅ en `main` y en `origin/main` (`9bb5e82` a `d10da21`; benchmark 0.4.2 en `1e46d30`) |
-| 6a | Glosario único y "Tasa anual neta" (textos 0.8), disclaimer nuevo; plazo especial de 6 a 60 meses, puntos extra hasta 4.0 y aviso con 4 puntos; tercera página del PDF con más de 24 meses; pantalla del cotizador sin el cálculo | ✅ en la rama `sprint-6a` (`35d79c1` a commit 4), sin fusionar ni subir |
+| 6a | Glosario único y "Tasa anual neta" (textos 0.8), disclaimer nuevo; plazo especial de 6 a 60 meses, puntos extra hasta 4.0 y aviso con 4 puntos; tercera página del PDF con más de 24 meses; pantalla del cotizador sin el cálculo | ✅ en `main` y en `origin/main` (`35d79c1` a `09ec4d5`) |
+| 6c | Comisiones: comisión por externos (30%, supuesto por confirmar) sujeta al desbloqueo del interno (semilla 0.9.1, `redExterna.ts`); externo sin comisión bloqueada; tabla de incentivos del externo y tabla de metas del ejecutivo con la fila alcanzada; bloque "Mis externos" (textos 0.9) | ✅ en la rama `sprint-6c` (`ed2bd58` a commit 3), sin fusionar ni subir |
 
 Respaldo: se hizo un bundle de git (`C:\dev\respaldos\crediflexi-sprint0a.bundle`) y la copia remota privada en GitHub (repositorio `crediflexi-inversiones`). Se verificó una restauración desde GitHub con éxito en octubre 1.
 
 ## 3. Qué está en curso
 
-**Sprint 6a** (rama `sprint-6a`): terminado; falta la revisión de Fernando y decidir cuándo se fusiona a `main` y se sube. Informe: `C:\dev\informes\paso62.md`. Capturas y PDF de muestra: `C:\dev\informes\sprint-6a`. **ALTA PRIORIDAD:** que el contador o el asesor confirme por escrito que la tasa ya es neta antes de enviar PDF a clientes ((nnnn)). Siguen la parte B ("Fecha de pago" y el criterio de los valores, (qqqq)) y los textos nuevos por aprobar ((oooo)).
+**Sprint 6c** (rama `sprint-6c`): terminado; falta la revisión de Fernando y decidir cuándo se fusiona a `main` y se sube. Informes: `C:\dev\informes\paso63-c1.md` y `paso63-6c.md`. Capturas: `C:\dev\informes\sprint-6c`. Por confirmar con el dueño: si el 30% por externos es para el interno que los patrocina y si el gerente también lo recibe ((ssss)); supuestos en (tttt).
+
+**Sprint 6a** (ya en `main`). Informe: `C:\dev\informes\paso62.md`. Capturas y PDF de muestra: `C:\dev\informes\sprint-6a`. **Prioridad media:** el contador confirmó de palabra que la tasa ya es neta; falta guardarlo por escrito ((nnnn)). Siguen la parte B ("Fecha de pago" y el criterio de los valores, (qqqq)) y los textos nuevos por aprobar ((oooo)).
 
 **Sprint 5** (ya en `main`): Informes: `C:\dev\informes\paso60-c1.md` a `paso60-c4.md`. Capturas y PDF de muestra: `C:\dev\informes\sprint-5`. Por confirmar (`PENDIENTES_TECNICOS.md`, (eeee) a (llll)): qué banco, qué NASDAQ, qué tasa de Caja Libertad, quién actualiza el benchmark y el periodo nuevo de Nu; el logo definitivo; la aprobación de RH de las frases y de los textos nuevos del modo reclutamiento; la fecha de pago del bono de externos.
 
@@ -57,7 +60,7 @@ Respaldo: se hizo un bundle de git (`C:\dev\respaldos\crediflexi-sprint0a.bundle
 
 ## 4. Orden de lo que sigue
 
-Hecho: 2a, 2b (etapas A a D), 3a, 4 (simulador de comisiones, sin guardar inversiones), 5 (ajustes del dueño al PDF y al modo reclutamiento) y 6a (glosario, tasa neta, límites, tercera página y pantalla sin cálculo; falta la parte B). Lo que sigue, en el orden original:
+Hecho: 2a, 2b (etapas A a D), 3a, 4 (simulador de comisiones, sin guardar inversiones), 5 (ajustes del dueño al PDF y al modo reclutamiento) 6a (glosario, tasa neta, límites, tercera página y pantalla sin cálculo; falta la parte B) y 6c (ajustes de comisiones: externo sin bloqueo, tablas de incentivos y Mis externos). Lo que sigue, en el orden original:
 1. **2b, etapa E:** "Envío del viernes", Inicio, respaldo y documentación. Segundo factor (MFA) antes de salir de localhost.
 2. **2c** **plan semanal** y **proyección** con exportación a Excel.
 3. **2d** **Cartera** (mini CRM) y registro de cierres, con vencimientos a 30, 60 y 90 días. Con ella, las comisiones pueden leer las inversiones reales en vez de simularlas (pendiente (qqq)).
@@ -121,6 +124,7 @@ Detalle exacto (anchos, celdas combinadas, formatos, colores) en `docs/FORMATOS_
   - el nivel de cada persona (N2 y N3 sin uso);
   - qué pasa con la comisión bloqueada si el mes cierra por debajo del 80% (hoy "se pierde", por confirmar);
   - el bono de gerente en sí (30% de la comisión N1 del equipo). Confirmado el 8 de octubre de 2026: la meta del gerente se mide sobre su propia captación y el bono no requiere que el equipo desbloquee;
+  - la comisión por externos (30% de la comisión N1 de sus externos, Sprint 6c): si es para el interno que los patrocina y si el gerente también la recibe ((ssss));
   - fecha de pago del sueldo base y del bono;
   - bono del Gerente.
 - Cuándo cuenta una inversión como captada: hoy se supone la fecha de inicio de la inversión, por confirmar.
