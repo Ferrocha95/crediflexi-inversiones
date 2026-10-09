@@ -33,6 +33,18 @@ const ALTO_BARRA = 11;
 /** x donde empiezan las barras: después de la columna de nombres. */
 const INICIO_BARRA = LIENZO_BENCHMARK.anchoEtiqueta + 4;
 
+/**
+ * Filas del calendario mensual que caben en la página 2. Con más (plazo
+ * especial de 25 a 60 meses), la tabla completa pasa a una tercera página.
+ */
+export const MESES_EN_PAGINA_2 = 24;
+
+/** true si el calendario mensual no cabe en la página 2 y el PDF lleva una tercera página. */
+export function llevaTerceraPagina(modelo: ModeloPagina2): boolean {
+  const d = modelo.tarjetas[0].detalle;
+  return d !== null && d.filas.length > MESES_EN_PAGINA_2;
+}
+
 const BANDA: Readonly<Record<TarjetaPdf["esquema"], string>> = {
   mensual: COLOR.bandaVerde,
   final_del_plazo: COLOR.bandaDorada,
@@ -108,7 +120,7 @@ const e = StyleSheet.create({
     paddingHorizontal: 4,
     backgroundColor: COLOR.marino,
     color: COLOR.blanco,
-    fontSize: 7,
+    fontSize: 7.5,
     fontWeight: "bold",
     lineHeight: 1,
   },
@@ -119,6 +131,8 @@ const e = StyleSheet.create({
   notaTarjeta: { fontSize: 8, color: COLOR.gris, lineHeight: 1.3 },
 
   notaCentavos: { marginTop: 4, fontSize: 7, color: COLOR.gris, lineHeight: 1.2 },
+  /** La misma nota en la tercera página, donde toda la letra es de 7.5 pt o más. */
+  notaCentavosGrande: { marginTop: 6, fontSize: 7.5, color: COLOR.gris, lineHeight: 1.2 },
 
   grafica: { width: LIENZO_GRAFICA.ancho },
   graficaCabeza: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 6, height: 16 },
@@ -174,7 +188,28 @@ function Franja({ f }: { f: FranjaPdf }) {
   );
 }
 
-function Tarjeta({ t, textos }: { t: TarjetaPdf; textos: ModeloPagina2["textos"] }) {
+/** La tabla mes a mes de la modalidad 1: encabezado y filas alternadas. */
+function TablaMensual({ filas, textos }: { filas: NonNullable<TarjetaPdf["detalle"]>["filas"]; textos: ModeloPagina2["textos"] }) {
+  return (
+    <>
+      <View style={e.tablaCabeza}>
+        <Text style={e.colMes}>{textos.columnaMes}</Text>
+        <Text style={e.colCifra}>{textos.columnaRendimientoMensual}</Text>
+        <Text style={e.colCifra}>{textos.columnaRendimientoAcumulado}</Text>
+      </View>
+      {filas.map((f, i) => (
+        <View key={f.mes} style={[e.tablaFila, ...(i % 2 === 1 ? [e.tablaFilaAlterna] : [])]}>
+          <Text style={e.colMes}>{f.mes}</Text>
+          <Text style={e.colCifra}>{f.rendimiento}</Text>
+          <Text style={e.colCifra}>{f.acumulado}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
+/** Con conTabla falso (más de 24 meses), la tarjeta no lleva la tabla mes a mes: va en la tercera página. */
+function Tarjeta({ t, textos, conTabla = true }: { t: TarjetaPdf; textos: ModeloPagina2["textos"]; conTabla?: boolean }) {
   const d = t.detalle;
   return (
     <View style={e.tarjeta} wrap={false}>
@@ -207,22 +242,7 @@ function Tarjeta({ t, textos }: { t: TarjetaPdf; textos: ModeloPagina2["textos"]
               </Text>
             ))}
             <Franja f={d.franja} />
-            {d.filas.length > 0 && (
-              <>
-                <View style={e.tablaCabeza}>
-                  <Text style={e.colMes}>{textos.columnaMes}</Text>
-                  <Text style={e.colCifra}>{textos.columnaRendimientoMensual}</Text>
-                  <Text style={e.colCifra}>{textos.columnaRendimientoAcumulado}</Text>
-                </View>
-                {d.filas.map((f, i) => (
-                  <View key={f.mes} style={[e.tablaFila, ...(i % 2 === 1 ? [e.tablaFilaAlterna] : [])]}>
-                    <Text style={e.colMes}>{f.mes}</Text>
-                    <Text style={e.colCifra}>{f.rendimiento}</Text>
-                    <Text style={e.colCifra}>{f.acumulado}</Text>
-                  </View>
-                ))}
-              </>
-            )}
+            {conTabla && d.filas.length > 0 && <TablaMensual filas={d.filas} textos={textos} />}
           </>
         )}
       </View>
@@ -411,6 +431,7 @@ export function PaginaCalendario({
 }) {
   const { textos } = modelo;
   const [m1, m2] = modelo.tarjetas;
+  const tercera = llevaTerceraPagina(modelo);
   return (
     <>
       <View style={e.encabezado}>
@@ -420,10 +441,10 @@ export function PaginaCalendario({
 
       <View style={e.columnas}>
         <View style={e.columna}>
-          <Tarjeta t={m1} textos={textos} />
-          {/* Juntas, sin el espacio entre bloques de la columna. */}
+          <Tarjeta t={m1} textos={textos} conTabla={!tercera} />
+          {/* Juntas, sin el espacio entre bloques de la columna. Con tercera página, la nota de centavos va allá. */}
           <View>
-            <Text style={e.notaCentavos}>{textos.notaCentavos}</Text>
+            {!tercera && <Text style={e.notaCentavos}>{textos.notaCentavos}</Text>}
             <NotasBenchmark b={modelo.benchmark} />
           </View>
         </View>
@@ -435,6 +456,57 @@ export function PaginaCalendario({
           <Benchmark b={modelo.benchmark} />
         </View>
       </View>
+
+      <View style={e.relleno} />
+      <View>
+        <Text style={e.pie}>{pie.sipres}</Text>
+        {/* La nota de la tasa neta va en el mismo párrafo del disclaimer, después de él. */}
+        <Text style={e.pie}>{`${pie.avisoFondo} ${pie.notaNeta}`}</Text>
+      </View>
+    </>
+  );
+}
+
+/**
+ * Página 3 (solo con más de 24 meses): el calendario mensual completo de la
+ * modalidad 1, repartido en dos columnas, con el mismo encabezado y pie. Toda
+ * la letra es de 7.5 pt o más.
+ */
+export function PaginaCalendarioMensual({
+  modelo,
+  logo,
+  pie,
+}: {
+  modelo: ModeloPagina2;
+  logo: LogoPdf;
+  pie: { readonly sipres: string; readonly avisoFondo: string; readonly notaNeta: string };
+}) {
+  const { textos } = modelo;
+  const m1 = modelo.tarjetas[0];
+  const filas = m1.detalle?.filas ?? [];
+  const mitad = Math.ceil(filas.length / 2);
+  return (
+    <>
+      <View style={e.encabezado}>
+        <Logo logo={logo} alto={ALTO_LOGO} />
+        <Text style={e.titulo}>{textos.titulo}</Text>
+      </View>
+
+      <View style={[e.banda, { backgroundColor: BANDA[m1.esquema], marginTop: 10, borderRadius: 4 }]}>
+        <Text style={e.bandaTexto}>{m1.titulo}</Text>
+      </View>
+      <View style={e.columnas}>
+        {[filas.slice(0, mitad), filas.slice(mitad)].map((parte, i) => (
+          <View key={i} style={e.columna}>
+            {parte.length > 0 && (
+              <View>
+                <TablaMensual filas={parte} textos={textos} />
+              </View>
+            )}
+          </View>
+        ))}
+      </View>
+      <Text style={e.notaCentavosGrande}>{textos.notaCentavos}</Text>
 
       <View style={e.relleno} />
       <View>

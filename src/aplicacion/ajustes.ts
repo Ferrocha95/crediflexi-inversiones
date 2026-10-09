@@ -21,9 +21,10 @@ export const OPCIONES_PUNTOS: readonly string[] = (() => {
 
 /**
  * Puntos sobre la tasa más alta de la tabla a partir de los cuales una tasa
- * acordada se avisa (no bloquea). Regla del dueño; pendiente pasarla a la semilla.
+ * acordada se avisa (no bloquea). Regla del dueño (4 desde el Sprint 6a);
+ * pendiente pasarla a la semilla.
  */
-export const PUNTOS_AVISO_TASA_ACORDADA = new Decimal(5);
+export const PUNTOS_AVISO_TASA_ACORDADA = new Decimal(4);
 
 /** Convierte los campos de la pantalla en el ajuste del dominio. */
 export function ajusteDesdeCampos(c: CamposAjuste): ResultadoApp<Ajuste> {
@@ -46,6 +47,8 @@ export interface AvisoTasaAcordada {
   readonly tasa: string;
   readonly maximoTabla: string;
   readonly limite: string;
+  /** Los puntos del aviso, para escribirlos en la pantalla ("4"). */
+  readonly puntos: string;
 }
 
 /**
@@ -58,5 +61,10 @@ export function avisoTasaAcordada(semilla: Semilla, moneda: Moneda, tasa: string
   const limite = maximo.plus(PUNTOS_AVISO_TASA_ACORDADA.div(100));
   const t = new Decimal(tasa);
   if (!t.gt(limite)) return null;
-  return { tasa: formatearPorcentaje(t), maximoTabla: formatearPorcentaje(maximo), limite: formatearPorcentaje(limite) };
+  return {
+    tasa: formatearPorcentaje(t),
+    maximoTabla: formatearPorcentaje(maximo),
+    limite: formatearPorcentaje(limite),
+    puntos: PUNTOS_AVISO_TASA_ACORDADA.toString(),
+  };
 }

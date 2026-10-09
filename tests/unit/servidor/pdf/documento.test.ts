@@ -9,7 +9,7 @@ import { renderizarPdf } from "../../../../src/servidor/pdf/renderizar";
 import { cotizarConAjuste, type Ajuste } from "../../../../src/domain/interes/ajustes";
 import { datosPagina2 } from "../../../../src/aplicacion/pagina2";
 import { cotizarBien, semillaReal } from "../../oro/ayudas";
-import { extraerTexto } from "./extraer";
+import { extraerTexto, textosConTamano } from "./extraer";
 import { benchmarkReal } from "../../benchmarkReal";
 
 // Renderizado real con react-pdf y lectura del texto con pdfjs-dist. Todo con datos sintéticos.
@@ -552,8 +552,8 @@ describe("PDF real: exactamente dos páginas en los extremos", () => {
     { esquema: "mensual", moneda: "MXN", monto: "99999999.99" },
     { esquema: "final_del_plazo", moneda: "MXN", monto: "99999999.99" },
     { esquema: "mensual", moneda: "USD", monto: "500000" },
-  ] as const)("Rami Sise $esquema $moneda con +5.0 puntos, opcionales al tope y 24 meses: dos páginas", { timeout: TIEMPO }, async ({ esquema, moneda, monto }) => {
-    const m = modeloAjustado("RAMI_SISE", esquema, { tipo: "tabla", puntos: "5.0" }, monto, moneda, TOPE, 24);
+  ] as const)("Rami Sise $esquema $moneda con +4.0 puntos (el máximo), opcionales al tope y 24 meses: dos páginas", { timeout: TIEMPO }, async ({ esquema, moneda, monto }) => {
+    const m = modeloAjustado("RAMI_SISE", esquema, { tipo: "tabla", puntos: "4.0" }, monto, moneda, TOPE, 24);
     const { paginas, porPagina } = await render(m);
     expect(paginas).toBe(2);
     expect(m.desgloseTasa).not.toBeNull();
@@ -641,5 +641,47 @@ describe("PDF real: página 2 del ejemplo del Excel, 1,000,000 pesos a 6 meses",
     expect(p2).not.toContain("$200,000.00");
     // Ya no van las filas mensuales de la modalidad 2.
     for (const t of ["$16,666.67", "$16,666.66", "$33,333.33", "$83,333.33"]) expect(p2).not.toContain(t);
+  });
+});
+
+describe("PDF real: plazo especial de más de 24 meses (Sprint 6a)", () => {
+  const ESPECIAL = (meses: number) => ({ tipo: "especial", plazo: meses, tasas: { mensual: "17.00", final_del_plazo: "19.00" } }) as const;
+
+  it.each([
+    [36, "$1,416.55", "$51,000.00"],
+    [60, "$1,416.47", "$85,000.00"],
+  ] as const)("%i meses: EXACTAMENTE 3 páginas; el calendario mensual completo va en la tercera", { timeout: TIEMPO }, async (meses, ultimo, total) => {
+    const { paginas, porPagina } = await render(modeloAjustado("CREDIFLEXI", "mensual", ESPECIAL(meses), "100000", "MXN", OPCIONALES));
+    expect(paginas).toBe(3);
+    for (let n = 1; n <= 3; n++) expect(porPagina[n - 1]).toContain(`${P2.pagina} ${n} ${P2.paginaDe} 3`);
+    // La página 2 conserva tarjetas, gráfica y comparativo, sin las filas del calendario.
+    expect(porPagina[1]).toContain(P2.modalidad1);
+    expect(porPagina[1]).toContain(P2.benchmarkTitulo);
+    expect(porPagina[1]).not.toContain(ultimo);
+    // La tercera lleva el calendario con sus encabezados, el último pago que ajusta los centavos y el total.
+    for (const t of [P2.columnaMes, P2.columnaRendimientoMensual, P2.columnaRendimientoAcumulado, "$1,416.67", ultimo, total]) {
+      expect(porPagina[2]).toContain(t);
+    }
+    expect(porPagina[2]).toContain(` ${meses} `);
+    expect(porPagina[2]).toContain(DISCLAIMER);
+  });
+
+  it("36 meses: toda la letra de la tercera página mide 7.5 pt o más", { timeout: TIEMPO }, async () => {
+    const { bytes } = await render(modeloAjustado("CREDIFLEXI", "mensual", ESPECIAL(36), "100000", "MXN", OPCIONALES));
+    const items = await textosConTamano(bytes, 3);
+    expect(items.length).toBeGreaterThan(36 * 3);
+    for (const i of items) expect(i.tamano, i.texto).toBeGreaterThanOrEqual(7.5 - 1e-6);
+  });
+
+  it("24 meses: sigue en EXACTAMENTE 2 páginas", { timeout: TIEMPO }, async () => {
+    const { paginas, porPagina } = await render(modeloAjustado("CREDIFLEXI", "mensual", ESPECIAL(24), "100000", "MXN", OPCIONALES));
+    expect(paginas).toBe(2);
+    expect(porPagina[1]).toContain(`${P2.pagina} 2 ${P2.paginaDe} 2`);
+  });
+
+  it("al final del plazo a 36 meses (USD de Rami Sise) también lleva la tercera página con el calendario mensual", { timeout: TIEMPO }, async () => {
+    const { paginas, porPagina } = await render(modeloAjustado("RAMI_SISE", "final_del_plazo", { tipo: "especial", plazo: 36, tasas: { mensual: "8.00", final_del_plazo: "9.00" } }, "50000", "USD", OPCIONALES));
+    expect(paginas).toBe(3);
+    expect(porPagina[2]).toContain("USD");
   });
 });

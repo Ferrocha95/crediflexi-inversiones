@@ -60,11 +60,11 @@ describe("puntos extra sobre la tasa de tabla", () => {
     expect(cifras(c)).toEqual(["23750.00", "285000.00", "285000.00"]);
   });
 
-  it.each(["0", "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.0"])("acepta %s puntos", (p) => {
+  it.each(["0", "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.0"])("acepta %s puntos (0 a 4.0 en pasos de 0.5, Sprint 6a)", (p) => {
     expect(codigo({}, tabla(p))).toBe("OK");
   });
 
-  it.each(["0.3", "5.5", "-1", "6", "0.25", "", "abc", "1e1", " 1"])("rechaza %j puntos", (p) => {
+  it.each(["4.5", "5.0", "5", "0.3", "5.5", "-1", "6", "0.25", "", "abc", "1e1", " 1"])("rechaza %j puntos", (p) => {
     expect(codigo({}, tabla(p))).toBe("PUNTOS_INVALIDOS");
   });
 
@@ -79,6 +79,31 @@ describe("puntos extra sobre la tasa de tabla", () => {
 });
 
 describe("plazo especial con tasa acordada", () => {
+  it("el mensaje del plazo especial fuera de rango dice de 6 a 60 meses enteros", () => {
+    const r = cotizarConAjuste(semillaReal, { ...base, monto: "100000", plazo: 61 }, especial(61, { mensual: "17" }));
+    if (r.ok) throw new Error("se esperaba el error");
+    expect(r.error.mensaje).toBe("El plazo especial debe ser de 6 a 60 meses enteros. Corrige el número de meses.");
+  });
+
+  it("el mensaje de puntos fuera de rango dice de 0.0 a 4.0 en pasos de 0.5", () => {
+    const r = cotizarConAjuste(semillaReal, base, tabla("4.5"));
+    if (r.ok) throw new Error("se esperaba el error");
+    expect(r.error.mensaje).toBe('Los puntos extra "4.5" no son válidos: elige un valor de 0.0 a 4.0 en pasos de 0.5.');
+  });
+
+  // Valores de referencia (Sprint 6a, calculados fuera del motor con meses ÷ 12):
+  // 100,000 al 17% mensual: pago 1,416.67 y el último ajusta los centavos.
+  it.each([
+    [6, 5, "1416.65", "8500.00"],
+    [36, 35, "1416.55", "51000.00"],
+    [60, 59, "1416.47", "85000.00"],
+  ] as const)("100,000 a %i meses al 17%% mensual: %i pagos de 1,416.67, el último de %s, total %s", (meses, iguales, ultimo, total) => {
+    const { mensual } = calendariosAjustados(semillaReal, { ...base, monto: "100000", plazo: meses }, especial(meses, { mensual: "17.00" }));
+    if (mensual.tipo !== "calendario") throw new Error("se esperaba el calendario mensual");
+    expect(mensual.calendario.filas.map((f) => f.rendimiento)).toEqual([...Array(iguales).fill("1416.67"), ultimo]);
+    expect(cifras(bien({ monto: "100000", plazo: meses }, especial(meses, { mensual: "17.00" })))[2]).toBe(total);
+  });
+
   it("100,000 a 9 meses al 17% mensual: pago 1,416.67, anual 17,000.00, total 12,750.00", () => {
     const c = bien({ monto: "100000", plazo: 9 }, especial(9, { mensual: "17.00" }));
     expect([c.tasa, c.tasaTabla, c.origenTasa, c.tramo]).toEqual(["0.17", null, "especial", null]);
@@ -112,11 +137,11 @@ describe("plazo especial con tasa acordada", () => {
     expect(cifras(c)[0]).toBe("79.17");
   });
 
-  it.each([0, 25, 1.5, -3])("rechaza un plazo especial de %s meses", (plazo) => {
+  it.each([5, 61, 0, 1, 1.5, -3])("rechaza un plazo especial de %s meses (6 a 60, Sprint 6a)", (plazo) => {
     expect(codigo({ monto: "100000", plazo }, especial(plazo, { mensual: "17" }))).toBe("PLAZO_ESPECIAL_INVALIDO");
   });
 
-  it.each([1, 24])("acepta %s meses", (plazo) => {
+  it.each([6, 24, 25, 36, 60])("acepta %s meses", (plazo) => {
     expect(codigo({ monto: "100000", plazo }, especial(plazo, { mensual: "17" }))).toBe("OK");
   });
 

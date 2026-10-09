@@ -15,7 +15,7 @@ import type { ModeloPdf } from "../../aplicacion/modelo";
 import { COLOR_PDF as COLOR } from "./colores";
 import { Logo, type LogoPdf } from "./Encabezado";
 import { FAMILIA } from "./fuente";
-import { PaginaCalendario } from "./PaginaCalendario";
+import { llevaTerceraPagina, PaginaCalendario, PaginaCalendarioMensual } from "./PaginaCalendario";
 
 // Solo presenta el modelo: aquí no se calcula nada y no hay textos propios.
 // Todo texto sale de ModeloPdf (archivo de textos, semilla o cotización).
@@ -163,15 +163,13 @@ function LineaMarca() {
 }
 
 /**
- * El documento tiene siempre dos páginas (las pruebas lo exigen). El número va
- * escrito por página: el render dinámico de react-pdf no se dibujó en el
+ * "Página N de M", con las palabras del archivo de textos. El documento tiene
+ * dos páginas, o tres con más de 24 meses (las pruebas lo exigen). El número
+ * va escrito por página: el render dinámico de react-pdf no se dibujó en el
  * margen inferior.
  */
-const TOTAL_PAGINAS = 2;
-
-/** "Página N de 2", con las palabras del archivo de textos. */
-function NumeroPagina({ pagina, de, numero }: { pagina: string; de: string; numero: number }) {
-  return <Text style={e.numeroPagina}>{`${pagina} ${numero} ${de} ${TOTAL_PAGINAS}`}</Text>;
+function NumeroPagina({ pagina, de, numero, total }: { pagina: string; de: string; numero: number; total: number }) {
+  return <Text style={e.numeroPagina}>{`${pagina} ${numero} ${de} ${total}`}</Text>;
 }
 
 function Casilla({ etiqueta, valor }: { etiqueta: string; valor: string }) {
@@ -185,7 +183,9 @@ function Casilla({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 
 export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo: LogoPdf }) {
   const { textos: t, cifraPrincipal, pie, pagina2 } = modelo;
-  const numero = (n: number) => <NumeroPagina pagina={pagina2.textos.pagina} de={pagina2.textos.paginaDe} numero={n} />;
+  const tercera = llevaTerceraPagina(pagina2);
+  const total = tercera ? 3 : 2;
+  const numero = (n: number) => <NumeroPagina pagina={pagina2.textos.pagina} de={pagina2.textos.paginaDe} numero={n} total={total} />;
   const hayFranja = pie.preparadoPor !== null || pie.vigencia !== null;
 
   return (
@@ -286,6 +286,13 @@ export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo:
         <PaginaCalendario modelo={pagina2} logo={logo} pie={pie} />
         {numero(2)}
       </Page>
+
+      {tercera && (
+        <Page size="LETTER" style={e.pagina}>
+          <PaginaCalendarioMensual modelo={pagina2} logo={logo} pie={pie} />
+          {numero(3)}
+        </Page>
+      )}
     </Document>
   );
 }

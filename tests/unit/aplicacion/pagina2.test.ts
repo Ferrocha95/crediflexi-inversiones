@@ -101,7 +101,7 @@ describe("modeloPagina2: tarjetas de las dos modalidades", () => {
     expect([f2.etiquetaPuntos, f2.etiquetaFinal]).toEqual([null, T.franjaRendimientoCapital]);
   });
 
-  it.each([1, 6, 9, 24])("la franja de %s meses queda dentro de su lienzo y en orden", (plazo) => {
+  it.each([6, 9, 24, 36, 60])("la franja de %s meses queda dentro de su lienzo y en orden", (plazo) => {
     const r = cotizarConAjuste(semillaReal, { entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "100000", plazo }, {
       tipo: "especial",
       plazo,

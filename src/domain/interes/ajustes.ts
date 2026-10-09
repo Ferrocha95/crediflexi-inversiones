@@ -8,11 +8,12 @@ import { calendarioDesdeTasa, type CalendarioModalidad } from "./calendario";
 import { cotizar, type Cotizacion } from "./cotizar";
 
 /**
- * Ajustes a la tasa de una cotización, decididos con el dueño (Sprint 3a):
+ * Ajustes a la tasa de una cotización, decididos con el dueño (Sprint 3a;
+ * límites del Sprint 6a):
  *
- *  - Puntos extra: de 0 a 5.0 en pasos de 0.5, solo en plazos de tabla. Se
+ *  - Puntos extra: de 0 a 4.0 en pasos de 0.5, solo en plazos de tabla. Se
  *    suman a la tasa de tabla de AMBAS modalidades: Z = tasa de tabla + puntos/100.
- *  - Plazo especial: meses enteros de 1 a 24, con la tasa anual que el
+ *  - Plazo especial: meses enteros de 6 a 60, con la tasa anual que el
  *    ejecutivo captura a mano por modalidad (máximo 2 decimales). La tasa NO
  *    sale de la tabla, pero entidad, moneda y monto mínimo se validan con la
  *    tabla, igual que una cotización normal.
@@ -23,8 +24,8 @@ import { cotizar, type Cotizacion } from "./cotizar";
  * Los topes de abajo son reglas del dueño que aún no están en la semilla
  * (PENDIENTES_TECNICOS.md): pasarlos a los parámetros versionados.
  */
-export const PUNTOS_EXTRA = { minimo: new Decimal(0), maximo: new Decimal(5), paso: new Decimal("0.5") } as const;
-export const PLAZO_ESPECIAL = { minimo: 1, maximo: 24 } as const;
+export const PUNTOS_EXTRA = { minimo: new Decimal(0), maximo: new Decimal(4), paso: new Decimal("0.5") } as const;
+export const PLAZO_ESPECIAL = { minimo: 6, maximo: 60 } as const;
 
 export type Ajuste =
   | { readonly tipo: "tabla"; readonly puntos: string }

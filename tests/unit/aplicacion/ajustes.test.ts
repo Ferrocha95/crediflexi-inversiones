@@ -57,14 +57,14 @@ describe("ajusteDesdeCampos", () => {
 });
 
 describe("OPCIONES_PUNTOS", () => {
-  it("de 0.0 a 5.0 en pasos de 0.5", () => {
-    expect(OPCIONES_PUNTOS).toEqual(["0.0", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0"]);
+  it("de 0.0 a 4.0 en pasos de 0.5 (Sprint 6a)", () => {
+    expect(OPCIONES_PUNTOS).toEqual(["0.0", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0"]);
   });
 });
 
-describe("avisoTasaAcordada: máxima de la tabla de la moneda más 5 puntos", () => {
+describe("avisoTasaAcordada: máxima de la tabla de la moneda más 4 puntos (Sprint 6a)", () => {
   const maximo = tasaMaximaDeTabla(semillaReal, "MXN")!;
-  const limite = maximo.plus("0.05");
+  const limite = maximo.plus("0.04");
 
   it("en el límite exacto no avisa; un centésimo arriba, sí", () => {
     expect(avisoTasaAcordada(semillaReal, "MXN", limite.toFixed())).toBeNull();
@@ -72,6 +72,7 @@ describe("avisoTasaAcordada: máxima de la tabla de la moneda más 5 puntos", ()
       tasa: formatearPorcentaje(limite.plus("0.0001")),
       maximoTabla: formatearPorcentaje(maximo),
       limite: formatearPorcentaje(limite),
+      puntos: "4",
     });
   });
 
@@ -104,7 +105,7 @@ describe("modeloVistaPrevia con ajustes", () => {
   });
 
   it("lleva el aviso de tasa acordada alta que recibe", () => {
-    const aviso = { tasa: "99.00%", maximoTabla: "21.50%", limite: "26.50%" };
+    const aviso = { tasa: "99.00%", maximoTabla: "21.50%", limite: "25.50%", puntos: "4" };
     expect(modeloVistaPrevia(cotizada({ monto: "100000", plazo: 9 }, ESPECIAL_9), textos, { tasaAcordadaAlta: aviso }).tasaAcordadaAlta).toEqual(aviso);
   });
 });

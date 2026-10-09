@@ -58,6 +58,9 @@ const MUESTRAS: readonly Muestra[] = [
   { archivo: "c-crediflexi-especial-100000-9m", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "100000", plazo: 9, ajuste: { tipo: "especial", plazo: 9, tasas: { mensual: "17", final_del_plazo: "19" } }, ahora: DIA_DE_LOS_DATOS },
   // Un mes después de actualizado_al: sin tope de antigüedad (interruptor apagado), el comparativo se dibuja con la fecha de cada instrumento.
   { archivo: "d-crediflexi-mensual-1500000-12m-un-mes-despues", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1500000", plazo: 12, ajuste: SIN_AJUSTE, ahora: new Date("2026-11-08T12:00:00-06:00") },
+  // Plazo especial de 36 meses (Sprint 6a): tercera página con el calendario mensual en dos columnas.
+  { archivo: "h-crediflexi-especial-100000-36m", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "100000", plazo: 36, ajuste: { tipo: "especial", plazo: 36, tasas: { mensual: "17", final_del_plazo: "19" } }, ahora: DIA_DE_LOS_DATOS },
+  { archivo: "i-crediflexi-especial-100000-60m", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "100000", plazo: 60, ajuste: { tipo: "especial", plazo: 60, tasas: { mensual: "17", final_del_plazo: "19" } }, ahora: DIA_DE_LOS_DATOS },
   { archivo: "g-ramisise-usd-final-50000-24m", entidad: "RAMI_SISE", moneda: "USD", esquema: "final_del_plazo", monto: "50000", plazo: 24, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
   { archivo: "e-ramisise-final-500000-24m", entidad: "RAMI_SISE", moneda: "MXN", esquema: "final_del_plazo", monto: "500000", plazo: 24, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
   { archivo: "f-crediflexi-mensual-30000-6m", entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "30000", plazo: 6, ajuste: SIN_AJUSTE, ahora: DIA_DE_LOS_DATOS },
@@ -76,11 +79,13 @@ describe.runIf(DIRECTORIO !== undefined)("muestras de la página 2 para revisió
       );
       const bytes = await renderizarPdf(modelo);
       const { paginas, porPagina } = await extraerTexto(bytes);
-      expect(paginas).toBe(2);
+      // Dos páginas; tres con más de 24 meses.
+      expect(paginas).toBe(plazo > 24 ? 3 : 2);
       await writeFile(path.join(dir, `${m.archivo}.pdf`), bytes);
       await writeFile(path.join(dir, `${m.archivo}-pagina1.png`), await paginaEnPng(bytes, 1, 1.5));
       await writeFile(path.join(dir, `${m.archivo}-pagina2.png`), await paginaEnPng(bytes, 2, 2));
       await writeFile(path.join(dir, `${m.archivo}-pagina2.txt`), porPagina[1], "utf8");
+      if (paginas === 3) await writeFile(path.join(dir, `${m.archivo}-pagina3.png`), await paginaEnPng(bytes, 3, 2));
     });
   }
 });

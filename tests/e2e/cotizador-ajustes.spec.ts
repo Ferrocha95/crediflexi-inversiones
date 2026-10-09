@@ -43,7 +43,7 @@ test.describe("cotizador: puntos extra y plazo especial", () => {
     await expect(page.getByLabel("Plazo", { exact: true })).toBeHidden();
     await expect(page.getByLabel("Puntos extra", { exact: true })).toBeHidden();
 
-    await page.getByLabel("Meses (1 a 24)").fill("9");
+    await page.getByLabel("Meses (6 a 60)").fill("9");
     await page.getByLabel("Tasa acordada, Mensual (% anual)").fill("17");
     await expect(page.getByRole("heading", { name: "Resultados" })).toBeVisible();
     await expect(page.getByText("$1,416.67", { exact: true })).toBeVisible();
@@ -52,7 +52,7 @@ test.describe("cotizador: puntos extra y plazo especial", () => {
 
     // Una tasa muy por encima de la tabla avisa, pero no bloquea.
     await page.getByLabel("Tasa acordada, Mensual (% anual)").fill("99");
-    await expect(page.getByText(/La tasa acordada \(99\.00%\) pasa de la máxima de la tabla/)).toBeVisible();
+    await expect(page.getByText(/La tasa acordada \(99\.00%\) pasa de la máxima de la tabla \(.+\) más 4 puntos/)).toBeVisible();
     await expect(page.getByRole("heading", { name: "Resultados" })).toBeVisible();
   });
 });

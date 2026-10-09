@@ -78,7 +78,7 @@ export interface ModeloVistaPrevia {
   readonly desgloseTasa: { readonly tasaTabla: string; readonly puntos: string; readonly tasa: string } | null;
   /** true si es un plazo especial con tasa acordada. */
   readonly plazoEspecial: boolean;
-  /** Aviso no bloqueante: la tasa acordada pasa de la máxima de la tabla más 5 puntos. */
+  /** Aviso no bloqueante: la tasa acordada pasa de la máxima de la tabla más los puntos de aviso (4). */
   readonly tasaAcordadaAlta: AvisoTasaAcordada | null;
   /** Cuándo se paga el rendimiento, con el plazo de la cotización (archivo de textos). */
   readonly lineaPago: string;

@@ -51,7 +51,7 @@ describe("vista previa con ajustes", () => {
     expect(v.tasaAcordadaAlta).toBeNull();
   });
 
-  it.each([0, 25])("rechaza un plazo especial de %s meses", async (plazo) => {
+  it.each([5, 61])("rechaza un plazo especial de %s meses", async (plazo) => {
     const r = await vista({ plazo: null, monto: "100,000", especial: { ...ESPECIAL, plazo } });
     expect(r.resultado).toMatchObject({ tipo: "error" });
   });

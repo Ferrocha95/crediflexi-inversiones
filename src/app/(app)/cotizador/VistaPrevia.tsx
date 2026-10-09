@@ -11,7 +11,7 @@ export function VistaPrevia({ vista }: { vista: ModeloVistaPrevia }) {
     <div className="flex flex-col gap-6">
       {vista.tasaAcordadaAlta !== null && (
         <Aviso tono="advertencia" titulo={TEXTOS.tituloAvisos}>
-          <p>{TEXTOS.avisoTasaAcordadaAlta(vista.tasaAcordadaAlta.tasa, vista.tasaAcordadaAlta.maximoTabla, vista.tasaAcordadaAlta.limite)}</p>
+          <p>{TEXTOS.avisoTasaAcordadaAlta(vista.tasaAcordadaAlta.tasa, vista.tasaAcordadaAlta.maximoTabla, vista.tasaAcordadaAlta.limite, vista.tasaAcordadaAlta.puntos)}</p>
         </Aviso>
       )}
       {vista.avisos.length > 0 && (

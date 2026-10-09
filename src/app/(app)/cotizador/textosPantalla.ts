@@ -30,8 +30,8 @@ export const TEXTOS = {
   tasaAcordadaDe: (modalidad: string) => `Tasa acordada, ${modalidad} (% anual)`,
   desglosePuntos: (tasaTabla: string, puntos: string, tasa: string) =>
     `Tasa de tabla ${tasaTabla} + ${puntos} puntos extra = ${tasa}`,
-  avisoTasaAcordadaAlta: (tasa: string, maximoTabla: string, limite: string) =>
-    `La tasa acordada (${tasa}) pasa de la máxima de la tabla (${maximoTabla}) más 5 puntos (${limite}). Revísala antes de confirmar; puedes continuar.`,
+  avisoTasaAcordadaAlta: (tasa: string, maximoTabla: string, limite: string, puntos: string) =>
+    `La tasa acordada (${tasa}) pasa de la máxima de la tabla (${maximoTabla}) más ${puntos} puntos (${limite}). Revísala antes de confirmar; puedes continuar.`,
   eligePlazoOpcion: "Elige un plazo",
   plazoSinMonto: "Escribe primero el monto",
 
