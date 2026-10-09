@@ -51,8 +51,9 @@ export interface Liquidacion {
   } | null;
   readonly comisionBruta: Decimal;
   readonly comisionPagable: Decimal;
-  readonly comisionBloqueada: Decimal;
-  /** Qué pasa con lo bloqueado al cierre del mes (parámetro, por confirmar); null si no hay bloqueo. */
+  /** null en externos: no tienen desbloqueo, así que nunca hay comisión bloqueada. */
+  readonly comisionBloqueada: Decimal | null;
+  /** Qué pasa con lo bloqueado al cierre del mes (parámetro, por confirmar); null si no hay bloqueo y siempre en externos. */
   readonly notaBloqueo: string | null;
   /**
    * Bono por captación, aparte de la comisión (no entra en los pagos por
@@ -60,6 +61,12 @@ export interface Liquidacion {
    * captación nueva del mes. null en GERENTE, hasta definirlo.
    */
   readonly bono: Decimal | null;
+  /**
+   * Índice de la fila alcanzada en incentivosInternos (EJECUTIVO) o en
+   * incentivosExternos (externos); null si la captación no llega a la primera
+   * fila, y siempre en GERENTE.
+   */
+  readonly filaIncentivo: number | null;
   readonly sueldoBase: Decimal | null;
   readonly pagos: readonly PagoComision[];
 }
@@ -67,10 +74,10 @@ export interface Liquidacion {
 const CERO = new Decimal(0);
 const sumar = (xs: readonly Decimal[]) => xs.reduce((a, b) => a.plus(b), CERO);
 
-function bonoInterno(s: SemillaComisiones, captacion: Decimal): Decimal {
+function bonoInterno(s: SemillaComisiones, captacion: Decimal): { bono: Decimal; fila: number | null } {
   // La última fila cuyo "desde" no pasa de la captación (las filas de la semilla dejan huecos de centavos entre sí).
-  const fila = [...s.incentivosInternos].reverse().find((f) => captacion.greaterThanOrEqualTo(f.desde));
-  return fila?.bono ?? CERO;
+  const fila = s.incentivosInternos.findLastIndex((f) => captacion.greaterThanOrEqualTo(f.desde));
+  return fila === -1 ? { bono: CERO, fila: null } : { bono: s.incentivosInternos[fila].bono, fila };
 }
 
 /** Agrupa las líneas por fecha de pago, en orden de fecha. */
@@ -121,6 +128,7 @@ export function liquidarMes(s: SemillaComisiones, e: EntradaLiquidacion): Result
 
   if (e.perfil === "externo") {
     const captacionNueva = sumar(lineas.filter((l) => l.tipo === "nueva").map((l) => l.monto));
+    const bono = bonoDeExterno(s, captacionNueva);
     return exitoComision({
       perfil: "externo",
       lineas,
@@ -128,9 +136,10 @@ export function liquidarMes(s: SemillaComisiones, e: EntradaLiquidacion): Result
       desbloqueo: null,
       comisionBruta,
       comisionPagable: comisionBruta,
-      comisionBloqueada: CERO,
+      comisionBloqueada: null,
       notaBloqueo: null,
-      bono: bonoDeExterno(s, captacionNueva).bono,
+      bono: bono.bono,
+      filaIncentivo: bono.rango === null ? null : s.incentivosExternos.indexOf(bono.rango),
       sueldoBase: s.externos.sueldoBase,
       pagos: agrupar(lineas, (i) => textoDeFecha(pagoDeFecha(s.pago, fechas[i]))),
     });
@@ -152,6 +161,7 @@ export function liquidarMes(s: SemillaComisiones, e: EntradaLiquidacion): Result
     }
   }
   const desbloqueada = fechaDesbloqueo !== null;
+  const ejecutivo = rol === "EJECUTIVO" ? bonoInterno(s, captacionParaMeta) : null;
   const d = fechaDesbloqueo;
 
   let pagos: PagoComision[] = [];
@@ -171,7 +181,8 @@ export function liquidarMes(s: SemillaComisiones, e: EntradaLiquidacion): Result
     comisionPagable: desbloqueada ? comisionBruta : CERO,
     comisionBloqueada: desbloqueada ? CERO : comisionBruta,
     notaBloqueo: desbloqueada ? null : s.notaComisionBloqueada,
-    bono: rol === "EJECUTIVO" ? bonoInterno(s, captacionParaMeta) : null,
+    bono: ejecutivo?.bono ?? null,
+    filaIncentivo: ejecutivo?.fila ?? null,
     sueldoBase: rol === "EJECUTIVO" ? s.sueldoBaseInterno : null,
     pagos,
   });

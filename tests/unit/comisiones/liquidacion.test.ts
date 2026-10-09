@@ -95,6 +95,7 @@ describe("liquidarMes: interno", () => {
     expect(l.desbloqueo!.desbloqueada).toBe(false);
     expect(l.bono).toBeNull();
     expect(l.sueldoBase).toBeNull();
+    expect(l.filaIncentivo).toBeNull();
   });
 
   it("la red externa ya no cuenta para la meta: la entrada no la acepta y la liquidación no trae aporte (0.8.1)", () => {
@@ -123,6 +124,16 @@ describe("liquidarMes: bono y sueldo base (EJECUTIVO, por captación para meta)"
     expect(pesos(l.sueldoBase)).toBe("15000.00");
   });
 
+  it.each([
+    ["999999.99", null],
+    ["1000000", 0],
+    ["1499999", 0],
+    ["1500000", 1],
+    ["2000000", 2],
+  ])("captación %s: fila alcanzada de INTERNOS %s", (monto, fila) => {
+    expect(interno([nueva(monto, 12)]).filaIncentivo).toBe(fila);
+  });
+
   it("el bono sale de incentivos_propuesta, no del código", () => {
     const j = copiaSemilla();
     j.incentivos_propuesta[1].bono = 7000;
@@ -136,9 +147,12 @@ describe("liquidarMes: externo", () => {
     const l = externo([nueva("500000", 12)]);
     expect(l.desbloqueo).toBeNull();
     expect(pesos(l.comisionPagable)).toBe("13530.00");
-    expect(pesos(l.comisionBloqueada)).toBe("0.00");
+    // Un externo no tiene desbloqueo: nunca trae comisión bloqueada ni nota de bloqueo.
+    expect(l.comisionBloqueada).toBeNull();
+    expect(l.notaBloqueo).toBeNull();
     // Menos de 1,000,000 de captación nueva: sin bono.
     expect(pesos(l.bono)).toBe("0.00");
+    expect(l.filaIncentivo).toBeNull();
     expect(pesos(l.sueldoBase)).toBe("0.00");
   });
 
@@ -166,6 +180,26 @@ describe("liquidarMes: externo", () => {
 
   it("renovación 500,000 a 12 -> 6,765.00 pagable", () => {
     expect(pesos(externo([renovacion("500000", 12)]).comisionPagable)).toBe("6765.00");
+  });
+
+  it.each([
+    ["999999.99", "0.00", null],
+    ["1000000.00", "15000.00", 0],
+    ["1500000.00", "20000.00", 1],
+    ["2000000.00", "25000.00", 2],
+  ])("bono por rango de captación nueva %s: %s (fila %s de EXTERNOS)", (monto, bono, fila) => {
+    const l = externo([nueva(monto, 12)]);
+    expect(pesos(l.bono)).toBe(bono);
+    expect(l.filaIncentivo).toBe(fila);
+  });
+
+  it("un externo nunca devuelve comisión bloqueada, con cualquier captación", () => {
+    for (const inv of [[], [nueva("30000", 6)], [renovacion("700000", 12)], [nueva("2500000", 24)]]) {
+      const l = externo(inv);
+      expect(l.comisionBloqueada).toBeNull();
+      expect(l.notaBloqueo).toBeNull();
+      expect(pesos(l.comisionPagable)).toBe(pesos(l.comisionBruta));
+    }
   });
 
   it("cada inversión se paga en la fecha de su quincena", () => {

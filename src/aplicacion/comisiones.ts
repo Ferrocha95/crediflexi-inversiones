@@ -52,7 +52,8 @@ export interface ModeloComisiones {
   readonly totales: {
     readonly comisionBruta: string;
     readonly comisionPagable: string;
-    readonly comisionBloqueada: string;
+    /** null en externos: no tienen desbloqueo. */
+    readonly comisionBloqueada: string | null;
     readonly captacionParaMeta: string;
   };
   /** Solo internos. */
@@ -217,7 +218,7 @@ export function modeloComisiones(s: SemillaComisiones, c: CamposComisiones): Res
     totales: {
       comisionBruta: pesos(v.comisionBruta),
       comisionPagable: pesos(v.comisionPagable),
-      comisionBloqueada: pesos(v.comisionBloqueada),
+      comisionBloqueada: pesosONulo(v.comisionBloqueada),
       captacionParaMeta: pesos(v.captacionParaMeta),
     },
     avance: avanceDe(v),

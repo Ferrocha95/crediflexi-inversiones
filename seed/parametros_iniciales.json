@@ -637,7 +637,7 @@
   "incentivos_propuesta": [
     {
       "tipo": "INTERNOS",
-      "cumplimiento": "100% META",
+      "cumplimiento": "100% de la meta",
       "sueldo_base": 15000,
       "bono": 0,
       "desde": 1000000,
@@ -646,7 +646,7 @@
     },
     {
       "tipo": "INTERNOS",
-      "cumplimiento": "150% META",
+      "cumplimiento": "150% de la meta",
       "sueldo_base": 15000,
       "bono": 5000,
       "desde": 1500000,
@@ -655,7 +655,7 @@
     },
     {
       "tipo": "INTERNOS",
-      "cumplimiento": "200% META",
+      "cumplimiento": "200% de la meta",
       "sueldo_base": 15000,
       "bono": 10000,
       "desde": 2000000,
@@ -664,6 +664,7 @@
     },
     {
       "tipo": "EXTERNOS",
+      "cumplimiento": "100% de la meta interna",
       "sueldo_base": 0,
       "bono": 15000,
       "desde": 1000000,
@@ -672,6 +673,7 @@
     },
     {
       "tipo": "EXTERNOS",
+      "cumplimiento": "150% de la meta interna",
       "sueldo_base": 0,
       "bono": 20000,
       "desde": 1500000,
@@ -680,6 +682,7 @@
     },
     {
       "tipo": "EXTERNOS",
+      "cumplimiento": "200% de la meta interna",
       "sueldo_base": 0,
       "bono": 25000,
       "desde": 2000000,
@@ -743,6 +746,12 @@
       "equipo": "ejecutivos subordinados por la cadena de mando, sin externos",
       "requiere_desbloqueo_del_equipo": false,
       "estado": "por confirmar"
+    },
+    "red_externa": {
+      "porcentaje": "0.30",
+      "base": "comision N1 de las inversiones de sus externos",
+      "requiere_desbloqueo_del_interno": true,
+      "estado": "por confirmar"
     }
   },
   "discrepancias_abiertas": [
@@ -756,5 +765,5 @@
     "D8 RESUELTA (2026-10-02): Pitagoras es la marca comercial de los servicios financieros; no cambia nada en el calculo ni en el PDF (usa el logo de Crediflexi).",
     "D9 RESUELTA (2026-10-07): la tabla USD se habilita (estatus CONFIRMADA) solo para RAMI_SISE, como en el folleto; sus tramos empiezan en dolares enteros (40,001; 80,001...)."
   ],
-  "version": "0.9"
+  "version": "0.9.1"
 }

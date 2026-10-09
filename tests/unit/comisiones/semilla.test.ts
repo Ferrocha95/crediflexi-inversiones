@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { cargarSemillaComisiones } from "../../../src/domain/comisiones/semilla";
 import { copiaSemilla, mal, semillaComisiones as s } from "./ayudas";
 
-describe("cargarSemillaComisiones con la semilla 0.9", () => {
+describe("cargarSemillaComisiones con la semilla 0.9.1", () => {
   it("lee la versión, el nivel vigente y los parámetros confirmados", () => {
-    expect(s.version).toBe("0.9");
+    expect(s.version).toBe("0.9.1");
     expect(s.generado).toBe("2026-10-07");
     expect(s.nivelVigente).toBe("N1");
     expect(s.renovacionesPaganComision).toBe(true);
@@ -64,13 +64,33 @@ describe("cargarSemillaComisiones con la semilla 0.9", () => {
     ]);
   });
 
-  it("las filas EXTERNOS ya no llevan la marca DESCARTADA ni la columna de cumplimiento", () => {
+  it("las filas EXTERNOS ya no llevan la marca DESCARTADA", () => {
     const externos = copiaSemilla().incentivos_propuesta.filter((f) => f.tipo === "EXTERNOS");
     expect(externos).toHaveLength(3);
-    for (const f of externos) {
-      expect(f).not.toHaveProperty("cumplimiento");
-      expect(JSON.stringify(f)).not.toMatch(/DESCARTADA/i);
-    }
+    for (const f of externos) expect(JSON.stringify(f)).not.toMatch(/DESCARTADA/i);
+  });
+
+  it("lee el cumplimiento y el rango de cada fila INTERNOS (0.9.1), sin mayúsculas tipo META", () => {
+    expect(s.incentivosInternos.map((i) => [i.cumplimiento, i.desde.toFixed(0), i.hasta?.toFixed(0) ?? null])).toEqual([
+      ["100% de la meta", "1000000", "1499999"],
+      ["150% de la meta", "1500000", "1999999"],
+      ["200% de la meta", "2000000", null],
+    ]);
+  });
+
+  it("lee el cumplimiento de cada fila EXTERNOS (0.9.1): es solo la etiqueta, el rango sigue siendo de captación nueva", () => {
+    expect(s.incentivosExternos.map((i) => i.cumplimiento)).toEqual([
+      "100% de la meta interna",
+      "150% de la meta interna",
+      "200% de la meta interna",
+    ]);
+  });
+
+  it("lee la comisión por externos (30% de la comisión N1 de sus externos, supuesto por confirmar)", () => {
+    expect(s.redExterna.porcentaje.toString()).toBe("0.3");
+    expect(s.redExterna.requiereDesbloqueoDelInterno).toBe(true);
+    expect(s.redExterna.estado).toBe("por confirmar");
+    expect(copiaSemilla().parametros.red_externa.base).toBe("comision N1 de las inversiones de sus externos");
   });
 });
 
@@ -146,6 +166,31 @@ describe("cargarSemillaComisiones: errores en español con la ubicación", () =>
     const j = copiaSemilla();
     j.parametros.bono_gerente.porcentaje = "30";
     expect(errorDe(j).detalles?.join("\n")).toContain("parametros.bono_gerente.porcentaje");
+  });
+
+  it("una fila de incentivos sin cumplimiento", () => {
+    const j = copiaSemilla();
+    const i = j.incentivos_propuesta.findIndex((f) => f.tipo === "EXTERNOS");
+    delete (j.incentivos_propuesta[i] as Record<string, unknown>).cumplimiento;
+    expect(errorDe(j).detalles?.join("\n")).toContain(`incentivos_propuesta.${i}.cumplimiento`);
+  });
+
+  it("un porcentaje de la comisión por externos fuera de 0 a 1", () => {
+    const j = copiaSemilla();
+    j.parametros.red_externa.porcentaje = "30";
+    expect(errorDe(j).detalles?.join("\n")).toContain("parametros.red_externa.porcentaje");
+  });
+
+  it("requiere_desbloqueo_del_interno que no es true ni false", () => {
+    const j = copiaSemilla();
+    (j.parametros.red_externa as Record<string, unknown>).requiere_desbloqueo_del_interno = "si";
+    expect(errorDe(j).detalles?.join("\n")).toContain("parametros.red_externa.requiere_desbloqueo_del_interno");
+  });
+
+  it("falta la comisión por externos", () => {
+    const j = copiaSemilla();
+    delete (j.parametros as Record<string, unknown>).red_externa;
+    expect(errorDe(j).detalles?.join("\n")).toContain("parametros.red_externa");
   });
 
   it("falta el bono de gerente", () => {

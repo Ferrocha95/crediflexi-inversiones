@@ -66,7 +66,7 @@ export function Resultado({ modelo: m }: { modelo: ModeloComisiones }) {
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Cifra etiqueta={TEXTOS.comisionDelMes} valor={m.totales.comisionBruta} />
           <Cifra etiqueta={TEXTOS.comisionPagable} valor={m.totales.comisionPagable} fuerte />
-          <Cifra etiqueta={TEXTOS.comisionBloqueada} valor={m.totales.comisionBloqueada} />
+          {m.totales.comisionBloqueada !== null && <Cifra etiqueta={TEXTOS.comisionBloqueada} valor={m.totales.comisionBloqueada} />}
         </dl>
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Cifra etiqueta={TEXTOS.captacionParaMeta} valor={m.totales.captacionParaMeta} />

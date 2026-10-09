@@ -23,13 +23,19 @@ export interface TramoComision {
   readonly tasas: ReadonlyMap<number, Decimal>;
 }
 
+/** Fila de bono de INTERNOS (EJECUTIVO) por captación para la meta; `hasta` INCLUSIVO, null en la última. */
 export interface IncentivoInterno {
+  /** Etiqueta de la fila ("100% de la meta"); no entra en el cálculo. */
+  readonly cumplimiento: string;
   readonly desde: Decimal;
+  readonly hasta: Decimal | null;
   readonly bono: Decimal;
 }
 
 /** Rango del bono de externos por captación nueva del mes; `hasta` INCLUSIVO, null en el último. */
 export interface IncentivoExterno {
+  /** Etiqueta de la fila ("100% de la meta interna"); el rango se sigue midiendo en pesos de captación nueva. */
+  readonly cumplimiento: string;
   readonly desde: Decimal;
   readonly hasta: Decimal | null;
   readonly bono: Decimal;
@@ -65,6 +71,15 @@ export interface SemillaComisiones {
   readonly bonoGerente: {
     readonly porcentaje: Decimal;
     readonly requiereDesbloqueoDelEquipo: boolean;
+    readonly estado: string;
+  };
+  /**
+   * Comisión por externos (supuesto por confirmar): fracción de la comisión N1
+   * de las inversiones de los externos de un interno. Aparte del bono de gerente.
+   */
+  readonly redExterna: {
+    readonly porcentaje: Decimal;
+    readonly requiereDesbloqueoDelInterno: boolean;
     readonly estado: string;
   };
 }
@@ -159,12 +174,19 @@ const parametros = z.looseObject({
     requiere_desbloqueo_del_equipo: z.boolean({ error: "Debe ser true o false." }),
     estado: z.string().min(1),
   }),
+  red_externa: z.looseObject({
+    porcentaje: fraccion,
+    base: z.string().min(1),
+    requiere_desbloqueo_del_interno: z.boolean({ error: "Debe ser true o false." }),
+    estado: z.string().min(1),
+  }),
   monto_minimo_comision: montoEntero,
 });
 
 const incentivo = z.looseObject({ tipo: z.string(), estado: z.string().optional() });
 const incentivoInterno = z.looseObject({
   tipo: z.literal("INTERNOS"),
+  cumplimiento: z.string().min(1),
   sueldo_base: montoEntero,
   bono: montoEntero,
   desde: montoEntero,
@@ -172,6 +194,7 @@ const incentivoInterno = z.looseObject({
 });
 const incentivoExterno = z.looseObject({
   tipo: z.literal("EXTERNOS"),
+  cumplimiento: z.string().min(1),
   bono: montoEntero,
   desde: montoEntero,
   hasta: montoEntero.nullable(),
@@ -255,14 +278,19 @@ const esquemaComisiones = z
         diaPagoQuincena1: p.pago_comisiones.quincena_1.dia_de_pago,
         diaPagoQuincena2: p.pago_comisiones.quincena_2.dia_de_pago,
       },
-      incentivosInternos: internos.map((f) => ({ desde: f.desde, bono: f.bono })),
+      incentivosInternos: internos.map((f) => ({ cumplimiento: f.cumplimiento, desde: f.desde, hasta: f.hasta, bono: f.bono })),
       sueldoBaseInterno: internos[0].sueldo_base,
-      incentivosExternos: externos.map((f) => ({ desde: f.desde, hasta: f.hasta, bono: f.bono })),
+      incentivosExternos: externos.map((f) => ({ cumplimiento: f.cumplimiento, desde: f.desde, hasta: f.hasta, bono: f.bono })),
       externos: { sueldoBase: p.externos.sueldo_base },
       bonoGerente: {
         porcentaje: p.bono_gerente.porcentaje,
         requiereDesbloqueoDelEquipo: p.bono_gerente.requiere_desbloqueo_del_equipo,
         estado: p.bono_gerente.estado,
+      },
+      redExterna: {
+        porcentaje: p.red_externa.porcentaje,
+        requiereDesbloqueoDelInterno: p.red_externa.requiere_desbloqueo_del_interno,
+        estado: p.red_externa.estado,
       },
     };
   });

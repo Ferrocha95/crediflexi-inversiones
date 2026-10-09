@@ -150,6 +150,8 @@ describe("modeloComisiones: externo", () => {
     const m = modelo({ perfil: "externo", rol: null, inversiones: [nueva("500000", 12, "2026-10-20")] });
     expect(m.avance).toBeNull();
     expect(m.totales.comisionPagable).toBe("$13,530.00");
+    // Un externo no tiene desbloqueo: el modelo no trae comisión bloqueada.
+    expect(m.totales.comisionBloqueada).toBeNull();
     expect(m.pagos).toEqual([{ fecha: "01/11/2026", monto: "$13,530.00", inversiones: [1] }]);
     // El sueldo base solo se muestra al perfil interno con rol EJECUTIVO.
     expect(m.sueldoBase).toBeNull();
