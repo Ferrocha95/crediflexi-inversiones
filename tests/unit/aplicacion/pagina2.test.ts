@@ -57,11 +57,11 @@ describe("modeloPagina2: tarjetas de las dos modalidades", () => {
     expect(m1.elegida).toBe(true);
     expect(m1.nota).toBeNull();
     expect(m1.detalle?.tasa).toBe("18.00%");
-    expect(m1.detalle?.etiquetaTasa).toBe("TASA ANUAL");
+    expect(m1.detalle?.etiquetaTasa).toBe("Tasa anual neta");
     expect(m1.detalle?.renglones).toEqual([
       { etiqueta: "Capital inicial", cifra: "$1,000,000.00" },
-      { etiqueta: "Ganancia esperada del periodo (plazo de 6 meses)", cifra: "$90,000.00" },
-      { etiqueta: "Total capital + ganancia", cifra: "$1,090,000.00" },
+      { etiqueta: "Rendimiento total (6 meses)", cifra: "$90,000.00" },
+      { etiqueta: "Capital + rendimiento total", cifra: "$1,090,000.00" },
     ]);
     expect(m1.detalle?.filas).toHaveLength(6);
     expect(m1.detalle?.filas[0]).toEqual({ mes: "1", rendimiento: "$15,000.00", acumulado: "$15,000.00" });
@@ -70,12 +70,11 @@ describe("modeloPagina2: tarjetas de las dos modalidades", () => {
     expect(m2.titulo).toBe("MODALIDAD 2 · PAGO AL VENCIMIENTO");
     expect(m2.elegida).toBe(false);
     expect(m2.detalle?.tasa).toBe("20.00%");
-    // Anualizada: 1,000,000 × 0.20 = 200,000.00; ganancia del plazo 1,000,000 × 0.20 × 6 ÷ 12 = 100,000.00.
+    // Sin el renglón del rendimiento anual (Sprint 6a); rendimiento total 1,000,000 × 0.20 × 6 ÷ 12 = 100,000.00.
     expect(m2.detalle?.renglones).toEqual([
       { etiqueta: "Capital inicial", cifra: "$1,000,000.00" },
-      { etiqueta: "Ganancia esperada del periodo (12 meses)", cifra: "$200,000.00" },
-      { etiqueta: "Ganancia esperada del periodo (plazo de 6 meses)", cifra: "$100,000.00" },
-      { etiqueta: "Total capital + ganancia", cifra: "$1,100,000.00" },
+      { etiqueta: "Rendimiento total (6 meses)", cifra: "$100,000.00" },
+      { etiqueta: "Capital + rendimiento total", cifra: "$1,100,000.00" },
     ]);
     expect(m2.detalle?.filas).toEqual([]);
   });
@@ -96,10 +95,10 @@ describe("modeloPagina2: tarjetas de las dos modalidades", () => {
     const [m1, m2] = modelo("1000000", 6, "mensual").tarjetas;
     const f1 = m1.detalle!.franja;
     expect(f1.puntos.map((p) => p.mes)).toEqual([1, 2, 3, 4, 5, 6]);
-    expect([f1.etiquetaPuntos, f1.etiquetaFinal]).toEqual([T.franjaGanancia, T.franjaMasCapital]);
+    expect([f1.etiquetaPuntos, f1.etiquetaFinal]).toEqual([T.franjaRendimiento, T.franjaMasCapital]);
     const f2 = m2.detalle!.franja;
     expect(f2.puntos.map((p) => p.mes)).toEqual([6]);
-    expect([f2.etiquetaPuntos, f2.etiquetaFinal]).toEqual([null, T.franjaGananciaCapital]);
+    expect([f2.etiquetaPuntos, f2.etiquetaFinal]).toEqual([null, T.franjaRendimientoCapital]);
   });
 
   it.each([1, 6, 9, 24])("la franja de %s meses queda dentro de su lienzo y en orden", (plazo) => {
@@ -150,7 +149,7 @@ describe("modeloPagina2: tarjetas de las dos modalidades", () => {
 describe("modeloPagina2: plazo especial", () => {
   const ESPECIAL_9: Ajuste = { tipo: "especial", plazo: 9, tasas: { mensual: "17" } };
 
-  it("la tarjeta dice TASA ACORDADA y las líneas llevan el mes 9", () => {
+  it("la tarjeta dice Tasa acordada y las líneas llevan el mes 9", () => {
     const [m1] = modeloAjustado("100000", "mensual", ESPECIAL_9).tarjetas;
     expect(m1.detalle?.etiquetaTasa).toBe(T.tasaAcordada);
     expect(m1.detalle?.lineas).toEqual(["Pago de rendimiento mensual: cada mes, del mes 1 al mes 9", "Capital: al vencimiento (mes 9)"]);
@@ -176,7 +175,7 @@ describe("modeloPagina2: comparación de modalidades (la única gráfica: ya no 
     expect(g.nota).toBe(T.notaGrafica1);
     expect(g.rotulo).toBeNull();
     const d = g.dibujo!;
-    expect(d.series.map((s) => s.nombre)).toEqual([T.serieCobrado, T.serieDevengado]);
+    expect(d.series.map((s) => s.nombre)).toEqual([T.serieMensual, T.serieFinal]);
     expect(d.series.map((s) => s.final.texto)).toEqual(["$90,000.00", "$100,000.00"]);
     expect(d.series.map((s) => s.trazo)).toEqual(["continuo", "rayado"]);
     for (const s of d.series) expect(s.ruta.split("L")).toHaveLength(7);
@@ -191,7 +190,7 @@ describe("modeloPagina2: comparación de modalidades (la única gráfica: ya no 
       ...datos,
       calendarios: { ...datos.calendarios, finalDelPlazo: { ok: false, error: { codigo: "TRAMO_POR_CONFIRMAR", mensaje: "x" } } },
     };
-    expect(modeloPagina2(c, sinFinal, T).graficas[0].dibujo!.series.map((s) => s.nombre)).toEqual([T.serieCobrado]);
+    expect(modeloPagina2(c, sinFinal, T).graficas[0].dibujo!.series.map((s) => s.nombre)).toEqual([T.serieMensual]);
   });
 
   it("el modelo de la página 2 no menciona la reinversión ni el escenario", () => {

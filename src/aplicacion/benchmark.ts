@@ -112,6 +112,8 @@ export type BenchmarkPdf =
       readonly actualizado: string;
       /** Primero la última tasa publicada (con tu tasa), luego el rendimiento histórico; un grupo sin instrumentos no va. */
       readonly grupos: readonly GrupoBenchmark[];
+      /** "La tasa de Crediflexi se muestra neta; las demás, brutas…" (archivo de textos). */
+      readonly notaNeta: string;
       /** Las notas numeradas, en el orden del archivo. */
       readonly notas: readonly string[];
       readonly fuentes: string;
@@ -218,6 +220,7 @@ export function modeloBenchmark(
     titulo,
     actualizado: rellenar(t.benchmarkActualizado, { fecha: fechaLarga(b.actualizado_al) }),
     grupos,
+    notaNeta: t.benchmarkNotaNeta,
     notas: publicables.flatMap((i) => (i.nota_asterisco === null ? [] : [`${marcas.get(i.id)} ${i.nota_asterisco}`])),
     fuentes: rellenar(t.benchmarkFuentes, { fuentes: listaEnEspanol([...new Set(publicables.map((i) => i.fuente.nombre_corto))]) }),
   };

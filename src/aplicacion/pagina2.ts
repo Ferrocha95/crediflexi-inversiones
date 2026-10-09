@@ -2,7 +2,6 @@ import { Decimal } from "../domain/comun/decimal";
 import { formatearCantidad, formatearPorcentaje } from "../domain/comun/formato";
 import { exito, fallo, type Resultado } from "../domain/comun/resultado";
 import { calendariosAjustados, type Ajuste, type CotizacionAjustada, type ModalidadAjustada } from "../domain/interes/ajustes";
-import { calcularRendimientos } from "../domain/interes/calcular";
 import { calendarios, type CalendarioModalidad } from "../domain/interes/calendario";
 import type { Cotizacion } from "../domain/interes/cotizar";
 import type { SolicitudTasa } from "../domain/tasas/resolver";
@@ -13,9 +12,8 @@ import { rellenar } from "./rellenar";
 import type { TextosPagina2 } from "./textos";
 
 // Página 2 del PDF: este módulo no calcula cifras, solo les da forma de texto y
-// convierte a coordenadas (números) lo que se dibuja. La única cifra que pide
-// al dominio es la ganancia anual equivalente de la modalidad 2, con la misma
-// fórmula de siempre (calcularRendimientos).
+// convierte a coordenadas (números) lo que se dibuja. Los rótulos salen del
+// glosario único del archivo de textos (Sprint 6a).
 
 /** Lo que el dominio calcula para la página 2. Una modalidad en null no tiene tasa acordada (plazo especial). */
 export interface DatosPagina2 {
@@ -55,9 +53,9 @@ export interface FranjaPdf {
   readonly fin: number;
   /** Un punto por pago: cada mes en la modalidad 1; solo el mes N en la 2. */
   readonly puntos: readonly { readonly mes: number; readonly x: number }[];
-  /** Rótulo de los pagos mensuales ("ganancia"); null si solo hay un pago. */
+  /** Rótulo de los pagos mensuales ("rendimiento"); null si solo hay un pago. */
   readonly etiquetaPuntos: string | null;
-  /** Rótulo del último punto ("+ capital" o "ganancia + capital"). */
+  /** Rótulo del último punto ("+ capital" o "rendimiento + capital"). */
   readonly etiquetaFinal: string;
 }
 
@@ -69,10 +67,10 @@ export interface TarjetaPdf {
   /** null si la modalidad no se puede cotizar o no tiene tasa acordada. */
   readonly detalle: {
     readonly tasa: string;
-    /** "TASA ANUAL", o "TASA ACORDADA" en un plazo especial. */
+    /** "Tasa anual neta" (glosario), o "Tasa acordada" en un plazo especial. */
     readonly etiquetaTasa: string;
     readonly renglones: readonly { readonly etiqueta: string; readonly cifra: string }[];
-    /** Cuándo se paga la ganancia y cuándo el capital (con el mes N). */
+    /** Cuándo se paga el rendimiento y cuándo el capital (con el mes N). */
     readonly lineas: readonly [string, string];
     readonly franja: FranjaPdf;
     /** Tabla mes por mes: solo la modalidad 1; la 2 va anualizada, sin filas. */
@@ -148,8 +146,8 @@ function franja(esquema: Esquema, meses: number, t: TextosPagina2): FranjaPdf {
     inicio: x(0),
     fin: x(meses),
     puntos: pagos.map((mes) => ({ mes, x: x(mes) })),
-    etiquetaPuntos: esquema === "mensual" ? t.franjaGanancia : null,
-    etiquetaFinal: esquema === "mensual" ? t.franjaMasCapital : t.franjaGananciaCapital,
+    etiquetaPuntos: esquema === "mensual" ? t.franjaRendimiento : null,
+    etiquetaFinal: esquema === "mensual" ? t.franjaMasCapital : t.franjaRendimientoCapital,
   };
 }
 
@@ -169,8 +167,8 @@ function tarjeta(
   const meses = c.filas.length;
   const n = { meses: String(meses) };
   const capital = { etiqueta: t.capitalInicial, cifra: pesos(c.capitalInicial) };
-  const plazo = { etiqueta: rellenar(t.gananciaPlazo, n), cifra: pesos(c.rendimientoEstimado) };
-  const total = { etiqueta: t.totalCapitalGanancia, cifra: pesos(c.total) };
+  const plazo = { etiqueta: rellenar(t.rendimientoTotal, n), cifra: pesos(c.rendimientoEstimado) };
+  const total = { etiqueta: t.capitalMasRendimiento, cifra: pesos(c.total) };
   const comun = { tasa: formatearPorcentaje(new Decimal(c.tasa)), etiquetaTasa: especial ? t.tasaAcordada : t.tasaAnual, franja: franja(esquema, meses, t) };
 
   if (esquema === "mensual") {
@@ -181,22 +179,21 @@ function tarjeta(
       detalle: {
         ...comun,
         renglones: [capital, plazo, total],
-        lineas: [rellenar(t.pagoGananciaMensual, n), rellenar(t.capitalVencimiento, n)],
+        lineas: [rellenar(t.pagoRendimientoMensual, n), rellenar(t.capitalVencimiento, n)],
         filas: c.filas.map((f) => ({ mes: String(f.mes), rendimiento: pesos(f.rendimiento), acumulado: pesos(f.acumulado) })),
       },
       nota: null,
     };
   }
-  // Modalidad 2 anualizada: sin filas por mes. La ganancia anual equivalente es monto × tasa (calcularRendimientos).
-  const anual = calcularRendimientos(new Decimal(c.capitalInicial), new Decimal(c.tasa), meses).rendimiento_anual_pesos.redondeado;
+  // Modalidad 2: sin filas por mes y, desde el Sprint 6a, sin el renglón del rendimiento anual.
   return {
     esquema,
     titulo,
     elegida,
     detalle: {
       ...comun,
-      renglones: [capital, { etiqueta: t.gananciaAnualEquivalente, cifra: pesos(anual.toFixed(2)) }, plazo, total],
-      lineas: [rellenar(t.pagoGananciaVencimiento, n), rellenar(t.capitalVencimiento, n)],
+      renglones: [capital, plazo, total],
+      lineas: [rellenar(t.pagoRendimientoFinal, n), rellenar(t.capitalVencimiento, n)],
       filas: [],
     },
     nota: null,
@@ -260,8 +257,8 @@ function graficaComparacion(
   }
   const series: SerieDatos[] = [];
   for (const [r, nombre, color, trazo] of [
-    [m1, t.serieCobrado, "marino", "continuo"],
-    [m2, t.serieDevengado, "verde", "rayado"],
+    [m1, t.serieMensual, "marino", "continuo"],
+    [m2, t.serieFinal, "verde", "rayado"],
   ] as const) {
     if (r.ok) series.push({ nombre, color, trazo, valores: ["0", ...r.valor.filas.map((f) => f.acumulado)] });
   }

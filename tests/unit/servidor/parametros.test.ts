@@ -42,7 +42,7 @@ describe("leerParametrosCotizacion", () => {
     expect(r.valor.semilla.entidades).toEqual(["CREDIFLEXI", "RAMI_SISE"]);
     expect(r.valor.razonesSociales.get("CREDIFLEXI")).toBe("CREDIFLEXI, S.A.P.I. DE C.V.");
     expect(r.valor.razonesSociales.get("RAMI_SISE")).toBe("RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R.");
-    expect(r.valor.textos.version).toBe("0.7.1");
+    expect(r.valor.textos.version).toBe("0.8");
     expect(r.valor.benchmark.version).toBe("0.4.2");
     expect(r.valor.benchmark.actualizado_al).toBe("2026-10-08");
   });

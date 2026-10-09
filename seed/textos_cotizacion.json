@@ -1,8 +1,23 @@
 {
-  "version": "0.7.1",
-  "pie_base": "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual indicada y con las tasas de la versión {version_tasas} del {fecha_tasas}. La ganancia anual es un equivalente a 12 meses; la ganancia del plazo corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables son las del contrato que se firme.",
-  "pie_aviso_fondo": "Crediflexi, fondo de inversión privado, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R., inscrita en el SIPRES de la CONDUSEF y sujeta a las disposiciones aplicables. Por ser un fondo de inversión privado, para invertir se requiere adquirir una acción de $1,000.00 MXN. Las tasas están sujetas a cambio.",
+  "version": "0.8",
+  "glosario": {
+    "rendimiento_mensual": "Rendimiento mensual",
+    "rendimiento_anual": "Rendimiento anual (12 meses)",
+    "rendimiento_total": "Rendimiento total ({meses} meses)",
+    "capital_mas_rendimiento": "Capital + rendimiento total",
+    "pago_rendimiento_mensual": "Pago de rendimiento mensual",
+    "pago_rendimiento_final": "Pago de rendimiento: al final del plazo (mes {meses}), junto con el capital",
+    "mensual": "Mensual",
+    "final_del_plazo": "Al final del plazo",
+    "rendimiento_acumulado": "Rendimiento acumulado",
+    "tasa_anual_neta": "Tasa anual neta"
+  },
+  "detalle_pago_mensual": "cada mes, del mes 1 al mes {meses}",
+  "nota_mensual_al_final": "se acumula y se paga al final del plazo",
+  "pie_base": "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual neta indicada y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente a 12 meses; el rendimiento total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables son las del contrato que se firme.",
+  "pie_aviso_fondo": "Crediflexi, fondo de inversión privado, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R., inscrita en el SIPRES de la CONDUSEF (clave de registro 696338), autoridad supervisora indicada en dicho registro, y sujeta a las disposiciones aplicables. Por ser un fondo de inversión privado, para invertir se requiere adquirir una acción de $1,000.00 MXN. Las tasas están sujetas a cambio.",
   "pie_sipres": "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES",
+  "pie_nota_neta": "Tasa neta: ya después de impuestos.",
   "linea_preparado_por": "Preparado por {ejecutivo}.",
   "linea_vigencia": "Vigencia: {vigencia}.",
   "estatus_tramo": {
@@ -10,38 +25,13 @@
     "CONFIRMADA": "Tasa confirmada.",
     "POR_CONFIRMAR": "Tasa por confirmar: no se puede cotizar."
   },
-  "nombre_esquema": {
-    "mensual": "Rendimientos mensuales",
-    "final_del_plazo": "Al final del plazo"
-  },
-  "esquema_corto": {
-    "mensual": "Mensual",
-    "final_del_plazo": "Al final del plazo"
-  },
   "moneda_deshabilitada": "Las tasas en {moneda} están por confirmar.",
-  "etiquetas_resultados": {
-    "mensual": {
-      "rendimiento_mensual_pesos": "Ganancia esperada del periodo (1 mes)",
-      "rendimiento_anual_pesos": "Ganancia esperada del periodo (12 meses)",
-      "ganancia_total_plazo": "Ganancia esperada del periodo (plazo de {meses} meses)"
-    },
-    "final_del_plazo": {
-      "rendimiento_mensual_pesos": "Ganancia esperada del periodo (1 mes), se acumula y se paga al final del plazo",
-      "rendimiento_anual_pesos": "Ganancia esperada del periodo (12 meses)",
-      "ganancia_total_plazo": "Ganancia esperada del periodo (plazo de {meses} meses)"
-    }
-  },
-  "linea_pago": {
-    "mensual": "Pago de rendimiento mensual: cada mes, del mes 1 al mes {meses}",
-    "final_del_plazo": "Pago de rendimiento: al final del plazo (mes {meses}), junto con el capital"
-  },
   "pdf": {
     "titulo": "Tu cotización de inversión",
     "preparado_para": "Preparado para",
     "fecha": "Fecha",
     "resumen_monto": "Monto de inversión",
     "resumen_plazo": "Plazo",
-    "resumen_tasa": "Tasa anual",
     "resumen_esquema": "Esquema",
     "seccion_resultados": "Tus resultados",
     "seccion_calculo": "Cómo se calculó",
@@ -54,37 +44,28 @@
     "titulo": "Calendario de pagos y comparativo",
     "modalidad_1": "MODALIDAD 1 · RENDIMIENTO MENSUAL",
     "modalidad_2": "MODALIDAD 2 · PAGO AL VENCIMIENTO",
-    "tasa_anual": "TASA ANUAL",
-    "tasa_acordada": "TASA ACORDADA",
+    "tasa_acordada": "Tasa acordada",
     "capital_inicial": "Capital inicial",
-    "ganancia_anual_equivalente": "Ganancia esperada del periodo (12 meses)",
-    "ganancia_plazo": "Ganancia esperada del periodo (plazo de {meses} meses)",
-    "total_capital_ganancia": "Total capital + ganancia",
-    "pago_ganancia_mensual": "Pago de rendimiento mensual: cada mes, del mes 1 al mes {meses}",
-    "pago_ganancia_vencimiento": "Pago de rendimiento: al final del plazo (mes {meses}), junto con el capital",
     "capital_vencimiento": "Capital: al vencimiento (mes {meses})",
-    "franja_ganancia": "ganancia",
+    "franja_rendimiento": "rendimiento",
     "franja_mas_capital": "+ capital",
-    "franja_ganancia_capital": "ganancia + capital",
+    "franja_rendimiento_capital": "rendimiento + capital",
     "columna_mes": "Mes",
-    "columna_ganancia_periodo": "Ganancia del periodo",
-    "columna_ganancia_acumulada": "Ganancia acumulada",
     "insignia": "Tu cotización",
     "nota_centavos": "Los centavos se ajustan para que la suma coincida con el total.",
     "modalidad_no_disponible": "Esta modalidad no se puede cotizar con el monto y el plazo elegidos.",
     "modalidad_sin_tasa": "Esta modalidad no lleva tasa acordada en este plazo especial.",
     "titulo_grafica_1": "Comparación de modalidades",
-    "nota_grafica_1": "Ganancia acumulada mes a mes: en la modalidad 1 se paga cada mes; en la modalidad 2 se acumula y se paga al vencimiento.",
-    "serie_cobrado": "Modalidad 1 (cobrado)",
-    "serie_devengado": "Modalidad 2 (acumulado)",
+    "nota_grafica_1": "Rendimiento acumulado mes a mes: en la modalidad 1 se paga cada mes; en la modalidad 2 se acumula y se paga al vencimiento.",
     "comparacion_omitida": "La comparación de modalidades se omite: falta la tasa acordada de una de las dos modalidades.",
     "benchmark_titulo": "Tu tasa frente a otras opciones",
-    "benchmark_tu_tasa": "Tu tasa",
+    "benchmark_tu_tasa": "Tu tasa anual neta",
     "benchmark_actualizado": "Última tasa publicada de cada instrumento; la fecha de cada uno se indica junto a su barra. Actualizado al {fecha}.",
     "benchmark_fuentes": "Fuentes: {fuentes}",
     "benchmark_desactualizado": "Comparativo no disponible: datos desactualizados",
     "benchmark_solo_pesos": "Comparativo no disponible en dólares: las opciones comparadas son en pesos (MXN).",
     "benchmark_en_dolares": "en dólares (USD)",
+    "benchmark_nota_neta": "La tasa de Crediflexi se muestra neta; las demás, brutas, antes de impuestos.",
     "pagina": "Página",
     "pagina_de": "de"
   },

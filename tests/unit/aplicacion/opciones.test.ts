@@ -72,7 +72,7 @@ describe("opcionesCotizador", () => {
 
   it("los esquemas llevan el nombre del archivo de textos", () => {
     expect(opcionesCotizador(parametros).esquemas).toEqual([
-      { esquema: "mensual", nombre: "Rendimientos mensuales" },
+      { esquema: "mensual", nombre: "Mensual" },
       { esquema: "final_del_plazo", nombre: "Al final del plazo" },
     ]);
   });

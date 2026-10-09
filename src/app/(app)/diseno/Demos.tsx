@@ -61,7 +61,7 @@ export function DemoControles() {
         valor={esquema}
         alCambiar={setEsquema}
         opciones={[
-          { valor: "mensual", etiqueta: "Pago mensual" },
+          { valor: "mensual", etiqueta: "Mensual" },
           { valor: "vencimiento", etiqueta: "Al vencimiento" },
         ]}
       />

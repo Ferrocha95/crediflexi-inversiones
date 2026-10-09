@@ -44,9 +44,9 @@ const ENTIDADES = [
 ] as const;
 
 const pieEsperado = (razonSocial: string) =>
-  `Cotización informativa para ${razonSocial}, calculada con interés simple sobre la tasa anual indicada ` +
-  `y con las tasas de la versión ${VERSION} del ${FECHA_SEMILLA}. La ganancia anual es un equivalente a 12 meses; ` +
-  "la ganancia del plazo corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables " +
+  `Cotización informativa para ${razonSocial}, calculada con interés simple sobre la tasa anual neta indicada ` +
+  `y con las tasas de la versión ${VERSION} del ${FECHA_SEMILLA}. El rendimiento anual es un equivalente a 12 meses; ` +
+  "el rendimiento total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables " +
   "son las del contrato que se firme.";
 
 /** Textos reales con otros nombres de esquema, para probar que el nombre sale del archivo (esquema_corto). */
@@ -75,21 +75,21 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     expect(m.cifras).toEqual([
       {
         clave: "rendimiento_mensual_pesos",
-        etiqueta: "Ganancia esperada del periodo (1 mes)",
+        etiqueta: "Rendimiento mensual",
         cifra: "$23,750.00",
         formula: "monto × tasa anual ÷ 12",
         operacion: "1,500,000.00 × 0.19 ÷ 12 = 23,750.00",
       },
       {
         clave: "rendimiento_anual_pesos",
-        etiqueta: "Ganancia esperada del periodo (12 meses)",
+        etiqueta: "Rendimiento anual (12 meses)",
         cifra: "$285,000.00",
         formula: "monto × tasa anual",
         operacion: "1,500,000.00 × 0.19 = 285,000.00",
       },
       {
         clave: "ganancia_total_plazo",
-        etiqueta: "Ganancia esperada del periodo (plazo de 12 meses)",
+        etiqueta: "Rendimiento total (12 meses)",
         cifra: "$285,000.00",
         formula: "monto × tasa anual × plazo ÷ 12",
         operacion: "1,500,000.00 × 0.19 × 12 ÷ 12 = 285,000.00",
@@ -114,7 +114,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
   it("cifra principal en esquema mensual: el pago mensual, con su etiqueta de la semilla", () => {
     expect(pdf(clave).cifraPrincipal).toEqual({
       clave: "rendimiento_mensual_pesos",
-      etiqueta: "Ganancia esperada del periodo (1 mes)",
+      etiqueta: "Rendimiento mensual",
       cifra: "$23,750.00",
     });
   });
@@ -122,7 +122,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
   it("cifra principal al final del plazo: la ganancia total, con su etiqueta de la semilla", () => {
     expect(pdf(clave, {}, { esquema: "final_del_plazo" }).cifraPrincipal).toEqual({
       clave: "ganancia_total_plazo",
-      etiqueta: "Ganancia esperada del periodo (plazo de 12 meses)",
+      etiqueta: "Rendimiento total (12 meses)",
       cifra: "$315,000.00",
     });
   });
@@ -142,7 +142,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
       fecha: "Fecha",
       resumenMonto: "Monto de inversión",
       resumenPlazo: "Plazo",
-      resumenTasa: "Tasa anual",
+      resumenTasa: "Tasa anual neta",
       resumenEsquema: "Esquema",
       seccionResultados: "Tus resultados",
       seccionCalculo: "Cómo se calculó",
@@ -191,9 +191,9 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     expect(m.solicitud.esquema).toBe("Al final del plazo");
     expect(m.tasa).toBe("21.00%");
     expect(m.cifras.map((c) => [c.etiqueta, c.cifra])).toEqual([
-      ["Ganancia esperada del periodo (1 mes), se acumula y se paga al final del plazo", "$26,250.00"],
-      ["Ganancia esperada del periodo (12 meses)", "$315,000.00"],
-      ["Ganancia esperada del periodo (plazo de 12 meses)", "$315,000.00"],
+      ["Rendimiento mensual, se acumula y se paga al final del plazo", "$26,250.00"],
+      ["Rendimiento anual (12 meses)", "$315,000.00"],
+      ["Rendimiento total (12 meses)", "$315,000.00"],
     ]);
   });
 
@@ -344,21 +344,21 @@ describe.each(ENTIDADES)("modeloVistaPrevia ($clave)", ({ clave }) => {
     expect(v.salidas).toEqual([
       {
         clave: "rendimiento_mensual_pesos",
-        etiqueta: "Ganancia esperada del periodo (1 mes)",
+        etiqueta: "Rendimiento mensual",
         cifra: "$23,750.00",
         formula: "monto × tasa anual ÷ 12",
         operacion: "1,500,000.00 × 0.19 ÷ 12 = 23,750.00",
       },
       {
         clave: "rendimiento_anual_pesos",
-        etiqueta: "Ganancia esperada del periodo (12 meses)",
+        etiqueta: "Rendimiento anual (12 meses)",
         cifra: "$285,000.00",
         formula: "monto × tasa anual",
         operacion: "1,500,000.00 × 0.19 = 285,000.00",
       },
       {
         clave: "ganancia_total_plazo",
-        etiqueta: "Ganancia esperada del periodo (plazo de 12 meses)",
+        etiqueta: "Rendimiento total (12 meses)",
         cifra: "$285,000.00",
         formula: "monto × tasa anual × plazo ÷ 12",
         operacion: "1,500,000.00 × 0.19 × 12 ÷ 12 = 285,000.00",
@@ -467,8 +467,8 @@ describe("modelo con los textos 0.5 (Sprint 3a)", () => {
   it("la etiqueta de la ganancia del plazo lleva el plazo de la cotización (6 meses)", () => {
     const c = cotizarBien({ monto: "500000", plazo: 6 });
     const etiqueta = (x: { clave: string; etiqueta: string }[]) => x.find((y) => y.clave === "ganancia_total_plazo")?.etiqueta;
-    expect(etiqueta([...modeloVistaPrevia(c, textos).salidas])).toBe("Ganancia esperada del periodo (plazo de 6 meses)");
-    expect(etiqueta([...sinError(modeloPdfConDatos(c, contexto, {}, AHORA)).cifras])).toBe("Ganancia esperada del periodo (plazo de 6 meses)");
+    expect(etiqueta([...modeloVistaPrevia(c, textos).salidas])).toBe("Rendimiento total (6 meses)");
+    expect(etiqueta([...sinError(modeloPdfConDatos(c, contexto, {}, AHORA)).cifras])).toBe("Rendimiento total (6 meses)");
   });
 
   it("el pie, para las dos entidades: la línea SIPRES y el disclaimer", () => {

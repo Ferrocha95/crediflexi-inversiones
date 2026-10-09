@@ -65,6 +65,8 @@ export interface ModeloVistaPrevia {
     readonly plazo: string;
   };
   readonly tasa: string;
+  /** "Tasa anual neta" (glosario) o, en un plazo especial, "Tasa acordada". */
+  readonly etiquetaTasa: string;
   readonly origenTasa: CotizacionAjustada["origenTasa"];
   /** Tramo aplicado con su estatus visible (pendiente t); null en un plazo especial (no hay tabla). */
   readonly tramo: {
@@ -107,6 +109,7 @@ export function modeloVistaPrevia(
       plazo: meses(c.solicitud.plazo),
     },
     tasa: formatearPorcentaje(new Decimal(c.tasa)),
+    etiquetaTasa: c.origenTasa === "especial" ? textos.pdf.tasaAcordada : textos.glosario.tasa_anual_neta,
     origenTasa: c.origenTasa,
     tramo:
       c.tramo === null
@@ -185,7 +188,7 @@ export interface ModeloPdf {
   readonly etiquetas: { readonly plazo: string; readonly tasa: string };
   /** "Tasa de tabla X% + Y puntos extra = Z%" ya rellenado; null si no hay puntos extra. */
   readonly desgloseTasa: string | null;
-  /** "Pago de la ganancia: cada mes" o "al vencimiento". */
+  /** Cuándo se paga el rendimiento, con el plazo (glosario). */
   readonly lineaPago: string;
   /** Textos fijos del documento, tal como vienen del archivo (sin plantillas). */
   readonly textos: Omit<TextosPdf, "lineaTasas" | "desglosePuntos">;
@@ -206,6 +209,8 @@ export interface ModeloPdf {
     readonly avisoFondo: string;
     /** Línea SIPRES: va en el pie de las dos páginas, con las dos entidades (textos 0.7). */
     readonly sipres: string;
+    /** "Tasa neta: ya después de impuestos.": va en el pie de las dos páginas. */
+    readonly notaNeta: string;
   };
   /** Página 2: calendario de las dos modalidades, comparación y comparativo de tasas. */
   readonly pagina2: ModeloPagina2 & { readonly benchmark: BenchmarkPdf };
@@ -297,6 +302,7 @@ export function modeloPdf(
       notaAdicional: oNulo(notaAdicional),
       avisoFondo: textos.pieAvisoFondo,
       sipres: textos.pieSipres,
+      notaNeta: textos.pieNotaNeta,
     },
     pagina2: {
       ...modeloPagina2(c, datos, textos.pdfPagina2),

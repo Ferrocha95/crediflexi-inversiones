@@ -19,7 +19,7 @@ import { FAMILIA } from "./fuente";
 // Página 2 del PDF: la modalidad 1 con su tabla mes a mes a la izquierda; a la
 // derecha, la modalidad 2 anualizada, la comparación de modalidades y el
 // comparativo de tasas (barras horizontales). Cada
-// tarjeta dice cuándo se paga la ganancia y cuándo el capital, con su franja
+// tarjeta dice cuándo se paga el rendimiento y cuándo el capital, con su franja
 // de tiempo. Solo presenta el modelo: aquí no se calcula nada y no hay textos
 // propios. Ningún texto nuevo baja de 7.5 pt.
 
@@ -118,7 +118,7 @@ const e = StyleSheet.create({
   colCifra: { flex: 1, textAlign: "right" },
   notaTarjeta: { fontSize: 8, color: COLOR.gris, lineHeight: 1.3 },
 
-  notaCentavos: { marginTop: 4, fontSize: 7, color: COLOR.gris },
+  notaCentavos: { marginTop: 4, fontSize: 7, color: COLOR.gris, lineHeight: 1.2 },
 
   grafica: { width: LIENZO_GRAFICA.ancho },
   graficaCabeza: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 6, height: 16 },
@@ -139,10 +139,10 @@ const e = StyleSheet.create({
   notaGrafica: { marginTop: 2, fontSize: 6.5, color: COLOR.gris, lineHeight: 1.3 },
 
   benchmark: { width: ANCHO_COLUMNA },
-  notasBenchmark: { marginTop: 2 },
+  notasBenchmark: { marginTop: 1 },
   benchmarkGrupo: { marginTop: 3, fontSize: 7.5, fontWeight: "bold", color: COLOR.marino },
   barras: { marginTop: 2, marginBottom: 1 },
-  benchmarkNota: { marginTop: 1.5, fontSize: 7.5, color: COLOR.gris, lineHeight: 1.2 },
+  benchmarkNota: { marginTop: 0.5, fontSize: 7.5, color: COLOR.gris, lineHeight: 1.2 },
 
   /** Empuja el pie al final de la hoja. */
   relleno: { flexGrow: 1, minHeight: 8 },
@@ -211,8 +211,8 @@ function Tarjeta({ t, textos }: { t: TarjetaPdf; textos: ModeloPagina2["textos"]
               <>
                 <View style={e.tablaCabeza}>
                   <Text style={e.colMes}>{textos.columnaMes}</Text>
-                  <Text style={e.colCifra}>{textos.columnaGananciaPeriodo}</Text>
-                  <Text style={e.colCifra}>{textos.columnaGananciaAcumulada}</Text>
+                  <Text style={e.colCifra}>{textos.columnaRendimientoMensual}</Text>
+                  <Text style={e.colCifra}>{textos.columnaRendimientoAcumulado}</Text>
                 </View>
                 {d.filas.map((f, i) => (
                   <View key={f.mes} style={[e.tablaFila, ...(i % 2 === 1 ? [e.tablaFilaAlterna] : [])]}>
@@ -390,7 +390,7 @@ function NotasBenchmark({ b }: { b: BenchmarkPdf }) {
   const vigentes = b.grupos.filter((g) => g.clave !== "rendimiento_historico").flatMap((g) => g.leyendas);
   return (
     <View style={e.notasBenchmark}>
-      {[b.actualizado, ...vigentes, ...b.notas, b.fuentes].map((n) => (
+      {[b.actualizado, ...vigentes, b.notaNeta, ...b.notas, b.fuentes].map((n) => (
         <Text key={n} style={e.benchmarkNota}>
           {n}
         </Text>
@@ -407,7 +407,7 @@ export function PaginaCalendario({
 }: {
   modelo: ModeloPagina2 & { readonly benchmark: BenchmarkPdf };
   logo: LogoPdf;
-  pie: { readonly sipres: string; readonly avisoFondo: string };
+  pie: { readonly sipres: string; readonly avisoFondo: string; readonly notaNeta: string };
 }) {
   const { textos } = modelo;
   const [m1, m2] = modelo.tarjetas;
@@ -439,7 +439,8 @@ export function PaginaCalendario({
       <View style={e.relleno} />
       <View>
         <Text style={e.pie}>{pie.sipres}</Text>
-        <Text style={e.pie}>{pie.avisoFondo}</Text>
+        {/* La nota de la tasa neta va en el mismo párrafo del disclaimer, después de él. */}
+        <Text style={e.pie}>{`${pie.avisoFondo} ${pie.notaNeta}`}</Text>
       </View>
     </>
   );

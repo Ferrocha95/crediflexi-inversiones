@@ -57,24 +57,42 @@ const TEXTOS_PAGINA2 = [
   P2.modalidad2,
   P2.tasaAnual,
   P2.capitalInicial,
-  P2.totalCapitalGanancia,
-  P2.columnaGananciaPeriodo,
-  P2.columnaGananciaAcumulada,
+  P2.capitalMasRendimiento,
+  P2.columnaRendimientoMensual,
+  P2.columnaRendimientoAcumulado,
   P2.notaCentavos,
   P2.tituloGrafica1,
   P2.franjaMasCapital,
-  P2.franjaGananciaCapital,
+  P2.franjaRendimientoCapital,
 ];
 
 /** La línea SIPRES exacta (Sprint 5: en el pie de las dos entidades). */
 const LINEA_SIPRES =
   "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES";
 
-/** El disclaimer exacto del pie de las dos páginas, para las dos entidades. */
+/** El disclaimer exacto del pie de las dos páginas, para las dos entidades (Sprint 6a). */
 const DISCLAIMER =
   "Crediflexi, fondo de inversión privado, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R., inscrita en el SIPRES de la CONDUSEF " +
-  "y sujeta a las disposiciones aplicables. Por ser un fondo de inversión privado, para invertir se requiere adquirir una acción de " +
-  "$1,000.00 MXN. Las tasas están sujetas a cambio.";
+  "(clave de registro 696338), autoridad supervisora indicada en dicho registro, y sujeta a las disposiciones aplicables. Por ser un " +
+  "fondo de inversión privado, para invertir se requiere adquirir una acción de $1,000.00 MXN. Las tasas están sujetas a cambio.";
+
+/** Las únicas frases donde se permite "neta" (Sprint 6a). */
+const NOTA_NETA = "Tasa neta: ya después de impuestos.";
+const NOTA_NETA_BENCHMARK = "La tasa de Crediflexi se muestra neta; las demás, brutas, antes de impuestos.";
+
+/** Los diez términos del glosario único; "Rendimiento total" y el pago al final llevan los meses de la inversión. */
+const GLOSARIO = (meses: number) => [
+  "Rendimiento mensual",
+  "Rendimiento anual (12 meses)",
+  `Rendimiento total (${meses} meses)`,
+  "Capital + rendimiento total",
+  "Pago de rendimiento mensual",
+  `Pago de rendimiento: al final del plazo (mes ${meses}), junto con el capital`,
+  "Mensual",
+  "Al final del plazo",
+  "Rendimiento acumulado",
+  "Tasa anual neta",
+];
 
 const RE_PROHIBIDO =
   /(?<![\p{L}\p{N}])(garantiz\p{L}*|asegur\p{L}*|sin riesgo|libre de impuestos|neta|neto|sin comisiones|supervis\p{L}*|promesa|recib(es|ir[aá]s)|CNBV|CONDUSEF|SIPRES|SHCP)(?![\p{L}\p{N}])/iu;
@@ -87,12 +105,19 @@ const RE_PROHIBIDO =
 const EXCEPCIONES_EXACTAS = [
   LINEA_SIPRES,
   DISCLAIMER,
+  NOTA_NETA,
+  NOTA_NETA_BENCHMARK,
   "Rendimiento histórico, no garantizado",
   "Rendimientos pasados no garantizan resultados futuros",
 ];
 
-/** El texto sin las excepciones exactas: lo que queda debe pasar la revisión de lenguaje. */
-const sinLineaSipres = (texto: string) => EXCEPCIONES_EXACTAS.reduce((x, e) => x.split(e).join(" "), texto);
+/**
+ * El texto sin las excepciones exactas: lo que queda debe pasar la revisión de
+ * lenguaje. "neta" solo se perdona en la etiqueta "Tasa anual neta" (y "Tu tasa
+ * anual neta"), en cualquier capitalización, y en las dos notas exactas.
+ */
+const sinLineaSipres = (texto: string) =>
+  EXCEPCIONES_EXACTAS.reduce((x, e) => x.split(e).join(" "), texto).replace(/(?<![\p{L}\p{N}])tasa anual neta(?![\p{L}\p{N}])/giu, " ");
 
 const CASOS = [
   {
@@ -100,7 +125,7 @@ const CASOS = [
     razonSocial: "CREDIFLEXI, S.A.P.I. DE C.V.",
     esquema: "mensual" as const,
     cifras: ["$23,750.00", "$285,000.00"],
-    etiquetas: ["Ganancia esperada del periodo (1 mes)", "Ganancia esperada del periodo (12 meses)", "Ganancia esperada del periodo (plazo de 12 meses)"],
+    etiquetas: ["Rendimiento mensual", "Rendimiento anual (12 meses)", "Rendimiento total (12 meses)"],
     lineaPago: "Pago de rendimiento mensual: cada mes, del mes 1 al mes 12",
     esquemaCorto: "Mensual",
   },
@@ -110,9 +135,9 @@ const CASOS = [
     esquema: "final_del_plazo" as const,
     cifras: ["$26,250.00", "$315,000.00"],
     etiquetas: [
-      "Ganancia esperada del periodo (1 mes), se acumula y se paga al final del plazo",
-      "Ganancia esperada del periodo (12 meses)",
-      "Ganancia esperada del periodo (plazo de 12 meses)",
+      "Rendimiento mensual, se acumula y se paga al final del plazo",
+      "Rendimiento anual (12 meses)",
+      "Rendimiento total (12 meses)",
     ],
     lineaPago: "Pago de rendimiento: al final del plazo (mes 12), junto con el capital",
     esquemaCorto: "Al final del plazo",
@@ -139,7 +164,8 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
     for (const t of [caso.razonSocial, "Tu cotización de inversión", m.lineaTasas, m.pie.base, caso.lineaPago, ...caso.cifras]) {
       expect(porPagina[0]).toContain(t);
     }
-    for (const t of [P2.modalidad1, P2.tasaAnual, P2.tituloGrafica1, P2.notaCentavos]) {
+    // "Tasa anual neta" va en las dos páginas (glosario), así que ya no sirve para distinguirlas.
+    for (const t of [P2.modalidad1, P2.tituloGrafica1, P2.notaCentavos]) {
       expect(porPagina[0]).not.toContain(t);
     }
   });
@@ -167,26 +193,44 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
     }
   });
 
-  it("el esquema se escribe corto en la página 1 y nunca 'Rendimientos mensuales'", { timeout: TIEMPO }, async () => {
+  it("el esquema se escribe con el glosario en la página 1", { timeout: TIEMPO }, async () => {
     const { porPagina } = await render(modelo(caso.entidad, caso.esquema));
     expect(porPagina[0]).toContain(`Esquema ${caso.esquemaCorto}`);
-    expect(porPagina[0]).not.toContain("Rendimientos mensuales");
-    expect(porPagina[0]).not.toMatch(/Pago de la ganancia|Pago mensual|al vencimiento/);
+    expect(porPagina[0]).not.toMatch(/Rendimientos mensuales|Pago de la ganancia|Pago mensual|al vencimiento/);
   });
 
-  it("la página 2: resumen de las tarjetas con 'Ganancia esperada del periodo' y la tabla con sus encabezados de siempre", { timeout: TIEMPO }, async () => {
+  it("el texto de las dos páginas trae los términos del glosario y ninguna variante de 'ganancia'", { timeout: TIEMPO }, async () => {
+    const { texto, porPagina } = await render(modelo(caso.entidad, caso.esquema));
+    for (const termino of GLOSARIO(12)) expect(texto).toContain(termino);
+    expect(texto).not.toMatch(/ganancia/i);
+    expect(texto).not.toMatch(/Modalidad 1 \(cobrado\)|Modalidad 2 \(acumulado\)/);
+    // La nota de la tasa neta va en el pie de las dos páginas; la del comparativo, en la página 2.
+    for (const p of porPagina) expect(p).toContain(NOTA_NETA);
+    expect(porPagina[1]).toContain(NOTA_NETA_BENCHMARK);
+    expect(porPagina[1]).toContain("Tasas anuales brutas, antes de impuestos.");
+  });
+
+  it("la Modalidad 2 ya no lleva el renglón del rendimiento anual en la página 2", { timeout: TIEMPO }, async () => {
+    const { porPagina } = await render(modelo(caso.entidad, caso.esquema));
+    expect(porPagina[1]).not.toContain("Rendimiento anual (12 meses)");
+  });
+
+  it("la página 2: tarjetas, tabla y gráfica con los términos del glosario", { timeout: TIEMPO }, async () => {
     const { porPagina } = await render(modelo(caso.entidad, caso.esquema));
     for (const t of [
-      "Ganancia esperada del periodo (12 meses)",
-      "Ganancia esperada del periodo (plazo de 12 meses)",
-      "Ganancia del periodo",
-      "Ganancia acumulada",
+      "Rendimiento total (12 meses)",
+      "Capital + rendimiento total",
+      "Rendimiento mensual",
+      "Rendimiento acumulado",
+      "Tasa anual neta",
+      "Mensual",
+      "Al final del plazo",
       "Pago de rendimiento mensual: cada mes, del mes 1 al mes 12",
       "Pago de rendimiento: al final del plazo (mes 12), junto con el capital",
     ]) {
       expect(porPagina[1]).toContain(t);
     }
-    expect(porPagina[1]).not.toMatch(/Pago de la ganancia|Ganancia anual equivalente|Ganancia del plazo/);
+    expect(porPagina[1]).not.toMatch(/ganancia/i);
   });
 
   it("la página 2 no trae restos técnicos ni lenguaje prohibido (fuera de la línea SIPRES)", { timeout: TIEMPO }, async () => {
@@ -211,7 +255,7 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
       "$1,500,000.00 MXN",
       "Plazo",
       "12 meses",
-      "Tasa anual",
+      "Tasa anual neta",
       caso.esquema === "mensual" ? "19.00%" : "21.00%",
       "Esquema",
       caso.esquemaCorto,
@@ -290,7 +334,7 @@ describe("PDF real: la revisión de lenguaje detecta lo prohibido", () => {
     expect(t).toMatch(RE_PROHIBIDO);
   });
 
-  it.each(["Netflix", "planeta", "Rendimientos mensuales", "Pago de rendimiento mensual: cada mes, del mes 1 al mes 12"])("no confunde %s", (t) => {
+  it.each(["Netflix", "planeta", "Mensual", "Pago de rendimiento mensual: cada mes, del mes 1 al mes 12"])("no confunde %s", (t) => {
     expect(t).not.toMatch(RE_PROHIBIDO);
   });
 
@@ -306,6 +350,21 @@ describe("PDF real: la revisión de lenguaje detecta lo prohibido", () => {
     expect(sinLineaSipres(DISCLAIMER.replace("sujeta a las disposiciones aplicables", "supervisada por todas las autoridades"))).toMatch(RE_PROHIBIDO);
     expect(sinLineaSipres(`${DISCLAIMER} Registrada ante la CONDUSEF.`)).toMatch(RE_PROHIBIDO);
     expect(sinLineaSipres("Inscrita en el SIPRES")).toMatch(RE_PROHIBIDO);
+  });
+
+  it("'neta' solo se perdona en 'Tasa anual neta' y en las dos notas exactas", () => {
+    expect(sinLineaSipres(`Tasa anual neta TASA ANUAL NETA Tu tasa anual neta ${NOTA_NETA} ${NOTA_NETA_BENCHMARK}`)).not.toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres("Rendimiento neto")).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres("Tasa neta anual")).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres("Tasa neta: ya después de impuestos y comisiones.")).toMatch(RE_PROHIBIDO);
+  });
+
+  it("el disclaimer nuevo se perdona solo exacto; 'supervisada' y 'CNBV' siguen prohibidas", () => {
+    expect(sinLineaSipres(DISCLAIMER)).not.toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres(DISCLAIMER.replace("autoridad supervisora indicada en dicho registro", "supervisada por todas las autoridades del país"))).toMatch(
+      RE_PROHIBIDO,
+    );
+    expect(sinLineaSipres(`${DISCLAIMER} Supervisada por la CNBV.`)).toMatch(RE_PROHIBIDO);
   });
 
   it("las negaciones del grupo histórico se perdonan solo exactas; \"garantizado\" en cualquier otro lugar sigue prohibido", () => {
@@ -381,7 +440,7 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
     for (const t of [
       "Última tasa publicada",
       "Rendimiento histórico, no garantizado",
-      "Tu tasa 19.00%",
+      "Tu tasa anual neta 19.00%",
       "CETES 1 año",
       "7.44%",
       "publicada el 8 de octubre de 2026",
@@ -421,7 +480,7 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
 
   it("con puntos extra, tu tasa del comparativo es la tasa con los puntos (19.00% + 1.0 = 20.00%)", { timeout: TIEMPO }, async () => {
     const { porPagina } = await render(modeloAjustado("CREDIFLEXI", "mensual", { tipo: "tabla", puntos: "1.0" }, "1500000"));
-    expect(porPagina[1]).toContain("Tu tasa 20.00%");
+    expect(porPagina[1]).toContain("Tu tasa anual neta 20.00%");
   });
 
   it("con el archivo tal cual, el 9 de octubre Nu (vigente hasta el 7) se dibuja con su fecha", { timeout: TIEMPO }, async () => {
@@ -485,7 +544,7 @@ describe("PDF real: exactamente dos páginas en los extremos", () => {
     expect(paginas).toBe(2);
     expect(porPagina[1]).toContain("Pago de rendimiento mensual: cada mes, del mes 1 al mes 24");
     expect(porPagina[0]).toContain("Pago de rendimiento: al final del plazo (mes 24), junto con el capital");
-    expect(porPagina[0]).toContain("Ganancia esperada del periodo (plazo de 24 meses)");
+    expect(porPagina[0]).toContain("Rendimiento total (24 meses)");
   });
 
   // Peor caso de la página 1: SIPRES, desglose de puntos y opcionales al tope.
@@ -570,15 +629,16 @@ describe("PDF real: página 2 del ejemplo del Excel, 1,000,000 pesos a 6 meses",
       "$75,000.00",
       "$90,000.00",
       "$1,090,000.00",
-      // Modalidad 2: anual 1,000,000 × 0.20 = 200,000.00; ganancia del plazo 100,000.00.
-      "$200,000.00",
+      // Modalidad 2: rendimiento total 1,000,000 × 0.20 × 6 ÷ 12 = 100,000.00.
       "$100,000.00",
       "$1,100,000.00",
-      P2.serieCobrado,
-      P2.serieDevengado,
+      P2.serieMensual,
+      P2.serieFinal,
     ]) {
       expect(p2).toContain(t);
     }
+    // La Modalidad 2 ya no lleva el rendimiento anual (1,000,000 × 0.20 = 200,000.00).
+    expect(p2).not.toContain("$200,000.00");
     // Ya no van las filas mensuales de la modalidad 2.
     for (const t of ["$16,666.67", "$16,666.66", "$33,333.33", "$83,333.33"]) expect(p2).not.toContain(t);
   });

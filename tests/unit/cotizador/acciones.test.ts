@@ -60,9 +60,9 @@ describe.each(["CREDIFLEXI", "RAMI_SISE"])("previsualizar (%s)", (entidad) => {
     const v = await vista({ entidad });
     expect(v.tasa).toBe("19.00%");
     expect(v.salidas.map((s) => [s.etiqueta, s.cifra])).toEqual([
-      ["Ganancia esperada del periodo (1 mes)", "$23,750.00"],
-      ["Ganancia esperada del periodo (12 meses)", "$285,000.00"],
-      ["Ganancia esperada del periodo (plazo de 12 meses)", "$285,000.00"],
+      ["Rendimiento mensual", "$23,750.00"],
+      ["Rendimiento anual (12 meses)", "$285,000.00"],
+      ["Rendimiento total (12 meses)", "$285,000.00"],
     ]);
     expect(v.salidas[0].operacion).toBe("1,500,000.00 × 0.19 ÷ 12 = 23,750.00");
     expect(v.solicitud.entidad).toBe(entidad);

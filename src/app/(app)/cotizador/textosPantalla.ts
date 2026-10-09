@@ -28,7 +28,6 @@ export const TEXTOS = {
     "Meses enteros y la tasa anual acordada de cada modalidad que quieras mostrar; la modalidad sin tasa no aparece en el PDF.",
   mesesEspecial: (minimo: number, maximo: number) => `Meses (${minimo} a ${maximo})`,
   tasaAcordadaDe: (modalidad: string) => `Tasa acordada, ${modalidad} (% anual)`,
-  tasaAcordada: "Tasa acordada",
   desglosePuntos: (tasaTabla: string, puntos: string, tasa: string) =>
     `Tasa de tabla ${tasaTabla} + ${puntos} puntos extra = ${tasa}`,
   avisoTasaAcordadaAlta: (tasa: string, maximoTabla: string, limite: string) =>
@@ -44,7 +43,6 @@ export const TEXTOS = {
   errorConexion:
     "No se pudo comunicar con el servidor. Revisa que la app siga corriendo y vuelve a intentarlo.",
 
-  tasaAnual: "Tasa anual",
   tramoAplicado: "Tramo aplicado",
   estatusTasa: "Estatus de la tasa",
   sinEstatus: "Sin estatus en la tabla",
