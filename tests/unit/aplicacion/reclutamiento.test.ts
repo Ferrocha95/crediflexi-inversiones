@@ -209,9 +209,9 @@ describe("modeloReclutamiento: avisos y frases", () => {
     expect(f[5]).toBe("Empieza con tu primera inversión de $30,000.");
   });
 
-  it("mientras RH no las apruebe, la pantalla lleva el aviso interno", () => {
-    expect(modelo().avisoFrasesRh).toBe("Frases pendientes de aprobación de RH");
-    expect(modelo({}, { ...t, frasesAprobadasPorRh: true }).avisoFrasesRh).toBeNull();
+  it("RH aprobó las frases (Sprint 6b): sin aviso interno; si se desaprueban, vuelve el aviso", () => {
+    expect(modelo().avisoFrasesRh).toBeNull();
+    expect(modelo({}, { ...t, frasesAprobadasPorRh: false }).avisoFrasesRh).toBe("Frases pendientes de aprobación de RH");
   });
 
   it("nunca muestra sueldo base", () => {

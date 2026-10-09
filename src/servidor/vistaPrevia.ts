@@ -5,6 +5,8 @@ import { normalizarMonto } from "../aplicacion/monto";
 import { plazosDisponibles } from "../aplicacion/plazos";
 import { ajusteDesdeCampos, avisoTasaAcordada } from "../aplicacion/ajustes";
 import { cotizarConAjuste } from "../domain/interes/ajustes";
+import { validarFechaInicio } from "../domain/interes/diasNaturales";
+import { fechaIsoEnMexico } from "../aplicacion/fecha";
 import { ESQUEMAS, MONEDAS } from "../domain/tasas/semilla.esquema";
 import { MENSAJE_HOST_NO_LOCAL } from "./guardiaHost";
 import { esHostLocal } from "../aplicacion/host";
@@ -22,6 +24,8 @@ const esquemaCampos = z.strictObject({
   esquema: z.enum(ESQUEMAS),
   monto: z.string().max(40),
   plazo: z.number().int().positive().max(600).nullable(),
+  /** AAAA-MM-DD; el dominio valida que exista y que esté en el rango de la semilla. */
+  fechaInicio: z.string().max(20),
   /** Puntos extra sobre la tasa de tabla; el dominio valida el valor. Ausente = 0. */
   puntosExtra: z.string().max(10).optional(),
   /** Plazo especial con tasas acordadas (porcentaje como texto); el dominio valida. Ausente o null = plazo de tabla. */
@@ -67,6 +71,7 @@ export async function previsualizarCon(
   campos: unknown,
   host: string | null,
   leer: () => Promise<ResultadoApp<ParametrosCotizacion>> = leerParametrosCotizacion,
+  ahora: () => Date = () => new Date(),
 ): Promise<RespuestaVistaPrevia> {
   // Seguro contra un despliegue accidental (no es seguridad real): ver guardiaHost.ts.
   if (!esHostLocal(host)) return fallo(null, MENSAJE_HOST_NO_LOCAL);
@@ -77,7 +82,11 @@ export async function previsualizarCon(
 
   const parametros = await leer();
   if (!parametros.ok) return fallo(peticion, parametros.error.mensaje, parametros.error.detalles);
-  const { semilla, textos } = parametros.valor;
+  const { semilla, textos, rangoFechaInicio } = parametros.valor;
+
+  const inicio = validarFechaInicio(forma.data.fechaInicio, fechaIsoEnMexico(ahora()), rangoFechaInicio);
+  if (!inicio.ok) return fallo(peticion, inicio.error.mensaje);
+  const fechaInicio = inicio.valor;
 
   const monto = normalizarMonto(forma.data.monto);
   if (!monto.ok) return fallo(peticion, monto.error.mensaje);
@@ -94,7 +103,7 @@ export async function previsualizarCon(
     return {
       peticion,
       plazos: null,
-      resultado: { tipo: "vista_previa", vistaPrevia: modeloVistaPrevia(c.valor, textos, { tasaAcordadaAlta }) },
+      resultado: { tipo: "vista_previa", vistaPrevia: modeloVistaPrevia(c.valor, textos, { tasaAcordadaAlta, fechaInicio }) },
     };
   }
 
@@ -111,6 +120,6 @@ export async function previsualizarCon(
   return {
     peticion,
     plazos: opcionesPlazo,
-    resultado: { tipo: "vista_previa", vistaPrevia: modeloVistaPrevia(c.valor, textos) },
+    resultado: { tipo: "vista_previa", vistaPrevia: modeloVistaPrevia(c.valor, textos, { fechaInicio }) },
   };
 }

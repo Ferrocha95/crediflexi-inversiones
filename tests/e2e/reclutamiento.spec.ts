@@ -41,7 +41,8 @@ test.describe("modo reclutamiento", () => {
     await expect(page.getByText(INCORPORACION)).toBeVisible();
     await expect(page.getByText(AVISO)).toBeVisible();
     await expect(page.getByText("Las tasas están sujetas a cambio.")).toBeVisible();
-    await expect(page.getByText("Frases pendientes de aprobación de RH")).toBeVisible();
+    // RH aprobó las frases (Sprint 6b): ya no hay aviso interno.
+    await expect(page.getByText("Frases pendientes de aprobación de RH")).toHaveCount(0);
     await expect(page.getByText(/sueldo base/i)).toHaveCount(0);
     // "Personalizar" empieza cerrado.
     await expect(page.getByLabel("Inversiones por plazo")).toBeHidden();

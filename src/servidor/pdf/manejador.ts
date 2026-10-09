@@ -8,6 +8,7 @@ import { datosPagina2 } from "../../aplicacion/pagina2";
 import type { ResultadoApp } from "../../aplicacion/resultado";
 import { ajusteDesdeCampos } from "../../aplicacion/ajustes";
 import { cotizarConAjuste } from "../../domain/interes/ajustes";
+import { validarFechaInicio } from "../../domain/interes/diasNaturales";
 import { ESQUEMAS, MONEDAS } from "../../domain/tasas/semilla.esquema";
 import { MENSAJE_HOST_NO_LOCAL } from "../guardiaHost";
 import type { ParametrosCotizacion } from "../parametros";
@@ -47,6 +48,8 @@ const esquemaCuerpo = z.object({
   esquema: z.enum(ESQUEMAS),
   monto: z.string().max(40),
   plazo: z.number().int().positive().max(600),
+  /** AAAA-MM-DD; el dominio valida que exista y que esté en el rango de la semilla. */
+  fechaInicio: z.string().max(20),
   confirmado: z.unknown().optional(),
   versionTasas: z.string().max(40),
   preparadoPara: opcional(TOPES.preparadoPara),
@@ -104,12 +107,12 @@ export async function manejarPdf(request: Request, deps: DependenciasPdf): Promi
 
   const forma = esquemaCuerpo.safeParse(await leerCuerpo(request));
   if (!forma.success) return json(422, MENSAJES_PDF.formaInvalida);
-  const { entidad, moneda, esquema, plazo, confirmado, versionTasas, puntosExtra, especial, ...entrada } = forma.data;
+  const { entidad, moneda, esquema, plazo, fechaInicio, confirmado, versionTasas, puntosExtra, especial, ...entrada } = forma.data;
   if (confirmado !== true) return json(422, MENSAJES_PDF.sinConfirmar);
 
   const parametros = await deps.leer();
   if (!parametros.ok) return json(500, parametros.error.mensaje, parametros.error.detalles);
-  const { semilla, razonesSociales, textos, benchmark } = parametros.valor;
+  const { semilla, razonesSociales, textos, benchmark, rangoFechaInicio } = parametros.valor;
   if (versionTasas !== semilla.version) return json(409, MENSAJES_PDF.tasasCambiaron);
 
   const monto = normalizarMonto(forma.data.monto);
@@ -129,7 +132,9 @@ export async function manejarPdf(request: Request, deps: DependenciasPdf): Promi
   if (!c.ok) return json(422, c.error.mensaje, c.error.detalles);
 
   const ahora = deps.ahora();
-  const datos = datosPagina2(semilla, solicitud, ajuste.valor);
+  const inicio = validarFechaInicio(fechaInicio, fechaIsoEnMexico(ahora), rangoFechaInicio);
+  if (!inicio.ok) return json(422, inicio.error.mensaje);
+  const datos = datosPagina2(semilla, solicitud, inicio.valor, ajuste.valor);
   const modelo = modeloPdf(c.valor, { razonesSociales, textos, benchmark }, entrada, ahora, datos);
   if (!modelo.ok) return json(500, modelo.error.mensaje, modelo.error.detalles);
 

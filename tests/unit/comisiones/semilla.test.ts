@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { cargarSemillaComisiones } from "../../../src/domain/comisiones/semilla";
 import { copiaSemilla, mal, semillaComisiones as s } from "./ayudas";
 
-describe("cargarSemillaComisiones con la semilla 0.9.1", () => {
+describe("cargarSemillaComisiones con la semilla 0.9.2", () => {
   it("lee la versión, el nivel vigente y los parámetros confirmados", () => {
-    expect(s.version).toBe("0.9.1");
+    expect(s.version).toBe("0.9.2");
     expect(s.generado).toBe("2026-10-07");
     expect(s.nivelVigente).toBe("N1");
     expect(s.renovacionesPaganComision).toBe(true);
@@ -86,10 +86,10 @@ describe("cargarSemillaComisiones con la semilla 0.9.1", () => {
     ]);
   });
 
-  it("lee la comisión por externos (30% de la comisión N1 de sus externos, supuesto por confirmar)", () => {
+  it("lee la comisión por externos (30% de la comisión N1 de sus externos, confirmada el 2026-10-09)", () => {
     expect(s.redExterna.porcentaje.toString()).toBe("0.3");
     expect(s.redExterna.requiereDesbloqueoDelInterno).toBe(true);
-    expect(s.redExterna.estado).toBe("por confirmar");
+    expect(s.redExterna.estado).toBe("confirmado (2026-10-09)");
     expect(copiaSemilla().parametros.red_externa.base).toBe("comision N1 de las inversiones de sus externos");
   });
 });

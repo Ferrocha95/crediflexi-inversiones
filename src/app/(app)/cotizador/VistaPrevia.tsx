@@ -41,6 +41,12 @@ export function VistaPrevia({ vista }: { vista: ModeloVistaPrevia }) {
             <dt className="text-sm font-semibold text-hielo-tenue">{vista.tramo === null ? TEXTOS.plazoEspecial : TEXTOS.plazo}</dt>
             <dd className="font-semibold">{vista.solicitud.plazo}</dd>
           </div>
+          {vista.solicitud.fechaInicio !== null && (
+            <div>
+              <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.fechaInicio}</dt>
+              <dd className="font-semibold tabular-nums">{vista.solicitud.fechaInicio}</dd>
+            </div>
+          )}
           <div>
             <dt className="text-sm font-semibold text-hielo-tenue">{TEXTOS.esquema}</dt>
             <dd className="font-semibold">{vista.solicitud.esquema}</dd>

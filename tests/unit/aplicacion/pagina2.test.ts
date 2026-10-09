@@ -18,20 +18,23 @@ import { cotizarConAjuste, type Ajuste } from "../../../src/domain/interes/ajust
 import type { Esquema } from "../../../src/domain/tasas/semilla.esquema";
 import { cotizarBien, semillaReal } from "../oro/ayudas";
 
+/** Fecha de inicio de las cotizaciones de estas pruebas (Sprint 6b: días naturales). */
+const INICIO = "2026-10-15";
+
 const textosCarga = cargarTextos(textosJson, "seed/textos_cotizacion.json");
 if (!textosCarga.ok) throw new Error(textosCarga.error.mensaje);
 const T = textosCarga.valor.pdfPagina2;
 
 function modelo(monto: string, plazo: number, esquema: Esquema, textos: TextosPagina2 = T) {
   const c = cotizarBien({ monto, plazo, esquema });
-  return modeloPagina2(c, datosPagina2(semillaReal, c.solicitud), textos);
+  return modeloPagina2(c, datosPagina2(semillaReal, c.solicitud, INICIO), textos);
 }
 
 function modeloAjustado(monto: string, esquema: Esquema, ajuste: Ajuste) {
   const plazo = ajuste.tipo === "especial" ? ajuste.plazo : 12;
   const r = cotizarConAjuste(semillaReal, { entidad: "CREDIFLEXI", moneda: "MXN", esquema, monto, plazo }, ajuste);
   if (!r.ok) throw new Error(r.error.mensaje);
-  return modeloPagina2(r.valor, datosPagina2(semillaReal, r.valor.solicitud, ajuste), T);
+  return modeloPagina2(r.valor, datosPagina2(semillaReal, r.valor.solicitud, INICIO, ajuste), T);
 }
 
 /** Todas las coordenadas de una gráfica, para revisar que sean finitas y caigan en el lienzo. */
@@ -60,22 +63,26 @@ describe("modeloPagina2: tarjetas de las dos modalidades", () => {
     expect(m1.detalle?.etiquetaTasa).toBe("Tasa anual neta");
     expect(m1.detalle?.renglones).toEqual([
       { etiqueta: "Capital inicial", cifra: "$1,000,000.00" },
-      { etiqueta: "Rendimiento total (6 meses)", cifra: "$90,000.00" },
-      { etiqueta: "Capital + rendimiento total", cifra: "$1,090,000.00" },
+      { etiqueta: "Rendimiento total (6 meses)", cifra: "$89,753.42" },
+      { etiqueta: "Capital + rendimiento total", cifra: "$1,089,753.42" },
     ]);
+    // Días naturales desde el 15/10/2026 (caso A del Sprint 6b).
     expect(m1.detalle?.filas).toHaveLength(6);
-    expect(m1.detalle?.filas[0]).toEqual({ mes: "1", rendimiento: "$15,000.00", acumulado: "$15,000.00" });
-    expect(m1.detalle?.filas[5]).toEqual({ mes: "6", rendimiento: "$15,000.00", acumulado: "$90,000.00" });
+    expect(m1.detalle?.filas[0]).toEqual({ fecha: "15/11/2026", dias: "31", rendimiento: "$15,287.67", acumulado: "$15,287.67" });
+    expect(m1.detalle?.filas[5]).toEqual({ fecha: "15/04/2027", dias: "31", rendimiento: "$15,287.67", acumulado: "$89,753.42" });
 
     expect(m2.titulo).toBe("MODALIDAD 2 · PAGO AL VENCIMIENTO");
     expect(m2.elegida).toBe(false);
     expect(m2.detalle?.tasa).toBe("20.00%");
-    // Sin el renglón del rendimiento anual (Sprint 6a); rendimiento total 1,000,000 × 0.20 × 6 ÷ 12 = 100,000.00.
+    // Sin el renglón del rendimiento anual (Sprint 6a); rendimiento total por días (caso D del Sprint 6b):
+    // 1,000,000 × 0.20 × 182 ÷ 365 = 99,726.03.
     expect(m2.detalle?.renglones).toEqual([
       { etiqueta: "Capital inicial", cifra: "$1,000,000.00" },
-      { etiqueta: "Rendimiento total (6 meses)", cifra: "$100,000.00" },
-      { etiqueta: "Capital + rendimiento total", cifra: "$1,100,000.00" },
+      { etiqueta: "Rendimiento total (6 meses)", cifra: "$99,726.03" },
+      { etiqueta: "Capital + rendimiento total", cifra: "$1,099,726.03" },
     ]);
+    expect(m1.detalle?.vencimiento).toBe("Vencimiento: 15/04/2027");
+    expect(m2.detalle?.vencimiento).toBe("Vencimiento: 15/04/2027");
     expect(m2.detalle?.filas).toEqual([]);
   });
 
@@ -108,7 +115,7 @@ describe("modeloPagina2: tarjetas de las dos modalidades", () => {
       tasas: { mensual: "17", final_del_plazo: "19" },
     });
     if (!r.ok) throw new Error(r.error.mensaje);
-    const m = modeloPagina2(r.valor, datosPagina2(semillaReal, r.valor.solicitud, { tipo: "especial", plazo, tasas: { mensual: "17", final_del_plazo: "19" } }), T);
+    const m = modeloPagina2(r.valor, datosPagina2(semillaReal, r.valor.solicitud, INICIO, { tipo: "especial", plazo, tasas: { mensual: "17", final_del_plazo: "19" } }), T);
     for (const t of m.tarjetas) {
       const xs = t.detalle!.franja.puntos.map((p) => p.x);
       for (const x of xs) {
@@ -126,7 +133,7 @@ describe("modeloPagina2: tarjetas de las dos modalidades", () => {
 
   it("una modalidad que no se puede cotizar se reemplaza por la nota del archivo de textos", () => {
     const c = cotizarBien({ monto: "1000000", plazo: 6 });
-    const datos = datosPagina2(semillaReal, c.solicitud);
+    const datos = datosPagina2(semillaReal, c.solicitud, INICIO);
     const sinFinal: DatosPagina2 = {
       ...datos,
       calendarios: { ...datos.calendarios, finalDelPlazo: { ok: false, error: { codigo: "TRAMO_POR_CONFIRMAR", mensaje: "x" } } },
@@ -176,7 +183,7 @@ describe("modeloPagina2: comparación de modalidades (la única gráfica: ya no 
     expect(g.rotulo).toBeNull();
     const d = g.dibujo!;
     expect(d.series.map((s) => s.nombre)).toEqual([T.serieMensual, T.serieFinal]);
-    expect(d.series.map((s) => s.final.texto)).toEqual(["$90,000.00", "$100,000.00"]);
+    expect(d.series.map((s) => s.final.texto)).toEqual(["$89,753.42", "$99,726.03"]);
     expect(d.series.map((s) => s.trazo)).toEqual(["continuo", "rayado"]);
     for (const s of d.series) expect(s.ruta.split("L")).toHaveLength(7);
     expect(d.ejeX.map((m) => m.texto)).toEqual(["0", "1", "2", "3", "4", "5", "6"]);
@@ -185,7 +192,7 @@ describe("modeloPagina2: comparación de modalidades (la única gráfica: ya no 
 
   it("con una sola modalidad cotizable, dibuja solo esa serie", () => {
     const c = cotizarBien({ monto: "1000000", plazo: 6 });
-    const datos = datosPagina2(semillaReal, c.solicitud);
+    const datos = datosPagina2(semillaReal, c.solicitud, INICIO);
     const sinFinal: DatosPagina2 = {
       ...datos,
       calendarios: { ...datos.calendarios, finalDelPlazo: { ok: false, error: { codigo: "TRAMO_POR_CONFIRMAR", mensaje: "x" } } },

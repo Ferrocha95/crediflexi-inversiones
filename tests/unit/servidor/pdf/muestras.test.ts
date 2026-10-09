@@ -21,6 +21,9 @@ import { semillaReal } from "../../oro/ayudas";
 import { extraerTexto, paginaEnPng } from "./extraer";
 import { benchmarkReal } from "../../benchmarkReal";
 
+/** Fecha de inicio de las cotizaciones de estas pruebas (Sprint 6b: días naturales). */
+const INICIO = "2026-10-15";
+
 const DIRECTORIO = process.env.MUESTRAS_DIR;
 
 function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: string } }): T {
@@ -75,7 +78,7 @@ describe.runIf(DIRECTORIO !== undefined)("muestras de la página 2 para revisió
       const c = cotizarConAjuste(semillaReal, { entidad, moneda, esquema, monto, plazo }, ajuste);
       if (!c.ok) throw new Error(c.error.mensaje);
       const modelo = sinError(
-        modeloPdf(c.valor, { razonesSociales, textos, benchmark: benchmarkReal }, OPCIONALES, m.ahora, datosPagina2(semillaReal, c.valor.solicitud, ajuste)),
+        modeloPdf(c.valor, { razonesSociales, textos, benchmark: benchmarkReal }, OPCIONALES, m.ahora, datosPagina2(semillaReal, c.valor.solicitud, INICIO, ajuste)),
       );
       const bytes = await renderizarPdf(modelo);
       const { paginas, porPagina } = await extraerTexto(bytes);

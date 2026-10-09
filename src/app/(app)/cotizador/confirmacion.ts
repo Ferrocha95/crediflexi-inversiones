@@ -10,6 +10,8 @@ export interface CamposHuella {
   readonly esquema: string;
   readonly monto: string;
   readonly plazo: number | null;
+  /** Fecha de inicio, AAAA-MM-DD, tal como está en el campo. */
+  readonly fechaInicio: string;
   /** Puntos extra sobre la tasa de tabla ("0.0" a "5.0"). */
   readonly puntosExtra?: string;
   /** Plazo especial con sus tasas acordadas; null o ausente = plazo de tabla. */
@@ -25,6 +27,7 @@ export function huellaDeCampos(c: CamposHuella): string {
     c.esquema,
     c.monto,
     c.plazo,
+    c.fechaInicio,
     c.puntosExtra ?? null,
     especial === null ? null : [especial.plazo, especial.tasaMensual, especial.tasaFinal],
   ]);

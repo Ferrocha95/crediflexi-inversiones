@@ -49,10 +49,12 @@ export const MARCADORES_POR_CAMPO = {
   moneda_deshabilitada: ["moneda"],
   "pdf.linea_tasas": ["version_tasas", "fecha_tasas"],
   "pdf.desglose_puntos": ["tasa_tabla", "puntos", "tasa"],
+  "pdf.fecha_inicio": ["fecha"],
   "glosario.rendimiento_total": ["meses"],
   "glosario.pago_rendimiento_final": ["meses"],
   detalle_pago_mensual: ["meses"],
   "pdf_pagina2.capital_vencimiento": ["meses"],
+  "pdf_pagina2.vencimiento": ["fecha"],
   "pdf_pagina2.benchmark_actualizado": ["fecha"],
   "pdf_pagina2.benchmark_fuentes": ["fuentes"],
   "reclutamiento.aviso": ["fecha"],
@@ -85,6 +87,8 @@ export const MARCADORES_POR_CAMPO = {
  */
 export interface Glosario {
   readonly rendimiento_mensual: string;
+  /** Página 1 (Sprint 6b): monto × tasa ÷ 12, como promedio; la tabla mensual sigue con rendimiento_mensual. */
+  readonly rendimiento_mensual_promedio: string;
   readonly rendimiento_anual: string;
   readonly rendimiento_total: string;
   readonly capital_mas_rendimiento: string;
@@ -98,6 +102,7 @@ export interface Glosario {
 
 const CLAVES_GLOSARIO = [
   "rendimiento_mensual",
+  "rendimiento_mensual_promedio",
   "rendimiento_anual",
   "rendimiento_total",
   "capital_mas_rendimiento",
@@ -173,7 +178,6 @@ export interface TextosComisiones {
   readonly inversionExterno: string;
   readonly agregarExterno: string;
   readonly quitarExterno: string;
-  readonly supuestoPorConfirmar: string;
   /** Plantilla con {porcentaje}. */
   readonly comisionPorExternos: string;
   readonly basePorExternos: string;
@@ -204,7 +208,6 @@ const CLAVES_COMISIONES = {
   inversion_externo: "inversionExterno",
   agregar_externo: "agregarExterno",
   quitar_externo: "quitarExterno",
-  supuesto_por_confirmar: "supuestoPorConfirmar",
   comision_por_externos: "comisionPorExternos",
   base_por_externos: "basePorExternos",
   nota_aparte: "notaAparte",
@@ -343,6 +346,10 @@ export interface TextosPdf {
   readonly tasaAcordada: string;
   /** Plantilla con {tasa_tabla}, {puntos} y {tasa}: el desglose de los puntos extra. */
   readonly desglosePuntos: string;
+  /** Plantilla con {fecha} (fecha larga): va después del nombre del inversionista en la página 1. */
+  readonly fechaInicio: string;
+  /** Nota de la página 1: los rendimientos se calculan a días naturales. */
+  readonly notaDiasNaturales: string;
 }
 
 /** Textos de la página 2 del PDF. Solo las líneas de cuándo se paga admiten {meses}. */
@@ -368,7 +375,15 @@ export interface TextosPagina2 {
   readonly franjaRendimiento: string;
   readonly franjaMasCapital: string;
   readonly franjaRendimientoCapital: string;
+  /** Título del eje de la gráfica (número de pago). */
   readonly columnaMes: string;
+  /** Encabezados de la tabla mensual por fechas (Sprint 6b). */
+  readonly columnaFechaPago: string;
+  readonly columnaDias: string;
+  /** Plantilla con {fecha} (DD/MM/AAAA): la fecha del último pago, en las dos tarjetas. */
+  readonly vencimiento: string;
+  /** Debajo de la tabla mensual: los días inhábiles no se calculan. */
+  readonly notaDiaInhabil: string;
   /** Encabezados de la tabla mensual (glosario). */
   readonly columnaRendimientoMensual: string;
   readonly columnaRendimientoAcumulado: string;
@@ -431,6 +446,10 @@ const CLAVES_PAGINA2 = {
   franja_mas_capital: "franjaMasCapital",
   franja_rendimiento_capital: "franjaRendimientoCapital",
   columna_mes: "columnaMes",
+  columna_fecha_pago: "columnaFechaPago",
+  columna_dias: "columnaDias",
+  vencimiento: "vencimiento",
+  nota_dia_inhabil: "notaDiaInhabil",
   insignia: "insignia",
   nota_centavos: "notaCentavos",
   modalidad_no_disponible: "modalidadNoDisponible",
@@ -539,6 +558,8 @@ const esquemaTextos = z
           plazo_especial: texto("pdf.plazo_especial"),
           tasa_acordada: texto("pdf.tasa_acordada"),
           desglose_puntos: texto("pdf.desglose_puntos", MARCADORES_POR_CAMPO["pdf.desglose_puntos"]),
+          fecha_inicio: texto("pdf.fecha_inicio", MARCADORES_POR_CAMPO["pdf.fecha_inicio"]),
+          nota_dias_naturales: texto("pdf.nota_dias_naturales"),
         },
         { error: claveDesconocida },
       ),
@@ -605,8 +626,8 @@ const esquemaTextos = z
       pieSipres: t.pie_sipres,
       pieNotaNeta: t.pie_nota_neta,
       etiquetasResultados: {
-        mensual: etiquetas(g.rendimiento_mensual),
-        final_del_plazo: etiquetas(`${g.rendimiento_mensual}, ${t.nota_mensual_al_final}`),
+        mensual: etiquetas(g.rendimiento_mensual_promedio),
+        final_del_plazo: etiquetas(`${g.rendimiento_mensual_promedio}, ${t.nota_mensual_al_final}`),
       },
       lineaPago,
       pdf: {
@@ -623,6 +644,8 @@ const esquemaTextos = z
         plazoEspecial: t.pdf.plazo_especial,
         tasaAcordada: t.pdf.tasa_acordada,
         desglosePuntos: t.pdf.desglose_puntos,
+        fechaInicio: t.pdf.fecha_inicio,
+        notaDiasNaturales: t.pdf.nota_dias_naturales,
       },
       pdfPagina2: {
         ...(Object.fromEntries(

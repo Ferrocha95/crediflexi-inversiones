@@ -50,6 +50,7 @@ function camposIniciales(opciones: OpcionesCotizador): Campos {
     esquema: opciones.esquemas[0]?.esquema ?? "mensual",
     monto: "",
     plazo: null,
+    fechaInicio: opciones.fechaInicio.hoy,
     puntosExtra: SIN_PUNTOS,
     especial: null,
   };
@@ -271,6 +272,19 @@ export function Cotizador({ opciones }: { opciones: OpcionesCotizador }) {
             value={campos.monto}
             aria-describedby={`${id}-monto-ayuda`}
             onChange={(e) => cambiar({ monto: e.target.value })}
+          />
+        </Campo>
+
+        <Campo id={`${id}-fecha-inicio`} etiqueta={TEXTOS.fechaInicio} ayuda={TEXTOS.ayudaFechaInicio(opciones.fechaInicio.minimo, opciones.fechaInicio.maximo)}>
+          <Entrada
+            id={`${id}-fecha-inicio`}
+            type="date"
+            autoComplete="off"
+            min={opciones.fechaInicio.minimo}
+            max={opciones.fechaInicio.maximo}
+            value={campos.fechaInicio}
+            aria-describedby={`${id}-fecha-inicio-ayuda`}
+            onChange={(e) => cambiar({ fechaInicio: e.target.value })}
           />
         </Campo>
 

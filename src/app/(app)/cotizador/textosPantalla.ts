@@ -18,6 +18,10 @@ export const TEXTOS = {
   esquema: "Esquema",
   monto: "Monto",
   ayudaMonto: "Ejemplo: 150,000.50 o 150000.50",
+  fechaInicio: "Fecha de inicio",
+  /** Recibe el rango en AAAA-MM-DD y lo muestra en DD/MM/AAAA. */
+  ayudaFechaInicio: (minimo: string, maximo: string) =>
+    `Por omisión, hoy. Elige una fecha del ${minimo.split("-").reverse().join("/")} al ${maximo.split("-").reverse().join("/")}; el rendimiento corre desde el día siguiente.`,
   plazo: "Plazo",
   puntosExtra: "Puntos extra",
   sinPuntosExtra: "Sin puntos extra",

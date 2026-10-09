@@ -201,7 +201,7 @@ async function tresDeExternos(page: Page) {
   await deExterno(page, 3, "500,000", "12 meses", "Renovación");
 }
 
-// Sprint 6c: tablas de incentivos, externo sin comisión bloqueada y Mis externos (30%, supuesto por confirmar).
+// Sprint 6c: tablas de incentivos, externo sin comisión bloqueada y Mis externos (30%; confirmado en el Sprint 6b, sin insignia de supuesto).
 test.describe("comisiones, Sprint 6c", () => {
   test("externo: tabla de incentivos con cumplimiento, resalta 100% con 1,000,000 y nunca muestra 'Bloqueada'", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -244,7 +244,7 @@ test.describe("comisiones, Sprint 6c", () => {
     await inversion(page, 1, "900,000", "12 meses", "2026-10-07");
     await tresDeExternos(page);
     const bloque = page.getByRole("region", { name: "Comisión por tus externos (30%)" });
-    await expect(bloque).toContainText("Supuesto por confirmar");
+    await expect(bloque).not.toContainText("Supuesto por confirmar");
     await expect(bloque).toContainText("30% × $25,215.00 = $7,564.50");
     await expect(bloque).toContainText("Se paga aparte: no se descuenta a tus externos.");
     await expect(bloque.getByText("Desbloqueada", { exact: true })).toBeVisible();

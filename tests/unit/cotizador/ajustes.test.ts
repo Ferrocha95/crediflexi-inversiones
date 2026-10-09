@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import semillaJson from "../../../seed/parametros_iniciales.json";
 import { huellaDeCampos, type CamposHuella } from "../../../src/app/(app)/cotizador/confirmacion";
+import { fechaIsoEnMexico } from "../../../src/aplicacion/fecha";
 import { cuerpoPeticionPdf } from "../../../src/app/(app)/cotizador/peticionPdf";
 import type { ModeloPdf } from "../../../src/aplicacion/modelo";
 import { manejarPdf } from "../../../src/servidor/pdf/manejador";
@@ -12,7 +13,8 @@ import { leerParametrosCotizacion } from "../../../src/servidor/parametros";
 import { previsualizarCon, type RespuestaVistaPrevia } from "../../../src/servidor/vistaPrevia";
 
 const HOST = "localhost:3000";
-const BASE = { peticion: 1, entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1,500,000", plazo: 12 };
+/** La vista previa valida la fecha de inicio contra hoy: se usa hoy en la Ciudad de México. */
+const BASE = { peticion: 1, entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1,500,000", plazo: 12, fechaInicio: fechaIsoEnMexico(new Date()) };
 const ESPECIAL = { plazo: 9, tasaMensual: "17", tasaFinal: null };
 
 async function vista(cambios: Record<string, unknown>) {
@@ -74,7 +76,7 @@ describe("vista previa con ajustes", () => {
 
 describe("PDF con ajustes", () => {
   const AHORA = new Date("2026-10-07T18:00:00Z");
-  const CUERPO = { ...BASE, confirmado: true, versionTasas: semillaJson.version };
+  const CUERPO = { ...BASE, fechaInicio: "2026-10-15", confirmado: true, versionTasas: semillaJson.version };
 
   async function pdf(cambios: Record<string, unknown>) {
     const modelos: ModeloPdf[] = [];
@@ -118,7 +120,7 @@ describe("PDF con ajustes", () => {
 });
 
 describe("la confirmación y la petición llevan los ajustes", () => {
-  const CAMPOS: CamposHuella = { entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1,500,000", plazo: 12 };
+  const CAMPOS: CamposHuella = { entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1,500,000", plazo: 12, fechaInicio: "2026-10-15" };
 
   it("cambiar los puntos o el plazo especial cambia la huella (invalida la vista previa confirmada)", () => {
     const h = huellaDeCampos({ ...CAMPOS, puntosExtra: "0.0", especial: null });

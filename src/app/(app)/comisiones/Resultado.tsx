@@ -277,12 +277,9 @@ export function Resultado({ modelo: m, textos: t }: { modelo: ModeloComisiones; 
 
       {m.redExterna !== null && (
         <section aria-labelledby="titulo-red-externa" className="superficie flex flex-col gap-3 rounded-2xl p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 id="titulo-red-externa" className="text-lg font-bold">
-              {llenar(t.comisionPorExternos, { porcentaje: m.redExterna.porcentaje })}
-            </h3>
-            <InsigniaTono etiqueta={t.supuestoPorConfirmar} tono="neutro" />
-          </div>
+          <h3 id="titulo-red-externa" className="text-lg font-bold">
+            {llenar(t.comisionPorExternos, { porcentaje: m.redExterna.porcentaje })}
+          </h3>
           <ol className="flex flex-col gap-1 text-sm">
             {m.redExterna.lineas.map((l) => (
               <li key={l.numero} className="flex flex-wrap justify-between gap-x-3">

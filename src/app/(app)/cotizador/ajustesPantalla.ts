@@ -16,6 +16,8 @@ export interface CamposPantalla {
   readonly esquema: Esquema;
   readonly monto: string;
   readonly plazo: number | null;
+  /** Fecha de inicio, AAAA-MM-DD (campo de fecha). */
+  readonly fechaInicio: string;
   readonly puntosExtra: string;
   readonly especial: EspecialEnPantalla | null;
 }
@@ -28,7 +30,7 @@ export const SIN_PUNTOS = "0.0";
  * 0, para que el servidor responda el mensaje en español.
  */
 export function camposParaServidor(c: CamposPantalla) {
-  const base = { entidad: c.entidad, moneda: c.moneda, esquema: c.esquema, monto: c.monto };
+  const base = { entidad: c.entidad, moneda: c.moneda, esquema: c.esquema, monto: c.monto, fechaInicio: c.fechaInicio };
   if (c.especial === null) return { ...base, plazo: c.plazo, puntosExtra: c.puntosExtra, especial: null };
   const meses = c.especial.meses.trim();
   const tasa = (t: string) => (t.trim() === "" ? null : t.trim());

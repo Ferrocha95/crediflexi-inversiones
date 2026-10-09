@@ -21,6 +21,16 @@
     "rendimiento_mensual_pesos": "capital * tasa_anual / 12",
     "rendimiento_anual_pesos": "capital * tasa_anual (equivalente a 12 meses, aunque el plazo sea menor)",
     "ganancia_total_plazo": "capital * tasa_anual * meses / 12",
+    "dias_naturales": {
+      "_nota": "Informativo (Sprint 6b, 2026-10-09). El PDF y la pantalla usan este criterio; lo implementa src/domain/interes/diasNaturales.ts. Las formulas de meses / 12 de arriba siguen siendo las de cotizar.",
+      "base": "dias reales / 365, siempre 365, tambien en anio bisiesto",
+      "inicio": "el rendimiento corre desde el dia siguiente a la fecha de inicio",
+      "fecha_de_pago": "el mismo dia del mes, k meses despues del inicio; si ese dia no existe en el mes, el ultimo dia del mes, y los pagos siguientes vuelven al dia original",
+      "pago_mensual": "capital * tasa_anual * dias_del_periodo / 365 a centavos; el ultimo pago es el rendimiento total menos la suma de los anteriores",
+      "rendimiento_total": "capital * tasa_anual * dias_totales / 365 a centavos",
+      "rendimiento_mensual_promedio": "capital * tasa_anual / 12",
+      "dia_inhabil": "si la fecha de pago cae en dia inhabil, el deposito se realiza el siguiente dia habil; no modifica el rendimiento (la app no calcula dias inhabiles)"
+    },
     "salidas_de_cotizacion": [
       "rendimiento_mensual_pesos",
       "rendimiento_anual_pesos",
@@ -750,8 +760,16 @@
     "red_externa": {
       "porcentaje": "0.30",
       "base": "comision N1 de las inversiones de sus externos",
+      "beneficiario": "el interno que patrocina a los externos (ejecutivo o gerente), solo por las inversiones de SUS externos",
       "requiere_desbloqueo_del_interno": true,
-      "estado": "por confirmar"
+      "estado": "confirmado (2026-10-09)"
+    }
+  },
+  "cotizador": {
+    "fecha_inicio": {
+      "_nota": "Rango permitido de la fecha de inicio, en dias respecto de hoy en America/Mexico_City (Sprint 6b).",
+      "dias_atras": 7,
+      "dias_adelante": 365
     }
   },
   "discrepancias_abiertas": [
@@ -765,5 +783,5 @@
     "D8 RESUELTA (2026-10-02): Pitagoras es la marca comercial de los servicios financieros; no cambia nada en el calculo ni en el PDF (usa el logo de Crediflexi).",
     "D9 RESUELTA (2026-10-07): la tabla USD se habilita (estatus CONFIRMADA) solo para RAMI_SISE, como en el folleto; sus tramos empiezan en dolares enteros (40,001; 80,001...)."
   ],
-  "version": "0.9.1"
+  "version": "0.9.2"
 }

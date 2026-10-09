@@ -15,6 +15,9 @@ import { cotizarConAjuste, tasaMaximaDeTabla, type Ajuste } from "../../../src/d
 import type { SolicitudTasa } from "../../../src/domain/tasas/resolver";
 import { semillaReal } from "../oro/ayudas";
 
+/** Fecha de inicio de las cotizaciones de estas pruebas (Sprint 6b: días naturales). */
+const INICIO = "2026-10-15";
+
 const textosCarga = cargarTextos(textosJson, "seed/textos_cotizacion.json");
 if (!textosCarga.ok) throw new Error(textosCarga.error.mensaje);
 const textos = textosCarga.valor;
@@ -113,17 +116,22 @@ describe("modeloVistaPrevia con ajustes", () => {
 describe("página 2 con ajustes", () => {
   it("puntos extra: las dos tarjetas usan la tasa de tabla de su modalidad más los puntos", () => {
     const c = cotizada({}, { tipo: "tabla", puntos: "1.0" });
-    const p = modeloPagina2(c, datosPagina2(semillaReal, c.solicitud, { tipo: "tabla", puntos: "1.0" }), textos.pdfPagina2);
+    const p = modeloPagina2(c, datosPagina2(semillaReal, c.solicitud, INICIO, { tipo: "tabla", puntos: "1.0" }), textos.pdfPagina2);
     expect(p.tarjetas[0].detalle!.tasa).toBe("20.00%");
-    expect(p.tarjetas[0].detalle!.filas[0].rendimiento).toBe("$25,000.00");
+    // Días naturales (Sprint 6b): 1,500,000 × 0.20 × 31 ÷ 365 = 25,479.45 (del 15/10 al 15/11).
+    expect(p.tarjetas[0].detalle!.filas[0].rendimiento).toBe("$25,479.45");
     const tablaFinal = cotizada({ esquema: "final_del_plazo" }, { tipo: "tabla", puntos: "0" }).tasa;
     expect(p.tarjetas[1].detalle!.tasa).toBe(formatearPorcentaje(new Decimal(tablaFinal).plus("0.01")));
   });
 
   it("plazo especial con una sola tasa: la otra modalidad se omite con su nota y la comparación también", () => {
     const c = cotizada({ monto: "100000", plazo: 9 }, ESPECIAL_9);
-    const p = modeloPagina2(c, datosPagina2(semillaReal, c.solicitud, ESPECIAL_9), textos.pdfPagina2);
-    expect(p.tarjetas[0].detalle!.filas.map((f) => f.rendimiento)).toEqual([...Array(8).fill("$1,416.67"), "$1,416.64"]);
+    const p = modeloPagina2(c, datosPagina2(semillaReal, c.solicitud, INICIO, ESPECIAL_9), textos.pdfPagina2);
+    // Días naturales (Sprint 6b), 100,000 al 17% desde el 15/10/2026: 31 días = 1,443.84, 30 = 1,397.26, 28 = 1,304.11;
+    // total 273 días = 12,715.07 y el último pago lo cierra: 12,715.07 − 11,317.83 = 1,397.24.
+    expect(p.tarjetas[0].detalle!.filas.map((f) => f.rendimiento)).toEqual(
+      ["$1,443.84", "$1,397.26", "$1,443.84", "$1,443.84", "$1,304.11", "$1,443.84", "$1,397.26", "$1,443.84", "$1,397.24"],
+    );
     expect(p.tarjetas[1].detalle).toBeNull();
     expect(p.tarjetas[1].nota).toBe(textos.pdfPagina2.modalidadSinTasa);
     expect(p.graficas[0].dibujo).toBeNull();
@@ -131,6 +139,6 @@ describe("página 2 con ajustes", () => {
 
   it("sin ajuste la página 2 sigue igual que antes", () => {
     const c = cotizada({}, { tipo: "tabla", puntos: "0" });
-    expect(datosPagina2(semillaReal, c.solicitud)).toEqual(datosPagina2(semillaReal, c.solicitud, { tipo: "tabla", puntos: "0" }));
+    expect(datosPagina2(semillaReal, c.solicitud, INICIO)).toEqual(datosPagina2(semillaReal, c.solicitud, INICIO, { tipo: "tabla", puntos: "0" }));
   });
 });

@@ -11,7 +11,7 @@ import {
 } from "../../../src/app/(app)/cotizador/peticionPdf";
 import { TEXTOS } from "../../../src/app/(app)/cotizador/textosPantalla";
 
-const CAMPOS = { entidad: "RAMI_SISE", moneda: "MXN", esquema: "final_del_plazo", monto: "1,500,000", plazo: 12 } as const;
+const CAMPOS = { entidad: "RAMI_SISE", moneda: "MXN", esquema: "final_del_plazo", monto: "1,500,000", plazo: 12, fechaInicio: "2026-10-15" } as const;
 const VACIOS: OpcionalesPdf = { preparadoPara: "", ejecutivo: "", vigencia: "", notaAdicional: "" };
 
 describe("cuerpoPeticionPdf", () => {
@@ -22,6 +22,7 @@ describe("cuerpoPeticionPdf", () => {
       esquema: "final_del_plazo",
       monto: "1,500,000",
       plazo: 12,
+      fechaInicio: "2026-10-15",
       confirmado: true,
       versionTasas: "0.5",
     });
@@ -48,6 +49,7 @@ describe("cuerpoPeticionPdf", () => {
         "ejecutivo",
         "entidad",
         "esquema",
+        "fechaInicio",
         "monto",
         "moneda",
         "notaAdicional",

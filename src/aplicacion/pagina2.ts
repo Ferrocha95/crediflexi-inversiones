@@ -1,12 +1,13 @@
 import { Decimal } from "../domain/comun/decimal";
 import { formatearCantidad, formatearPorcentaje } from "../domain/comun/formato";
 import { exito, fallo, type Resultado } from "../domain/comun/resultado";
-import { calendariosAjustados, type Ajuste, type CotizacionAjustada, type ModalidadAjustada } from "../domain/interes/ajustes";
-import { calendarios, type CalendarioModalidad } from "../domain/interes/calendario";
+import type { Ajuste, CotizacionAjustada } from "../domain/interes/ajustes";
+import { calendariosPorFechas, type CalendarioPorFechas, type ModalidadPorFechas } from "../domain/interes/diasNaturales";
 import type { Cotizacion } from "../domain/interes/cotizar";
 import type { SolicitudTasa } from "../domain/tasas/resolver";
 import type { Esquema, Moneda, Semilla } from "../domain/tasas/semilla.esquema";
 import { formatearDinero } from "./dinero";
+import { fechaDeTextoIso } from "./fecha";
 import { escalaLineal, marcasMeses, marcasValor, separarEtiquetas, trazado } from "./graficas";
 import { rellenar } from "./rellenar";
 import type { TextosPagina2 } from "./textos";
@@ -17,32 +18,30 @@ import type { TextosPagina2 } from "./textos";
 
 /** Lo que el dominio calcula para la página 2. Una modalidad en null no tiene tasa acordada (plazo especial). */
 export interface DatosPagina2 {
+  /** AAAA-MM-DD, ya validada. */
+  readonly fechaInicio: string;
   readonly calendarios: {
-    readonly mensual: Resultado<CalendarioModalidad> | null;
-    readonly finalDelPlazo: Resultado<CalendarioModalidad> | null;
+    readonly mensual: Resultado<CalendarioPorFechas> | null;
+    readonly finalDelPlazo: Resultado<CalendarioPorFechas> | null;
   };
 }
 
 const SIN_AJUSTE: Ajuste = { tipo: "tabla", puntos: "0" };
 
-/** Puntos en cero ("0", "0.0"). Solo decide el camino; la validación de los puntos es del dominio. */
-const sinPuntos = (a: Ajuste) => a.tipo === "tabla" && a.puntos.trim() !== "" && Number(a.puntos) === 0;
-
-function comoResultado(m: ModalidadAjustada): Resultado<CalendarioModalidad> | null {
+function comoResultado(m: ModalidadPorFechas): Resultado<CalendarioPorFechas> | null {
   if (m.tipo === "sin_tasa") return null;
   return m.tipo === "calendario" ? exito(m.calendario) : fallo(m.error);
 }
 
 /**
- * Calendarios de las dos modalidades para la misma solicitud. Con puntos extra
- * o plazo especial, usan la tasa ajustada (calendariosAjustados). El escenario
- * de reinversión ya no va en el PDF (src/domain/interes/escenario.ts queda sin
- * usar; ver PENDIENTES_TECNICOS.md).
+ * Calendarios por fechas (días naturales, Sprint 6b) de las dos modalidades
+ * para la misma solicitud, con la tasa de tabla, con puntos extra o con la
+ * tasa acordada de un plazo especial. El escenario de reinversión ya no va en
+ * el PDF (src/domain/interes/escenario.ts queda sin usar; ver PENDIENTES_TECNICOS.md).
  */
-export function datosPagina2(semilla: Semilla, solicitud: SolicitudTasa, ajuste: Ajuste = SIN_AJUSTE): DatosPagina2 {
-  if (sinPuntos(ajuste)) return { calendarios: calendarios(semilla, solicitud) };
-  const a = calendariosAjustados(semilla, solicitud, ajuste);
-  return { calendarios: { mensual: comoResultado(a.mensual), finalDelPlazo: comoResultado(a.finalDelPlazo) } };
+export function datosPagina2(semilla: Semilla, solicitud: SolicitudTasa, fechaInicio: string, ajuste: Ajuste = SIN_AJUSTE): DatosPagina2 {
+  const a = calendariosPorFechas(semilla, solicitud, ajuste, fechaInicio);
+  return { fechaInicio, calendarios: { mensual: comoResultado(a.mensual), finalDelPlazo: comoResultado(a.finalDelPlazo) } };
 }
 
 /** Franja de tiempo de una tarjeta: de dónde a dónde va y en qué meses hay un pago. */
@@ -72,9 +71,11 @@ export interface TarjetaPdf {
     readonly renglones: readonly { readonly etiqueta: string; readonly cifra: string }[];
     /** Cuándo se paga el rendimiento y cuándo el capital (con el mes N). */
     readonly lineas: readonly [string, string];
+    /** "Vencimiento: DD/MM/AAAA": la fecha del último pago. */
+    readonly vencimiento: string;
     readonly franja: FranjaPdf;
-    /** Tabla mes por mes: solo la modalidad 1; la 2 va anualizada, sin filas. */
-    readonly filas: readonly { readonly mes: string; readonly rendimiento: string; readonly acumulado: string }[];
+    /** Tabla por fechas de pago: solo la modalidad 1; la 2 va sin filas. */
+    readonly filas: readonly { readonly fecha: string; readonly dias: string; readonly rendimiento: string; readonly acumulado: string }[];
   } | null;
   /** Reemplaza al detalle cuando la modalidad no se puede cotizar o no tiene tasa acordada. */
   readonly nota: string | null;
@@ -155,7 +156,7 @@ function tarjeta(
   esquema: Esquema,
   titulo: string,
   elegida: boolean,
-  r: Resultado<CalendarioModalidad> | null,
+  r: Resultado<CalendarioPorFechas> | null,
   t: TextosPagina2,
   moneda: Moneda,
   especial: boolean,
@@ -167,9 +168,14 @@ function tarjeta(
   const meses = c.filas.length;
   const n = { meses: String(meses) };
   const capital = { etiqueta: t.capitalInicial, cifra: pesos(c.capitalInicial) };
-  const plazo = { etiqueta: rellenar(t.rendimientoTotal, n), cifra: pesos(c.rendimientoEstimado) };
+  const plazo = { etiqueta: rellenar(t.rendimientoTotal, n), cifra: pesos(c.rendimientoTotal) };
   const total = { etiqueta: t.capitalMasRendimiento, cifra: pesos(c.total) };
-  const comun = { tasa: formatearPorcentaje(new Decimal(c.tasa)), etiquetaTasa: especial ? t.tasaAcordada : t.tasaAnual, franja: franja(esquema, meses, t) };
+  const comun = {
+    tasa: formatearPorcentaje(new Decimal(c.tasa)),
+    etiquetaTasa: especial ? t.tasaAcordada : t.tasaAnual,
+    vencimiento: rellenar(t.vencimiento, { fecha: fechaDeTextoIso(c.vencimiento) }),
+    franja: franja(esquema, meses, t),
+  };
 
   if (esquema === "mensual") {
     return {
@@ -180,12 +186,17 @@ function tarjeta(
         ...comun,
         renglones: [capital, plazo, total],
         lineas: [rellenar(t.pagoRendimientoMensual, n), rellenar(t.capitalVencimiento, n)],
-        filas: c.filas.map((f) => ({ mes: String(f.mes), rendimiento: pesos(f.rendimiento), acumulado: pesos(f.acumulado) })),
+        filas: c.filas.map((f) => ({
+          fecha: fechaDeTextoIso(f.fecha),
+          dias: String(f.dias),
+          rendimiento: pesos(f.rendimiento),
+          acumulado: pesos(f.acumulado),
+        })),
       },
       nota: null,
     };
   }
-  // Modalidad 2: sin filas por mes y, desde el Sprint 6a, sin el renglón del rendimiento anual.
+  // Modalidad 2: sin filas y, desde el Sprint 6a, sin el renglón del rendimiento anual; el total es por días (Sprint 6b).
   return {
     esquema,
     titulo,
@@ -245,8 +256,8 @@ function dibujo(
 }
 
 function graficaComparacion(
-  m1: Resultado<CalendarioModalidad> | null,
-  m2: Resultado<CalendarioModalidad> | null,
+  m1: Resultado<CalendarioPorFechas> | null,
+  m2: Resultado<CalendarioPorFechas> | null,
   plazo: number,
   t: TextosPagina2,
   moneda: Moneda,
@@ -255,13 +266,11 @@ function graficaComparacion(
   if (m1 === null || m2 === null) {
     return { titulo: t.tituloGrafica1, rotulo: null, nota: null, dibujo: null, omision: t.comparacionOmitida };
   }
+  // Acumulado por fechas en cada fecha de pago: Mensual, el de la tabla; Al final
+  // del plazo, lo devengado (monto × tasa × días transcurridos ÷ 365).
   const series: SerieDatos[] = [];
-  for (const [r, nombre, color, trazo] of [
-    [m1, t.serieMensual, "marino", "continuo"],
-    [m2, t.serieFinal, "verde", "rayado"],
-  ] as const) {
-    if (r.ok) series.push({ nombre, color, trazo, valores: ["0", ...r.valor.filas.map((f) => f.acumulado)] });
-  }
+  if (m1.ok) series.push({ nombre: t.serieMensual, color: "marino", trazo: "continuo", valores: ["0", ...m1.valor.filas.map((f) => f.acumulado)] });
+  if (m2.ok) series.push({ nombre: t.serieFinal, color: "verde", trazo: "rayado", valores: ["0", ...m2.valor.filas.map((f) => f.devengado)] });
   return {
     titulo: t.tituloGrafica1,
     rotulo: null,

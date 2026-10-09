@@ -1,4 +1,5 @@
 import { PLAZO_ESPECIAL } from "../domain/interes/ajustes";
+import { limitesFechaInicio, type RangoFechaInicio } from "../domain/interes/diasNaturales";
 import { ESQUEMAS, MONEDAS, type Esquema, type Moneda, type Semilla } from "../domain/tasas/semilla.esquema";
 import { OPCIONES_PUNTOS } from "./ajustes";
 import { TOPES } from "./modelo";
@@ -27,15 +28,19 @@ export interface OpcionesCotizador {
   readonly puntosExtra: readonly string[];
   /** Meses permitidos en un plazo especial. */
   readonly plazoEspecial: { readonly minimo: number; readonly maximo: number };
+  /** Fecha de inicio: hoy en la Ciudad de México (por omisión) y el rango permitido, en AAAA-MM-DD. */
+  readonly fechaInicio: { readonly hoy: string; readonly minimo: string; readonly maximo: string };
 }
 
 export interface ParametrosOpciones {
   readonly semilla: Semilla;
   readonly razonesSociales: ReadonlyMap<string, string>;
   readonly textos: TextosCotizacion;
+  readonly rangoFechaInicio: RangoFechaInicio;
 }
 
-export function opcionesCotizador({ semilla, razonesSociales, textos }: ParametrosOpciones): OpcionesCotizador {
+/** `hoy` es la fecha de hoy en la Ciudad de México (AAAA-MM-DD); entra como parámetro para que la función sea pura. */
+export function opcionesCotizador({ semilla, razonesSociales, textos, rangoFechaInicio }: ParametrosOpciones, hoy: string): OpcionesCotizador {
   return {
     // Las claves y las razones sociales salen del mismo arreglo entidades[] de la semilla.
     entidades: semilla.entidades.map((clave) => ({ clave, razonSocial: razonesSociales.get(clave) ?? clave })),
@@ -56,5 +61,6 @@ export function opcionesCotizador({ semilla, razonesSociales, textos }: Parametr
     topes: { ...TOPES },
     puntosExtra: [...OPCIONES_PUNTOS],
     plazoEspecial: { ...PLAZO_ESPECIAL },
+    fechaInicio: { hoy, ...limitesFechaInicio(hoy, rangoFechaInicio) },
   };
 }

@@ -24,8 +24,12 @@ import { FAMILIA } from "./fuente";
 // propios. Ningún texto nuevo baja de 7.5 pt.
 
 const ALTO_LOGO = 26;
-/** Alto de cada fila de la tabla y de los renglones de las tarjetas. */
-const ALTO_FILA = 10.5;
+/**
+ * Alto de cada fila de la tabla y de los renglones de las tarjetas. Bajó de
+ * 10.5 a 10 en el Sprint 6b (decisión de Fernando) para que, con 24 meses, la
+ * nota de día inhábil quepa en la página 2; la letra no cambia.
+ */
+const ALTO_FILA = 10;
 /** Ancho de cada columna: la mitad del ancho útil (540 pt) menos la separación. */
 const ANCHO_COLUMNA = LIENZO_GRAFICA.ancho;
 /** Alto de cada renglón del comparativo (una línea de 7.5 pt y su barra). */
@@ -126,7 +130,8 @@ const e = StyleSheet.create({
   },
   tablaFila: { flexDirection: "row", alignItems: "center", height: ALTO_FILA, paddingHorizontal: 4, fontSize: 7.5, lineHeight: 1 },
   tablaFilaAlterna: { backgroundColor: COLOR.fondoTenue },
-  colMes: { width: 30 },
+  colFecha: { width: 50 },
+  colDias: { width: 24, textAlign: "right" },
   colCifra: { flex: 1, textAlign: "right" },
   notaTarjeta: { fontSize: 8, color: COLOR.gris, lineHeight: 1.3 },
 
@@ -188,18 +193,20 @@ function Franja({ f }: { f: FranjaPdf }) {
   );
 }
 
-/** La tabla mes a mes de la modalidad 1: encabezado y filas alternadas. */
+/** La tabla por fechas de pago de la modalidad 1: encabezado y filas alternadas. */
 function TablaMensual({ filas, textos }: { filas: NonNullable<TarjetaPdf["detalle"]>["filas"]; textos: ModeloPagina2["textos"] }) {
   return (
     <>
       <View style={e.tablaCabeza}>
-        <Text style={e.colMes}>{textos.columnaMes}</Text>
+        <Text style={e.colFecha}>{textos.columnaFechaPago}</Text>
+        <Text style={e.colDias}>{textos.columnaDias}</Text>
         <Text style={e.colCifra}>{textos.columnaRendimientoMensual}</Text>
         <Text style={e.colCifra}>{textos.columnaRendimientoAcumulado}</Text>
       </View>
       {filas.map((f, i) => (
-        <View key={f.mes} style={[e.tablaFila, ...(i % 2 === 1 ? [e.tablaFilaAlterna] : [])]}>
-          <Text style={e.colMes}>{f.mes}</Text>
+        <View key={f.fecha} style={[e.tablaFila, ...(i % 2 === 1 ? [e.tablaFilaAlterna] : [])]}>
+          <Text style={e.colFecha}>{f.fecha}</Text>
+          <Text style={e.colDias}>{f.dias}</Text>
           <Text style={e.colCifra}>{f.rendimiento}</Text>
           <Text style={e.colCifra}>{f.acumulado}</Text>
         </View>
@@ -236,7 +243,8 @@ function Tarjeta({ t, textos, conTabla = true }: { t: TarjetaPdf; textos: Modelo
                 </View>
               ))}
             </View>
-            {d.lineas.map((l) => (
+            {/* El vencimiento va en el renglón del capital, para no sumar un renglón a la página 2. */}
+            {[d.lineas[0], `${d.lineas[1]} · ${d.vencimiento}`].map((l) => (
               <Text key={l} style={e.linea}>
                 {l}
               </Text>
@@ -444,7 +452,7 @@ export function PaginaCalendario({
           <Tarjeta t={m1} textos={textos} conTabla={!tercera} />
           {/* Juntas, sin el espacio entre bloques de la columna. Con tercera página, la nota de centavos va allá. */}
           <View>
-            {!tercera && <Text style={e.notaCentavos}>{textos.notaCentavos}</Text>}
+            {!tercera && <Text style={e.notaCentavos}>{`${textos.notaCentavos} ${textos.notaDiaInhabil}`}</Text>}
             <NotasBenchmark b={modelo.benchmark} />
           </View>
         </View>
@@ -507,6 +515,7 @@ export function PaginaCalendarioMensual({
         ))}
       </View>
       <Text style={e.notaCentavosGrande}>{textos.notaCentavos}</Text>
+      <Text style={e.notaCentavosGrande}>{textos.notaDiaInhabil}</Text>
 
       <View style={e.relleno} />
       <View>

@@ -218,6 +218,12 @@ export function validarFechaInicio(texto: string, hoy: string, rango: RangoFecha
   return exito(comoTexto(d));
 }
 
+/** Primera y última fecha permitidas (AAAA-MM-DD), para el campo de fecha de la pantalla. */
+export function limitesFechaInicio(hoy: string, rango: RangoFechaInicio): { readonly minimo: string; readonly maximo: string } {
+  const nHoy = numeroDeDia(fechaValida(hoy));
+  return { minimo: comoTexto(diaDeNumero(nHoy - rango.diasAtras)), maximo: comoTexto(diaDeNumero(nHoy + rango.diasAdelante)) };
+}
+
 /** Calendario por fechas de una modalidad ajustada: calculado, omitido por no tener tasa acordada, o con error. */
 export type ModalidadPorFechas =
   | { readonly tipo: "calendario"; readonly calendario: CalendarioPorFechas }

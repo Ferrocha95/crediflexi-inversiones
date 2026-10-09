@@ -18,6 +18,9 @@ import { cotizarConAjuste, type Ajuste } from "../../../src/domain/interes/ajust
 import { cargar, copiaSemilla, cotizarBien, semillaReal } from "../oro/ayudas";
 import { benchmarkReal } from "../benchmarkReal";
 
+/** Fecha de inicio de las cotizaciones de estas pruebas (Sprint 6b: días naturales). */
+const INICIO = "2026-10-15";
+
 function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: string } }): T {
   if (!r.ok) throw new Error(r.error.mensaje);
   return r.valor;
@@ -32,7 +35,7 @@ const FECHA_SEMILLA = semillaJson.generado.split("-").reverse().join("/");
 
 /** modeloPdf con los datos de la página 2 calculados con la semilla real. */
 function modeloPdfConDatos(c: Cotizacion, ...resto: [ContextoPdf, EntradaPdf, Date]) {
-  return modeloPdf(c, ...resto, datosPagina2(semillaReal, c.solicitud));
+  return modeloPdf(c, ...resto, datosPagina2(semillaReal, c.solicitud, INICIO));
 }
 
 /** 1 de octubre de 2026, 12:00 en la Ciudad de México. */
@@ -75,35 +78,41 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     expect(m.cifras).toEqual([
       {
         clave: "rendimiento_mensual_pesos",
-        etiqueta: "Rendimiento mensual",
+        etiqueta: "Rendimiento mensual (promedio)",
+        etiquetaCalculo: "Rendimiento mensual (promedio)",
         cifra: "$23,750.00",
-        formula: "monto × tasa anual ÷ 12",
+        formula: "monto × tasa anual neta ÷ 12",
         operacion: "1,500,000.00 × 0.19 ÷ 12 = 23,750.00",
       },
       {
         clave: "rendimiento_anual_pesos",
         etiqueta: "Rendimiento anual (12 meses)",
+        etiquetaCalculo: "Rendimiento anual (12 meses)",
         cifra: "$285,000.00",
-        formula: "monto × tasa anual",
+        formula: "monto × tasa anual neta",
         operacion: "1,500,000.00 × 0.19 = 285,000.00",
       },
       {
         clave: "ganancia_total_plazo",
         etiqueta: "Rendimiento total (12 meses)",
+        etiquetaCalculo: "Rendimiento total (12 meses)",
         cifra: "$285,000.00",
-        formula: "monto × tasa anual × plazo ÷ 12",
-        operacion: "1,500,000.00 × 0.19 × 12 ÷ 12 = 285,000.00",
+        // Días naturales (Sprint 6b): del 15/10/2026 al 15/10/2027 hay 365 días.
+        formula: "monto × tasa anual neta × días ÷ 365",
+        operacion: "1,500,000.00 × 0.19 × 365 ÷ 365 = 285,000.00",
       },
     ]);
   });
 
-  it("cada cifra trae la fórmula y la operación tal como vienen en la cotización", () => {
+  it("cada cifra trae su fórmula y su operación: el promedio y el anual con los números de la cotización, el total por días", () => {
     for (const esquema of ["mensual", "final_del_plazo"] as const) {
       const c = cotizarBien({ entidad: clave, esquema, monto: "500000", plazo: 24 });
       const m = sinError(modeloPdfConDatos(c, contexto, {}, AHORA));
-      expect(m.cifras.map((x) => [x.clave, x.formula, x.operacion])).toEqual(
-        c.salidas.map((s) => [s.clave, s.desglose.formula, s.desglose.operacion]),
-      );
+      expect(m.cifras.map((x) => x.clave)).toEqual(c.salidas.map((s) => s.clave));
+      expect(m.cifras.slice(0, 2).map((x) => x.operacion)).toEqual(c.salidas.slice(0, 2).map((s) => s.desglose.operacion));
+      // Del 15/10/2026 al 15/10/2028 hay 731 días (2028 es bisiesto); la base sigue siendo 365.
+      expect(m.cifras[2].formula).toBe("monto × tasa anual neta × días ÷ 365");
+      expect(m.cifras[2].operacion).toMatch(/^500,000\.00 × 0\.\d+ × 731 ÷ 365 = /);
       for (const x of m.cifras) {
         expect(x.formula).not.toBe("");
         expect(x.operacion).toMatch(/=/);
@@ -114,7 +123,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
   it("cifra principal en esquema mensual: el pago mensual, con su etiqueta de la semilla", () => {
     expect(pdf(clave).cifraPrincipal).toEqual({
       clave: "rendimiento_mensual_pesos",
-      etiqueta: "Rendimiento mensual",
+      etiqueta: "Rendimiento mensual (promedio)",
       cifra: "$23,750.00",
     });
   });
@@ -148,6 +157,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
       seccionCalculo: "Cómo se calculó",
       plazoEspecial: "Plazo especial",
       tasaAcordada: "Tasa acordada",
+      notaDiasNaturales: "Rendimientos calculados a días naturales (días reales ÷ 365).",
     });
   });
 
@@ -191,7 +201,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     expect(m.solicitud.esquema).toBe("Al final del plazo");
     expect(m.tasa).toBe("21.00%");
     expect(m.cifras.map((c) => [c.etiqueta, c.cifra])).toEqual([
-      ["Rendimiento mensual, se acumula y se paga al final del plazo", "$26,250.00"],
+      ["Rendimiento mensual (promedio), se acumula y se paga al final del plazo", "$26,250.00"],
       ["Rendimiento anual (12 meses)", "$315,000.00"],
       ["Rendimiento total (12 meses)", "$315,000.00"],
     ]);
@@ -341,10 +351,11 @@ describe.each(ENTIDADES)("modeloVistaPrevia ($clave)", ({ clave }) => {
   it("ejemplo oficial con su desglose: fórmula y operación con números", () => {
     const v = modeloVistaPrevia(cotizarBien({ entidad: clave }), textos);
     expect(v.tasa).toBe("19.00%");
+    // La pantalla no muestra estas cifras (Sprint 6a); siguen siendo las de cotizar (meses ÷ 12).
     expect(v.salidas).toEqual([
       {
         clave: "rendimiento_mensual_pesos",
-        etiqueta: "Rendimiento mensual",
+        etiqueta: "Rendimiento mensual (promedio)",
         cifra: "$23,750.00",
         formula: "monto × tasa anual ÷ 12",
         operacion: "1,500,000.00 × 0.19 ÷ 12 = 23,750.00",
@@ -374,6 +385,7 @@ describe.each(ENTIDADES)("modeloVistaPrevia ($clave)", ({ clave }) => {
       esquema: "Mensual",
       monto: "$1,500,000.00 MXN",
       plazo: "12 meses",
+      fechaInicio: null,
     });
     expect(v.tasas).toEqual({ version: VERSION, fecha: FECHA_SEMILLA });
   });
@@ -439,7 +451,7 @@ describe("modelo con los textos 0.5 (Sprint 3a)", () => {
     return r.valor;
   };
   const pdfDe = (c: ReturnType<typeof ajustado>, ajuste: Ajuste) =>
-    sinError(modeloPdf(c, contexto, {}, AHORA, datosPagina2(semillaReal, c.solicitud, ajuste)));
+    sinError(modeloPdf(c, contexto, {}, AHORA, datosPagina2(semillaReal, c.solicitud, INICIO, ajuste)));
 
   it("las etiquetas de los resultados salen del archivo de textos, no de la semilla", () => {
     const otros: TextosCotizacion = {

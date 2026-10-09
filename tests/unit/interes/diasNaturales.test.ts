@@ -12,6 +12,7 @@ import {
   calendariosPorFechas,
   diasEntre,
   fechaDePago,
+  limitesFechaInicio,
   rendimientosPorFechas,
   validarFechaInicio,
   type CalendarioPorFechas,
@@ -183,6 +184,14 @@ describe("validarFechaInicio", () => {
     for (const texto of ["", "2026-2-1", "15/10/2026", "2026-02-30", "2026-13-01", "2026-10-09T00:00"]) {
       expect(validarFechaInicio(texto, "2026-10-09", rango).ok).toBe(false);
     }
+  });
+});
+
+describe("limitesFechaInicio", () => {
+  it("primera y última fecha permitidas, cruzando meses y años bisiestos", () => {
+    expect(limitesFechaInicio("2026-10-09", { diasAtras: 7, diasAdelante: 365 })).toEqual({ minimo: "2026-10-02", maximo: "2027-10-09" });
+    expect(limitesFechaInicio("2028-03-03", { diasAtras: 7, diasAdelante: 365 })).toEqual({ minimo: "2028-02-25", maximo: "2029-03-03" });
+    expect(limitesFechaInicio("2027-03-03", { diasAtras: 7, diasAdelante: 365 })).toEqual({ minimo: "2027-02-24", maximo: "2028-03-02" });
   });
 });
 

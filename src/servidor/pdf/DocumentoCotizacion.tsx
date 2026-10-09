@@ -50,6 +50,7 @@ const e = StyleSheet.create({
   preparadoPara: { marginTop: 6, fontSize: 13, color: COLOR.marino, lineHeight: 1.2 },
   preparadoParaEtiqueta: { color: COLOR.verde },
   preparadoParaNombre: { fontWeight: "bold" },
+  fechaInicio: { marginTop: 2, fontSize: 10, color: COLOR.marino, lineHeight: 1.2 },
 
   tarjeta: {
     marginTop: 10,
@@ -208,6 +209,8 @@ export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo:
             <Text style={e.preparadoParaNombre}>{modelo.preparadoPara}</Text>
           </Text>
         )}
+        {/* Inmediatamente después del nombre del inversionista; sin nombre, en su lugar. */}
+        <Text style={e.fechaInicio}>{modelo.fechaInicio}</Text>
 
         <View style={e.hueco} />
         <View style={e.tarjeta}>
@@ -252,11 +255,12 @@ export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo:
         <View style={e.calculo}>
           <View style={e.calculoCabeza}>
             <Text style={e.calculoTitulo}>{t.seccionCalculo}</Text>
-            <Text style={e.calculoTasas}>{modelo.lineaTasas}</Text>
+            {/* La nota de días naturales va junto a la versión de las tasas, para no sumar un renglón a la página 1. */}
+            <Text style={e.calculoTasas}>{`${modelo.lineaTasas} ${t.notaDiasNaturales}`}</Text>
           </View>
           {modelo.cifras.map((c) => (
             <View key={c.clave} style={e.calculoFila}>
-              <Text style={e.calculoEtiqueta}>{c.etiqueta}</Text>
+              <Text style={e.calculoEtiqueta}>{c.etiquetaCalculo}</Text>
               <Text style={e.calculoFormula}>{c.formula}</Text>
               <Text style={e.calculoOperacion}>{c.operacion}</Text>
             </View>

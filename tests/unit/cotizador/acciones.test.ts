@@ -15,6 +15,7 @@ vi.mock("../../../src/servidor/sesion", () => ({
   },
 }));
 
+import { fechaIsoEnMexico } from "../../../src/aplicacion/fecha";
 import { MENSAJE_MONTO_CERO, MENSAJE_MONTO_ILEGIBLE } from "../../../src/aplicacion/monto";
 import { previsualizar } from "../../../src/app/(app)/cotizador/acciones";
 import { cotizar } from "../../../src/domain/interes/cotizar";
@@ -31,6 +32,8 @@ const base = {
   esquema: "mensual",
   monto: "1,500,000",
   plazo: 12 as number | null,
+  /** La vista previa valida la fecha de inicio contra hoy: se usa hoy en la Ciudad de México. */
+  fechaInicio: fechaIsoEnMexico(new Date()),
 };
 
 async function pedir(cambios: Record<string, unknown> = {}): Promise<RespuestaVistaPrevia> {
@@ -60,7 +63,7 @@ describe.each(["CREDIFLEXI", "RAMI_SISE"])("previsualizar (%s)", (entidad) => {
     const v = await vista({ entidad });
     expect(v.tasa).toBe("19.00%");
     expect(v.salidas.map((s) => [s.etiqueta, s.cifra])).toEqual([
-      ["Rendimiento mensual", "$23,750.00"],
+      ["Rendimiento mensual (promedio)", "$23,750.00"],
       ["Rendimiento anual (12 meses)", "$285,000.00"],
       ["Rendimiento total (12 meses)", "$285,000.00"],
     ]);

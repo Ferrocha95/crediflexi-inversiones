@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { camposParaServidor } from "../../../src/app/(app)/cotizador/ajustesPantalla";
 
-const BASE = { entidad: "CREDIFLEXI", moneda: "MXN" as const, esquema: "mensual" as const, monto: "100,000", plazo: 12 };
+const BASE = { entidad: "CREDIFLEXI", moneda: "MXN" as const, esquema: "mensual" as const, monto: "100,000", plazo: 12, fechaInicio: "2026-10-15" };
 
 describe("camposParaServidor", () => {
   it("plazo de tabla: el plazo elegido, los puntos y sin plazo especial", () => {

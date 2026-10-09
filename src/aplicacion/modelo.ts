@@ -3,12 +3,13 @@ import { formatearMonto, formatearPorcentaje } from "../domain/comun/formato";
 import type { CodigoAviso } from "../domain/comun/resultado";
 import type { CotizacionAjustada } from "../domain/interes/ajustes";
 import type { Cotizacion } from "../domain/interes/cotizar";
+import { rendimientosPorFechas } from "../domain/interes/diasNaturales";
 import type { AvisoTasaAcordada } from "./ajustes";
 import { modeloBenchmark, type Benchmark, type BenchmarkPdf } from "./benchmark";
 import type { Esquema, Estatus, Moneda, Salida } from "../domain/tasas/semilla.esquema";
 import { limpiarCampo } from "./campos";
 import { formatearDinero } from "./dinero";
-import { fechaDeTextoIso, fechaEnMexico } from "./fecha";
+import { fechaDeTextoIso, fechaEnMexico, fechaLarga } from "./fecha";
 import { modeloPagina2, type DatosPagina2, type ModeloPagina2 } from "./pagina2";
 import { rellenar } from "./rellenar";
 import { error, ok, type ResultadoApp } from "./resultado";
@@ -63,6 +64,8 @@ export interface ModeloVistaPrevia {
     readonly esquema: string;
     readonly monto: string;
     readonly plazo: string;
+    /** Fecha de inicio en DD/MM/AAAA (datos capturados, sin importes); null si no se indicó. */
+    readonly fechaInicio: string | null;
   };
   readonly tasa: string;
   /** "Tasa anual neta" (glosario) o, en un plazo especial, "Tasa acordada". */
@@ -97,7 +100,7 @@ export interface ModeloVistaPrevia {
 export function modeloVistaPrevia(
   c: CotizacionParaModelo,
   textos: TextosCotizacion,
-  extras: { readonly tasaAcordadaAlta?: AvisoTasaAcordada | null } = {},
+  extras: { readonly tasaAcordadaAlta?: AvisoTasaAcordada | null; readonly fechaInicio?: string } = {},
 ): ModeloVistaPrevia {
   const { moneda } = c.solicitud;
   return {
@@ -107,6 +110,7 @@ export function modeloVistaPrevia(
       esquema: textos.esquemaCorto[c.solicitud.esquema],
       monto: monto(c.solicitud.monto, moneda),
       plazo: meses(c.solicitud.plazo),
+      fechaInicio: extras.fechaInicio === undefined ? null : fechaDeTextoIso(extras.fechaInicio),
     },
     tasa: formatearPorcentaje(new Decimal(c.tasa)),
     etiquetaTasa: c.origenTasa === "especial" ? textos.pdf.tasaAcordada : textos.glosario.tasa_anual_neta,
@@ -165,6 +169,8 @@ export const CIFRA_PRINCIPAL: Readonly<Record<Esquema, Salida>> = {
 export interface CifraPdf {
   readonly clave: Salida;
   readonly etiqueta: string;
+  /** Etiqueta de "Cómo se calculó": la del glosario sin la nota de al final del plazo (Sprint 6b, para que la página 1 quepa). */
+  readonly etiquetaCalculo: string;
   readonly cifra: string;
   readonly formula: string;
   readonly operacion: string;
@@ -191,10 +197,12 @@ export interface ModeloPdf {
   /** Cuándo se paga el rendimiento, con el plazo (glosario). */
   readonly lineaPago: string;
   /** Textos fijos del documento, tal como vienen del archivo (sin plantillas). */
-  readonly textos: Omit<TextosPdf, "lineaTasas" | "desglosePuntos">;
+  readonly textos: Omit<TextosPdf, "lineaTasas" | "desglosePuntos" | "fechaInicio">;
+  /** "Fecha de inicio: 15 de octubre de 2026": va después del nombre del inversionista (o en su lugar). */
+  readonly fechaInicio: string;
   /** La cifra destacada (CIFRA_PRINCIPAL), con su etiqueta del archivo de textos. */
   readonly cifraPrincipal: { readonly clave: Salida; readonly etiqueta: string; readonly cifra: string };
-  /** Todas las cifras, en el orden de la semilla, con su desglose. */
+  /** Todas las cifras, en el orden de la semilla, con su desglose (a días naturales, Sprint 6b). */
   readonly cifras: readonly CifraPdf[];
   readonly tasas: { readonly version: string; readonly fecha: string };
   /** pdf.linea_tasas ya rellenada. */
@@ -247,16 +255,19 @@ export function modeloPdf(
 
   const tasas = tasasDeLaCotizacion(c);
   const { textos } = contexto;
-  const { lineaTasas, desglosePuntos, ...textosPdf } = textos.pdf;
+  const { lineaTasas, desglosePuntos, fechaInicio, ...textosPdf } = textos.pdf;
   const desglose = desgloseDeTasa(c);
   const especial = c.origenTasa === "especial";
 
+  // Cifras de la página 1 a días naturales: promedio mensual, anual y total por días.
+  const porDias = rendimientosPorFechas(new Decimal(c.solicitud.monto), new Decimal(c.tasa), c.solicitud.plazo, datos.fechaInicio);
   const cifras: CifraPdf[] = c.salidas.map((s) => ({
     clave: s.clave,
     etiqueta: rellenar(textos.etiquetasResultados[c.solicitud.esquema][s.clave], { meses: String(c.solicitud.plazo) }),
-    cifra: dinero(s.redondeado, c.solicitud.moneda),
-    formula: s.desglose.formula,
-    operacion: s.desglose.operacion,
+    etiquetaCalculo: rellenar(textos.etiquetasResultados.mensual[s.clave], { meses: String(c.solicitud.plazo) }),
+    cifra: formatearDinero(porDias[s.clave].redondeado, c.solicitud.moneda),
+    formula: porDias[s.clave].desglose.formula,
+    operacion: porDias[s.clave].desglose.operacion,
   }));
   const principal = cifras.find((x) => x.clave === CIFRA_PRINCIPAL[c.solicitud.esquema]);
   if (principal === undefined) {
@@ -286,6 +297,7 @@ export function modeloPdf(
       desglose === null ? null : rellenar(desglosePuntos, { tasa_tabla: desglose.tasaTabla, puntos: desglose.puntos, tasa: desglose.tasa }),
     lineaPago: rellenar(textos.lineaPago[c.solicitud.esquema], { meses: String(c.solicitud.plazo) }),
     textos: textosPdf,
+    fechaInicio: rellenar(fechaInicio, { fecha: fechaLarga(datos.fechaInicio) }),
     cifraPrincipal: { clave: principal.clave, etiqueta: principal.etiqueta, cifra: principal.cifra },
     cifras,
     tasas,

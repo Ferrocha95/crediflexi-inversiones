@@ -16,6 +16,9 @@ import { manejarPdf, MENSAJES_PDF, type DependenciasPdf } from "../../../../src/
 import { semillaReal } from "../../oro/ayudas";
 import { benchmarkReal } from "../../benchmarkReal";
 
+/** Fecha de inicio de las cotizaciones de estas pruebas (Sprint 6b: días naturales). */
+const INICIO = "2026-10-15";
+
 function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: string } }): T {
   if (!r.ok) throw new Error(r.error.mensaje);
   return r.valor;
@@ -26,6 +29,7 @@ const parametros: ParametrosCotizacion = {
   razonesSociales: sinError(cargarRazonesSociales(semillaJson, "seed/parametros_iniciales.json")),
   textos: sinError(cargarTextos(textosJson, "seed/textos_cotizacion.json")),
   benchmark: benchmarkReal,
+  rangoFechaInicio: { diasAtras: 7, diasAdelante: 365 },
 };
 
 /** 1 de octubre de 2026, 12:00 en la Ciudad de México. */
@@ -53,6 +57,7 @@ const VALIDO = {
   esquema: "mensual",
   monto: "1,500,000",
   plazo: 12,
+  fechaInicio: INICIO,
   confirmado: true,
   versionTasas: semillaJson.version,
 };
@@ -87,7 +92,7 @@ function esperado(solicitud: Partial<SolicitudTasa>, entrada: EntradaPdf = {}): 
   });
   if (!c.ok) throw new Error(c.error.mensaje);
   const ctx = { razonesSociales: parametros.razonesSociales, textos: parametros.textos, benchmark: parametros.benchmark };
-  return sinError(modeloPdf(c.valor, ctx, entrada, AHORA, datosPagina2(semillaReal, c.valor.solicitud)));
+  return sinError(modeloPdf(c.valor, ctx, entrada, AHORA, datosPagina2(semillaReal, c.valor.solicitud, INICIO)));
 }
 
 async function errorJson(r: Response): Promise<{ error: string; detalles?: string[] }> {

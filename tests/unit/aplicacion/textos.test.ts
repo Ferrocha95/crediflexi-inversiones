@@ -37,7 +37,7 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 describe("cargarTextos: el archivo real", () => {
   it("carga seed/textos_cotizacion.json versión 0.9", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.9");
+    expect(t.version).toBe("0.10");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual neta indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +
@@ -67,6 +67,7 @@ describe("cargarTextos: el archivo real", () => {
 /** Los diez términos del glosario único (Sprint 6a). */
 const GLOSARIO = {
   rendimiento_mensual: "Rendimiento mensual",
+  rendimiento_mensual_promedio: "Rendimiento mensual (promedio)",
   rendimiento_anual: "Rendimiento anual (12 meses)",
   rendimiento_total: "Rendimiento total ({meses} meses)",
   capital_mas_rendimiento: "Capital + rendimiento total",
@@ -84,20 +85,20 @@ const DISCLAIMER =
   "fondo de inversión privado, para invertir se requiere adquirir una acción de $1,000.00 MXN. Las tasas están sujetas a cambio.";
 
 describe("cargarTextos: glosario único (Sprint 6a, versión 0.8)", () => {
-  it("el bloque glosario trae exactamente los diez términos", () => {
+  it("el bloque glosario trae exactamente los once términos (Sprint 6b: más el rendimiento mensual promedio)", () => {
     expect(textosJson.glosario).toEqual(GLOSARIO);
     expect(cargarBien(textosJson).glosario).toEqual(GLOSARIO);
   });
 
-  it("las etiquetas de los resultados salen del glosario (la de 1 mes al final del plazo conserva su nota)", () => {
+  it("las etiquetas de los resultados salen del glosario: el mensual es el promedio (Sprint 6b); al final del plazo conserva su nota", () => {
     expect(cargarBien(textosJson).etiquetasResultados).toEqual({
       mensual: {
-        rendimiento_mensual_pesos: "Rendimiento mensual",
+        rendimiento_mensual_pesos: "Rendimiento mensual (promedio)",
         rendimiento_anual_pesos: "Rendimiento anual (12 meses)",
         ganancia_total_plazo: "Rendimiento total ({meses} meses)",
       },
       final_del_plazo: {
-        rendimiento_mensual_pesos: "Rendimiento mensual, se acumula y se paga al final del plazo",
+        rendimiento_mensual_pesos: "Rendimiento mensual (promedio), se acumula y se paga al final del plazo",
         rendimiento_anual_pesos: "Rendimiento anual (12 meses)",
         ganancia_total_plazo: "Rendimiento total ({meses} meses)",
       },
@@ -195,6 +196,8 @@ describe("cargarTextos: el bloque pdf", () => {
       plazoEspecial: "Plazo especial",
       tasaAcordada: "Tasa acordada",
       desglosePuntos: "Tasa de tabla {tasa_tabla} + {puntos} puntos extra = {tasa}",
+      fechaInicio: "Fecha de inicio: {fecha}",
+      notaDiasNaturales: "Rendimientos calculados a días naturales (días reales ÷ 365).",
     });
   });
 
@@ -391,6 +394,9 @@ const CLAVES_PAGINA2 = [
   "franja_mas_capital",
   "franja_rendimiento_capital",
   "columna_mes",
+  "columna_fecha_pago",
+  "columna_dias",
+  "nota_dia_inhabil",
   "insignia",
   "nota_centavos",
   "modalidad_no_disponible",
@@ -409,10 +415,11 @@ const CLAVES_PAGINA2 = [
 ] as const;
 
 const CLAVES_PAGINA2_CON_MESES = ["capital_vencimiento"] as const;
-/** Claves del comparativo con su único marcador. */
+/** Claves con su único marcador: las del comparativo y el vencimiento de las tarjetas (Sprint 6b). */
 const CLAVES_PAGINA2_BENCHMARK = [
   ["benchmark_actualizado", "fecha"],
   ["benchmark_fuentes", "fuentes"],
+  ["vencimiento", "fecha"],
 ] as const;
 
 describe("cargarTextos: el bloque pdf_pagina2", () => {
@@ -453,7 +460,7 @@ describe("cargarTextos: el bloque pdf_pagina2", () => {
     expect(p.benchmarkSoloPesos).toBe("Comparativo no disponible en dólares: las opciones comparadas son en pesos (MXN).");
   });
 
-  it("trae las 36 claves, todas con texto", () => {
+  it("trae las 40 claves, todas con texto", () => {
     const p = cargarBien(textosJson).pdfPagina2;
     // Más los 9 que salen del glosario: tasa, rendimiento total, capital + rendimiento, dos líneas de pago, dos columnas y dos series.
     expect(Object.keys(p)).toHaveLength(CLAVES_PAGINA2.length + CLAVES_PAGINA2_CON_MESES.length + CLAVES_PAGINA2_BENCHMARK.length + 9);
@@ -543,7 +550,7 @@ describe("cargarTextos: el bloque reclutamiento (0.7.1)", () => {
     expect(r.escalonUltimo).toBe("{desde} en adelante: {bono} más la comisión");
   });
 
-  it("las ocho frases propuestas, pendientes de RH", () => {
+  it("las ocho frases propuestas, aprobadas por RH (Sprint 6b)", () => {
     const r = cargarBien(textosJson).reclutamiento;
     expect(r.frases).toEqual([
       "Tu captación, tu ganancia.",
@@ -555,7 +562,7 @@ describe("cargarTextos: el bloque reclutamiento (0.7.1)", () => {
       "Imagina cuánto podrías ganar este mes.",
       "Súmate a una marca de inversión que ya opera en el mercado.",
     ]);
-    expect(r.frasesAprobadasPorRh).toBe(false);
+    expect(r.frasesAprobadasPorRh).toBe(true);
     expect(r.avisoFrasesRh).toBe("Frases pendientes de aprobación de RH");
   });
 
@@ -661,10 +668,10 @@ describe("cargarTextos: el bloque comisiones (0.9, Sprint 6c)", () => {
     expect(c.notaDesbloqueo).toBe("Las comisiones se desbloquean desde el {porcentaje} de la meta ({umbral}).");
   });
 
-  it("Mis externos: rotulado como supuesto por confirmar, se paga aparte y la nota de la doble captura, exacta", () => {
+  it("Mis externos: confirmado (Sprint 6b, sin insignia de supuesto), se paga aparte y la nota de la doble captura, exacta", () => {
     const c = cargarBien(textosJson).comisiones;
     expect(c.tituloMisExternos).toBe("Mis externos");
-    expect(c.supuestoPorConfirmar).toBe("Supuesto por confirmar");
+    expect(c).not.toHaveProperty("supuestoPorConfirmar");
     expect(c.comisionPorExternos).toBe("Comisión por tus externos ({porcentaje})");
     expect(c.notaAparte).toBe("Se paga aparte: no se descuenta a tus externos.");
     expect(c.notaDobleCaptura).toBe(

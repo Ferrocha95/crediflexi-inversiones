@@ -14,6 +14,9 @@ import { benchmarkReal } from "../../benchmarkReal";
 import { semillaReal } from "../../oro/ayudas";
 import { imagenesPorPagina, textosConTamano } from "./extraer";
 
+/** Fecha de inicio de las cotizaciones de estas pruebas (Sprint 6b: días naturales). */
+const INICIO = "2026-10-15";
+
 // Encabezado con los dos logos juntos (una sola imagen, public/logos-crediflexi-rami-sise.png)
 // y letra mínima del comparativo. Datos sintéticos.
 
@@ -32,7 +35,7 @@ function modelo(entidad: string, moneda: "MXN" | "USD" = "MXN", plazo = 24) {
   const ajuste = { tipo: "tabla", puntos: "0" } as const;
   const monto = moneda === "MXN" ? "1500000" : "50000";
   const c = sinError(cotizarConAjuste(semillaReal, { entidad, moneda, esquema: "mensual", monto, plazo }, ajuste));
-  return sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, { preparadoPara: "Persona Sintética" }, AHORA, datosPagina2(semillaReal, c.solicitud, ajuste)));
+  return sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, { preparadoPara: "Persona Sintética" }, AHORA, datosPagina2(semillaReal, c.solicitud, INICIO, ajuste)));
 }
 
 describe("dimensionesPng", () => {

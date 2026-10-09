@@ -17,7 +17,7 @@ import { TEXTOS } from "../../../src/app/(app)/cotizador/textosPantalla";
 type Vista = { readonly tasa: string };
 const VISTA: Vista = { tasa: "19.00%" };
 
-const CAMPOS: CamposHuella = { entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1,500,000", plazo: 12 };
+const CAMPOS: CamposHuella = { entidad: "CREDIFLEXI", moneda: "MXN", esquema: "mensual", monto: "1,500,000", plazo: 12, fechaInicio: "2026-10-15" };
 const H = huellaDeCampos(CAMPOS);
 const H2 = huellaDeCampos({ ...CAMPOS, plazo: 18 });
 

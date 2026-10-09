@@ -1,7 +1,8 @@
 {
-  "version": "0.9",
+  "version": "0.10",
   "glosario": {
     "rendimiento_mensual": "Rendimiento mensual",
+    "rendimiento_mensual_promedio": "Rendimiento mensual (promedio)",
     "rendimiento_anual": "Rendimiento anual (12 meses)",
     "rendimiento_total": "Rendimiento total ({meses} meses)",
     "capital_mas_rendimiento": "Capital + rendimiento total",
@@ -38,7 +39,9 @@
     "linea_tasas": "Tasas versión {version_tasas} del {fecha_tasas}.",
     "plazo_especial": "Plazo especial",
     "tasa_acordada": "Tasa acordada",
-    "desglose_puntos": "Tasa de tabla {tasa_tabla} + {puntos} puntos extra = {tasa}"
+    "desglose_puntos": "Tasa de tabla {tasa_tabla} + {puntos} puntos extra = {tasa}",
+    "fecha_inicio": "Fecha de inicio: {fecha}",
+    "nota_dias_naturales": "Rendimientos calculados a días naturales (días reales ÷ 365)."
   },
   "pdf_pagina2": {
     "titulo": "Calendario de pagos y comparativo",
@@ -51,6 +54,10 @@
     "franja_mas_capital": "+ capital",
     "franja_rendimiento_capital": "rendimiento + capital",
     "columna_mes": "Mes",
+    "columna_fecha_pago": "Fecha de pago",
+    "columna_dias": "Días",
+    "vencimiento": "Vencimiento: {fecha}",
+    "nota_dia_inhabil": "Si la fecha de pago cae en día inhábil, el depósito se realiza el siguiente día hábil; esto no modifica el rendimiento.",
     "insignia": "Tu cotización",
     "nota_centavos": "Los centavos se ajustan para que la suma coincida con el total.",
     "modalidad_no_disponible": "Esta modalidad no se puede cotizar con el monto y el plazo elegidos.",
@@ -120,7 +127,7 @@
       "Imagina cuánto podrías ganar este mes.",
       "Súmate a una marca de inversión que ya opera en el mercado."
     ],
-    "frases_aprobadas_por_rh": false,
+    "frases_aprobadas_por_rh": true,
     "aviso_frases_rh": "Frases pendientes de aprobación de RH",
     "pdf_titulo": "Propuesta de ingresos",
     "pdf_presenta": "Presenta: {presenta}",
@@ -147,7 +154,6 @@
     "inversion_externo": "Inversión de tus externos {n}",
     "agregar_externo": "Agregar inversión de tus externos",
     "quitar_externo": "Quitar la inversión de tus externos {n}",
-    "supuesto_por_confirmar": "Supuesto por confirmar",
     "comision_por_externos": "Comisión por tus externos ({porcentaje})",
     "base_por_externos": "Comisión N1 de tus externos",
     "nota_aparte": "Se paga aparte: no se descuenta a tus externos.",

@@ -2,6 +2,7 @@ import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
+import { fechaIsoEnMexico } from "../../../aplicacion/fecha";
 import { opcionesCotizador } from "../../../aplicacion/opciones";
 import { leerParametrosCotizacion } from "../../../servidor/parametros";
 import { exigirUsuario } from "../../../servidor/sesion";
@@ -41,7 +42,7 @@ export default async function PaginaCotizador() {
       </header>
 
       {parametros.ok ? (
-        <Cotizador opciones={opcionesCotizador(parametros.valor)} />
+        <Cotizador opciones={opcionesCotizador(parametros.valor, fechaIsoEnMexico(new Date()))} />
       ) : (
         <Aviso role="alert" tono="error" titulo={TEXTOS.tituloErrorParametros}>
           <p>{parametros.error.mensaje}</p>

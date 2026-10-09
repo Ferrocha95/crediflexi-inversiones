@@ -17,6 +17,9 @@ import { Decimal } from "../../../src/domain/comun/decimal";
 import { cotizarBien, semillaReal } from "../oro/ayudas";
 import { benchmarkReal } from "../benchmarkReal";
 
+/** Fecha de inicio de las cotizaciones de estas pruebas (Sprint 6b: días naturales). */
+const INICIO = "2026-10-15";
+
 function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: string } }): T {
   if (!r.ok) throw new Error(r.error.mensaje);
   return r.valor;
@@ -47,7 +50,7 @@ describe("vista previa y PDF en USD", () => {
 
   it("la página 1 del PDF muestra la cifra principal y los resultados con USD", () => {
     const c = cotizarBien(USD);
-    const m = sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, {}, AHORA, datosPagina2(semillaReal, c.solicitud)));
+    const m = sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, {}, AHORA, datosPagina2(semillaReal, c.solicitud, INICIO)));
     expect(m.cifraPrincipal.cifra).toBe("$70.83 USD");
     expect(m.cifras.map((x) => x.cifra)).toEqual(["$70.83 USD", "$850.00 USD", "$850.00 USD"]);
     expect(m.solicitud.monto).toBe("$10,000.00 USD");
@@ -55,11 +58,12 @@ describe("vista previa y PDF en USD", () => {
 
   it("la página 2 lleva USD en las tarjetas, en las filas y en las etiquetas finales de la gráfica", () => {
     const c = cotizarBien(USD);
-    const m = sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, {}, AHORA, datosPagina2(semillaReal, c.solicitud)));
+    const m = sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, {}, AHORA, datosPagina2(semillaReal, c.solicitud, INICIO)));
     const [m1, m2] = m.pagina2.tarjetas;
     expect(m1.detalle!.renglones.map((r) => r.cifra)).toEqual(["$10,000.00 USD", "$850.00 USD", "$10,850.00 USD"]);
-    expect(m1.detalle!.filas[0].rendimiento).toBe("$70.83 USD");
-    expect(m1.detalle!.filas[11].rendimiento).toBe("$70.87 USD");
+    // Días naturales desde el 15/10/2026 (365 días): 10,000 × 0.085 × 31 ÷ 365 = 72.19; el último cierra 850.00 − 780.12 = 69.88.
+    expect(m1.detalle!.filas[0].rendimiento).toBe("$72.19 USD");
+    expect(m1.detalle!.filas[11].rendimiento).toBe("$69.88 USD");
     expect(m1.detalle!.filas[11].acumulado).toBe("$850.00 USD");
     for (const r of m2.detalle!.renglones) expect(r.cifra).toMatch(/ USD$/);
     for (const s of m.pagina2.graficas[0].dibujo!.series) expect(s.final.texto).toMatch(/ USD$/);

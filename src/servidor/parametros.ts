@@ -3,9 +3,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { cargarBenchmark, type Benchmark } from "../aplicacion/benchmark";
 import { cargarRazonesSociales } from "../aplicacion/entidades";
+import { cargarRangoFechaInicio } from "../aplicacion/fechaInicio";
 import { error, ok, type ResultadoApp } from "../aplicacion/resultado";
 import { cargarTextos, type TextosComisiones, type TextosCotizacion, type TextosReclutamiento } from "../aplicacion/textos";
 import { cargarSemillaComisiones, type SemillaComisiones } from "../domain/comisiones/semilla";
+import type { RangoFechaInicio } from "../domain/interes/diasNaturales";
 import { cargarSemilla } from "../domain/tasas/semilla";
 import type { Semilla } from "../domain/tasas/semilla.esquema";
 
@@ -26,6 +28,8 @@ export interface ParametrosCotizacion {
   readonly textos: TextosCotizacion;
   /** Comparativo de tasas de la página 2 del PDF. */
   readonly benchmark: Benchmark;
+  /** Rango permitido de la fecha de inicio (cotizador.fecha_inicio de la semilla). */
+  readonly rangoFechaInicio: RangoFechaInicio;
 }
 
 /** Ruta relativa al proyecto si está dentro de él ("seed/x.json"); si no, la ruta completa. */
@@ -88,13 +92,22 @@ export async function leerParametrosCotizacion(
   const razonesSociales = cargarRazonesSociales(jsonSemilla.valor, nombreVisible(rutas.semilla));
   if (!razonesSociales.ok) return razonesSociales;
 
+  const rangoFechaInicio = cargarRangoFechaInicio(jsonSemilla.valor, nombreVisible(rutas.semilla));
+  if (!rangoFechaInicio.ok) return rangoFechaInicio;
+
   const textos = cargarTextos(jsonTextos.valor, nombreVisible(rutas.textos));
   if (!textos.ok) return textos;
 
   const benchmark = cargarBenchmark(jsonBenchmark.valor, nombreVisible(rutas.benchmark));
   if (!benchmark.ok) return benchmark;
 
-  return ok({ semilla: semilla.valor, razonesSociales: razonesSociales.valor, textos: textos.valor, benchmark: benchmark.valor });
+  return ok({
+    semilla: semilla.valor,
+    razonesSociales: razonesSociales.valor,
+    textos: textos.valor,
+    benchmark: benchmark.valor,
+    rangoFechaInicio: rangoFechaInicio.valor,
+  });
 }
 
 /**

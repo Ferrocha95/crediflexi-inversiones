@@ -12,6 +12,9 @@ import { cotizarBien, semillaReal } from "../../oro/ayudas";
 import { extraerTexto, textosConTamano } from "./extraer";
 import { benchmarkReal } from "../../benchmarkReal";
 
+/** Fecha de inicio de las cotizaciones de estas pruebas (Sprint 6b: días naturales). */
+const INICIO = "2026-10-15";
+
 // Renderizado real con react-pdf y lectura del texto con pdfjs-dist. Todo con datos sintéticos.
 
 function sinError<T>(r: { ok: true; valor: T } | { ok: false; error: { mensaje: string } }): T {
@@ -33,7 +36,7 @@ const OPCIONALES: EntradaPdf = {
 
 function modelo(entidad: string, esquema: Esquema, entrada: EntradaPdf = OPCIONALES, monto = "1500000", plazo = 12) {
   const c = cotizarBien({ entidad, esquema, monto, plazo });
-  return sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, entrada, AHORA, datosPagina2(semillaReal, c.solicitud)));
+  return sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, entrada, AHORA, datosPagina2(semillaReal, c.solicitud, INICIO)));
 }
 
 async function render(m: ModeloPdf) {
@@ -125,7 +128,7 @@ const CASOS = [
     razonSocial: "CREDIFLEXI, S.A.P.I. DE C.V.",
     esquema: "mensual" as const,
     cifras: ["$23,750.00", "$285,000.00"],
-    etiquetas: ["Rendimiento mensual", "Rendimiento anual (12 meses)", "Rendimiento total (12 meses)"],
+    etiquetas: ["Rendimiento mensual (promedio)", "Rendimiento anual (12 meses)", "Rendimiento total (12 meses)"],
     lineaPago: "Pago de rendimiento mensual: cada mes, del mes 1 al mes 12",
     esquemaCorto: "Mensual",
   },
@@ -135,7 +138,7 @@ const CASOS = [
     esquema: "final_del_plazo" as const,
     cifras: ["$26,250.00", "$315,000.00"],
     etiquetas: [
-      "Rendimiento mensual, se acumula y se paga al final del plazo",
+      "Rendimiento mensual (promedio), se acumula y se paga al final del plazo",
       "Rendimiento anual (12 meses)",
       "Rendimiento total (12 meses)",
     ],
@@ -148,7 +151,7 @@ function modeloAjustado(entidad: string, esquema: Esquema, ajuste: Ajuste, monto
   const plazo = ajuste.tipo === "especial" ? ajuste.plazo : plazoTabla;
   const r = cotizarConAjuste(semillaReal, { entidad, moneda, esquema, monto, plazo }, ajuste);
   if (!r.ok) throw new Error(r.error.mensaje);
-  return sinError(modeloPdf(r.valor, { razonesSociales, textos, benchmark: benchmarkReal }, entrada, AHORA, datosPagina2(semillaReal, r.valor.solicitud, ajuste)));
+  return sinError(modeloPdf(r.valor, { razonesSociales, textos, benchmark: benchmarkReal }, entrada, AHORA, datosPagina2(semillaReal, r.valor.solicitud, INICIO, ajuste)));
 }
 
 describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses", (caso) => {
@@ -424,7 +427,7 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
   /** CREDIFLEXI mensual 1,500,000 a 12 meses (19.00%) con la fecha del PDF indicada. */
   function conFecha(ahora: Date, moneda: "MXN" | "USD" = "MXN") {
     const c = moneda === "MXN" ? cotizarBien({ monto: "1500000", plazo: 12 }) : cotizarBien({ entidad: "RAMI_SISE", moneda, monto: "10000", plazo: 12 });
-    return sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, OPCIONALES, ahora, datosPagina2(semillaReal, c.solicitud)));
+    return sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, OPCIONALES, ahora, datosPagina2(semillaReal, c.solicitud, INICIO)));
   }
 
   it("el 8 de octubre trae los dos grupos, cada barra con su tasa y su fecha, los avisos, los asteriscos y las fuentes", { timeout: TIEMPO }, async () => {
@@ -531,7 +534,7 @@ describe("PDF real: exactamente dos páginas en los extremos", () => {
 
   it("USD de Rami Sise a 24 meses con los opcionales al tope: dos páginas", { timeout: TIEMPO }, async () => {
     const c = cotizarBien({ entidad: "RAMI_SISE", moneda: "USD", monto: "500000", plazo: 24 });
-    const m = sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, TOPE, AHORA, datosPagina2(semillaReal, c.solicitud)));
+    const m = sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, TOPE, AHORA, datosPagina2(semillaReal, c.solicitud, INICIO)));
     const { paginas, porPagina } = await render(m);
     expect(paginas).toBe(2);
     expect(porPagina[1]).toContain(LINEA_SIPRES);
@@ -622,16 +625,19 @@ describe("PDF real: página 2 del ejemplo del Excel, 1,000,000 pesos a 6 meses",
       "18.00%",
       "20.00%",
       "$1,000,000.00",
-      "$15,000.00",
-      "$30,000.00",
-      "$45,000.00",
-      "$60,000.00",
-      "$75,000.00",
-      "$90,000.00",
-      "$1,090,000.00",
-      // Modalidad 2: rendimiento total 1,000,000 × 0.20 × 6 ÷ 12 = 100,000.00.
-      "$100,000.00",
-      "$1,100,000.00",
+      // Días naturales desde el 15/10/2026 (casos A y D del Sprint 6b).
+      "15/11/2026",
+      "$15,287.67",
+      "$14,794.52",
+      "$30,082.19",
+      "$13,808.22",
+      "$74,465.75",
+      "$89,753.42",
+      "$1,089,753.42",
+      // Modalidad 2: rendimiento total 1,000,000 × 0.20 × 182 ÷ 365 = 99,726.03.
+      "$99,726.03",
+      "$1,099,726.03",
+      "Vencimiento: 15/04/2027",
       P2.serieMensual,
       P2.serieFinal,
     ]) {
@@ -647,10 +653,11 @@ describe("PDF real: página 2 del ejemplo del Excel, 1,000,000 pesos a 6 meses",
 describe("PDF real: plazo especial de más de 24 meses (Sprint 6a)", () => {
   const ESPECIAL = (meses: number) => ({ tipo: "especial", plazo: meses, tasas: { mensual: "17.00", final_del_plazo: "19.00" } }) as const;
 
+  // Días naturales desde el 15/10/2026 (Sprint 6b): 36 meses es el caso F (1,096 días); 60 meses son 1,826 días.
   it.each([
-    [36, "$1,416.55", "$51,000.00"],
-    [60, "$1,416.47", "$85,000.00"],
-  ] as const)("%i meses: EXACTAMENTE 3 páginas; el calendario mensual completo va en la tercera", { timeout: TIEMPO }, async (meses, ultimo, total) => {
+    [36, "$1,397.18", "$51,046.58", "15/10/2029"],
+    [60, "$1,397.12", "$85,046.58", "15/10/2031"],
+  ] as const)("%i meses: EXACTAMENTE 3 páginas; el calendario mensual completo va en la tercera", { timeout: TIEMPO }, async (meses, ultimo, total, vencimiento) => {
     const { paginas, porPagina } = await render(modeloAjustado("CREDIFLEXI", "mensual", ESPECIAL(meses), "100000", "MXN", OPCIONALES));
     expect(paginas).toBe(3);
     for (let n = 1; n <= 3; n++) expect(porPagina[n - 1]).toContain(`${P2.pagina} ${n} ${P2.paginaDe} 3`);
@@ -659,10 +666,10 @@ describe("PDF real: plazo especial de más de 24 meses (Sprint 6a)", () => {
     expect(porPagina[1]).toContain(P2.benchmarkTitulo);
     expect(porPagina[1]).not.toContain(ultimo);
     // La tercera lleva el calendario con sus encabezados, el último pago que ajusta los centavos y el total.
-    for (const t of [P2.columnaMes, P2.columnaRendimientoMensual, P2.columnaRendimientoAcumulado, "$1,416.67", ultimo, total]) {
+    for (const t of [P2.columnaFechaPago, P2.columnaDias, P2.columnaRendimientoMensual, P2.columnaRendimientoAcumulado, "$1,443.84", ultimo, total, vencimiento]) {
       expect(porPagina[2]).toContain(t);
     }
-    expect(porPagina[2]).toContain(` ${meses} `);
+    expect(porPagina[2]).toContain(P2.notaDiaInhabil);
     expect(porPagina[2]).toContain(DISCLAIMER);
   });
 
