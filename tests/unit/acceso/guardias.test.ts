@@ -37,6 +37,7 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
       "src/app/(app)/pipeline/page.tsx",
     ]);
     expect(rutas.map(relativo).sort()).toEqual([
+      "src/app/(app)/comisiones/pdf/route.ts",
       "src/app/(app)/comisiones/reclutamiento/pdf/route.ts",
       "src/app/(app)/cotizador/pdf/route.ts",
       "src/app/(app)/pipeline/excel/route.ts",

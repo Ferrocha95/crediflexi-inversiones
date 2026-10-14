@@ -31,6 +31,9 @@ function importacionesDeValor(codigo: string): string[] {
 /** Lenguaje de promesa que no puede aparecer en el simulador. */
 const RE_PROMESA = /(?<![\p{L}\p{N}])(garantiz\p{L}*|asegur\p{L}*|sin riesgo|ingreso fijo|ganar[aá]s|recibir[aá]s|promesa)(?![\p{L}\p{N}])/iu;
 
+/** Aviso fijo del PDF de comisiones (Sprint 7a, dictado por Fernando): "garantiza" solo vale dentro de él, que se quita antes de revisar. */
+const AVISO_PDF_EXACTO = "Simulación informativa con las reglas vigentes. No garantiza ingresos. El sueldo base es una propuesta.";
+
 describe("archivos del navegador de /comisiones", () => {
   it("Simulador.tsx, Resultado.tsx y Reclutamiento.tsx son componentes de cliente", () => {
     for (const f of [...CLIENTE.slice(0, 2), CLIENTE[3]]) expect(leer(f).startsWith('"use client";')).toBe(true);
@@ -56,7 +59,9 @@ describe("archivos del navegador de /comisiones", () => {
   });
 
   it("los textos de la pantalla no usan lenguaje de promesa", () => {
-    expect(textosDeLaPantalla()).not.toMatch(RE_PROMESA);
+    expect(textosDeLaPantalla()).toContain(AVISO_PDF_EXACTO);
+    expect(textosDeLaPantalla().split(AVISO_PDF_EXACTO).join(" ")).not.toMatch(RE_PROMESA);
+    expect(`Ingreso fijo ${AVISO_PDF_EXACTO}`.split(AVISO_PDF_EXACTO).join(" ")).toMatch(RE_PROMESA);
   });
 
   it("ningún texto de la pantalla de comisiones dice 'sin límite', 'estadía' ni 'permanencia' (Sprint 6c)", () => {

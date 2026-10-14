@@ -35,6 +35,11 @@ export const MARCADORES = [
   "meta",
   "porcentaje",
   "umbral",
+  "falta",
+  "nota",
+  "dia_pago",
+  "dia_pago_siguiente",
+  "lista",
 ] as const;
 export type Marcador = (typeof MARCADORES)[number];
 
@@ -79,6 +84,17 @@ export const MARCADORES_POR_CAMPO = {
   "comisiones.comision_por_externos": ["porcentaje"],
   "comisiones.red_desbloqueada": ["umbral"],
   "comisiones.red_bloqueada": ["umbral"],
+  "comisiones.pdf_avance": ["porcentaje", "captacion", "meta"],
+  "comisiones.pdf_marca_umbral": ["porcentaje", "umbral"],
+  "comisiones.pdf_marca_meta": ["meta"],
+  "comisiones.pdf_desbloqueada_el": ["fecha"],
+  "comisiones.pdf_falta_umbral": ["falta", "umbral"],
+  "comisiones.pdf_falta_meta": ["falta"],
+  "comisiones.pdf_regla_cierre": ["nota"],
+  "comisiones.pdf_regla_quincenas": ["dia_corte", "dia_pago", "dia_siguiente", "dia_pago_siguiente"],
+  "comisiones.pdf_regla_interno": ["dia_corte", "dia_pago_siguiente"],
+  "comisiones.pdf_pago_inversiones": ["lista"],
+  "comisiones.pdf_pago_inversion": ["n"],
 } as const satisfies Readonly<Record<string, readonly Marcador[]>>;
 
 /**
@@ -185,6 +201,64 @@ export interface TextosComisiones {
   /** Plantillas con {umbral}. */
   readonly redDesbloqueada: string;
   readonly redBloqueada: string;
+  /** Sprint 7a: "Total estimado del mes (simulación)" = sueldo base + comisión pagable + bono (pantalla y PDF). */
+  readonly totalEstimadoMes: string;
+  readonly totalComisionPagable: string;
+  readonly totalBono: string;
+  readonly descargarPdf: string;
+  /** Aviso fijo del PDF de comisiones (sin marcadores). */
+  readonly avisoPdf: string;
+  // PDF de comisiones (Sprint 7a): rótulos fijos y plantillas.
+  readonly pdfTitulo: string;
+  readonly pdfFecha: string;
+  readonly pdfPerfil: string;
+  readonly pdfRol: string;
+  readonly pdfInterno: string;
+  readonly pdfEjecutivo: string;
+  readonly pdfGerente: string;
+  readonly pdfTituloTabla: string;
+  readonly pdfColumnaNumero: string;
+  readonly pdfColumnaTipo: string;
+  readonly pdfColumnaFecha: string;
+  readonly pdfColumnaMonto: string;
+  readonly pdfColumnaPlazo: string;
+  readonly pdfColumnaTasa: string;
+  readonly pdfColumnaComision: string;
+  readonly pdfColumnaPago: string;
+  readonly pdfNueva: string;
+  readonly pdfRenovacion: string;
+  readonly pdfSinPago: string;
+  readonly pdfNoCuentaParaMeta: string;
+  readonly pdfComisionDelMes: string;
+  readonly pdfComisionPagable: string;
+  readonly pdfComisionBloqueada: string;
+  readonly pdfCaptacionParaMeta: string;
+  readonly pdfTituloAvance: string;
+  readonly pdfDesbloqueada: string;
+  readonly pdfBloqueada: string;
+  /** Plantillas con {porcentaje}, {captacion}, {meta}, {umbral}, {fecha}, {falta} o {nota}. */
+  readonly pdfAvance: string;
+  readonly pdfMarcaUmbral: string;
+  readonly pdfMarcaMeta: string;
+  readonly pdfDesbloqueadaEl: string;
+  readonly pdfFaltaUmbral: string;
+  readonly pdfFaltaMeta: string;
+  readonly pdfMetaCumplida: string;
+  readonly pdfReglaCierre: string;
+  readonly pdfSinBonoGerente: string;
+  readonly pdfFechaIncentivos: string;
+  readonly pdfBonoGerente: string;
+  readonly pdfBaseBonoGerente: string;
+  readonly pdfAyudaBonoGerente: string;
+  readonly pdfCalculo: string;
+  readonly pdfTituloCalendario: string;
+  /** Plantillas con los días del calendario de la semilla. */
+  readonly pdfReglaQuincenas: string;
+  readonly pdfReglaInterno: string;
+  readonly pdfSinPagos: string;
+  /** Plantillas con {lista} y {n}. */
+  readonly pdfPagoInversiones: string;
+  readonly pdfPagoInversion: string;
 }
 
 /** Clave del archivo (snake_case) -> clave de TextosComisiones. */
@@ -213,6 +287,58 @@ const CLAVES_COMISIONES = {
   nota_aparte: "notaAparte",
   red_desbloqueada: "redDesbloqueada",
   red_bloqueada: "redBloqueada",
+  total_estimado_mes: "totalEstimadoMes",
+  total_comision_pagable: "totalComisionPagable",
+  total_bono: "totalBono",
+  descargar_pdf: "descargarPdf",
+  aviso_pdf: "avisoPdf",
+  pdf_titulo: "pdfTitulo",
+  pdf_fecha: "pdfFecha",
+  pdf_perfil: "pdfPerfil",
+  pdf_rol: "pdfRol",
+  pdf_interno: "pdfInterno",
+  pdf_ejecutivo: "pdfEjecutivo",
+  pdf_gerente: "pdfGerente",
+  pdf_titulo_tabla: "pdfTituloTabla",
+  pdf_columna_numero: "pdfColumnaNumero",
+  pdf_columna_tipo: "pdfColumnaTipo",
+  pdf_columna_fecha: "pdfColumnaFecha",
+  pdf_columna_monto: "pdfColumnaMonto",
+  pdf_columna_plazo: "pdfColumnaPlazo",
+  pdf_columna_tasa: "pdfColumnaTasa",
+  pdf_columna_comision: "pdfColumnaComision",
+  pdf_columna_pago: "pdfColumnaPago",
+  pdf_nueva: "pdfNueva",
+  pdf_renovacion: "pdfRenovacion",
+  pdf_sin_pago: "pdfSinPago",
+  pdf_no_cuenta_para_meta: "pdfNoCuentaParaMeta",
+  pdf_comision_del_mes: "pdfComisionDelMes",
+  pdf_comision_pagable: "pdfComisionPagable",
+  pdf_comision_bloqueada: "pdfComisionBloqueada",
+  pdf_captacion_para_meta: "pdfCaptacionParaMeta",
+  pdf_titulo_avance: "pdfTituloAvance",
+  pdf_desbloqueada: "pdfDesbloqueada",
+  pdf_bloqueada: "pdfBloqueada",
+  pdf_avance: "pdfAvance",
+  pdf_marca_umbral: "pdfMarcaUmbral",
+  pdf_marca_meta: "pdfMarcaMeta",
+  pdf_desbloqueada_el: "pdfDesbloqueadaEl",
+  pdf_falta_umbral: "pdfFaltaUmbral",
+  pdf_falta_meta: "pdfFaltaMeta",
+  pdf_meta_cumplida: "pdfMetaCumplida",
+  pdf_regla_cierre: "pdfReglaCierre",
+  pdf_sin_bono_gerente: "pdfSinBonoGerente",
+  pdf_fecha_incentivos: "pdfFechaIncentivos",
+  pdf_bono_gerente: "pdfBonoGerente",
+  pdf_base_bono_gerente: "pdfBaseBonoGerente",
+  pdf_ayuda_bono_gerente: "pdfAyudaBonoGerente",
+  pdf_calculo: "pdfCalculo",
+  pdf_titulo_calendario: "pdfTituloCalendario",
+  pdf_regla_quincenas: "pdfReglaQuincenas",
+  pdf_regla_interno: "pdfReglaInterno",
+  pdf_sin_pagos: "pdfSinPagos",
+  pdf_pago_inversiones: "pdfPagoInversiones",
+  pdf_pago_inversion: "pdfPagoInversion",
 } as const satisfies Readonly<Record<string, keyof TextosComisiones>>;
 
 type ClaveArchivoComisiones = keyof typeof CLAVES_COMISIONES;

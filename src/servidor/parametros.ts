@@ -132,6 +132,21 @@ export async function leerTextosComisiones(ruta: string = RUTA_TEXTOS): Promise<
   return ok(textos.valor.comisiones);
 }
 
+export interface ParametrosComisiones {
+  readonly semilla: SemillaComisiones;
+  readonly textos: TextosComisiones;
+}
+
+/** Lee en cada llamada la semilla de comisiones y los textos del simulador (para el PDF de comisiones). */
+export async function leerParametrosComisiones(
+  rutas: { readonly semilla: string; readonly textos: string } = { semilla: RUTA_SEMILLA, textos: RUTA_TEXTOS },
+): Promise<ResultadoApp<ParametrosComisiones>> {
+  const [semilla, textos] = await Promise.all([leerSemillaComisiones(rutas.semilla), leerTextosComisiones(rutas.textos)]);
+  if (!semilla.ok) return semilla;
+  if (!textos.ok) return textos;
+  return ok({ semilla: semilla.valor, textos: textos.valor });
+}
+
 export interface ParametrosReclutamiento {
   readonly semilla: SemillaComisiones;
   readonly textos: TextosReclutamiento;

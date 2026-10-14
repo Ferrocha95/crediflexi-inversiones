@@ -2,8 +2,10 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { renderToBuffer } from "@react-pdf/renderer";
+import type { ModeloPdfComisiones } from "../../aplicacion/comisiones";
 import type { ModeloPdf } from "../../aplicacion/modelo";
 import type { ModeloReclutamiento } from "../../aplicacion/reclutamiento";
+import { DocumentoComisiones } from "./DocumentoComisiones";
 import { DocumentoCotizacion } from "./DocumentoCotizacion";
 import { DocumentoReclutamiento } from "./DocumentoReclutamiento";
 import type { LogoPdf } from "./Encabezado";
@@ -30,5 +32,12 @@ export async function renderizarPdf(modelo: ModeloPdf): Promise<Uint8Array> {
 export async function renderizarReclutamiento(modelo: ModeloReclutamiento): Promise<Uint8Array> {
   registrarFuente();
   const bytes = await renderToBuffer(DocumentoReclutamiento({ modelo, logo: await leerLogo() }));
+  return new Uint8Array(bytes);
+}
+
+/** Simulación de comisiones del mes (Gerente y Ejecutivo) en bytes. No guarda nada en disco. */
+export async function renderizarComisiones(modelo: ModeloPdfComisiones): Promise<Uint8Array> {
+  registrarFuente();
+  const bytes = await renderToBuffer(DocumentoComisiones({ modelo, logo: await leerLogo() }));
   return new Uint8Array(bytes);
 }

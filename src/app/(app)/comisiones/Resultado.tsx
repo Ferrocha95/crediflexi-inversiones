@@ -136,6 +136,29 @@ export function Resultado({ modelo: m, textos: t }: { modelo: ModeloComisiones; 
         </dl>
       </section>
 
+      {/* Total estimado del mes: sueldo base (solo ejecutivo) + comisión pagable + bono, con su desglose. */}
+      <section aria-labelledby="titulo-total-mes" className="superficie flex flex-col gap-3 rounded-2xl border border-verde-texto/40 p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 id="titulo-total-mes" className="text-lg font-bold">
+            {t.totalEstimadoMes}
+          </h3>
+          <p className="text-2xl font-extrabold tabular-nums">{m.totalMes.total}</p>
+        </div>
+        <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
+          {m.totalMes.partes.map((p) => (
+            <div key={p.clave} className="flex justify-between gap-3">
+              <dt className="text-hielo">{{ sueldoBase: t.sueldoBase, comisionPagable: t.totalComisionPagable, bono: t.totalBono }[p.clave]}</dt>
+              <dd className="font-semibold tabular-nums">{p.monto}</dd>
+            </div>
+          ))}
+        </dl>
+        {m.totalMes.operacion !== null && (
+          <p className="text-sm break-words text-hielo-tenue">
+            {TEXTOS.calculo}: {m.totalMes.operacion}
+          </p>
+        )}
+      </section>
+
       {m.avance !== null && (
         <section aria-labelledby="titulo-avance" className="superficie flex flex-col gap-4 rounded-2xl p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">

@@ -103,4 +103,5 @@ export const TEXTOS = {
   pdfListo: "Listo: el PDF se descargó.",
   tituloErrorPdf: "No se pudo generar el PDF",
   nombrePdfPorOmision: "propuesta-de-ingresos.pdf",
+  nombrePdfComisiones: "simulacion-de-comisiones.pdf",
 } as const;

@@ -37,7 +37,7 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 describe("cargarTextos: el archivo real", () => {
   it("carga seed/textos_cotizacion.json versión 0.9", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.10");
+    expect(t.version).toBe("0.11");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual neta indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +
@@ -713,5 +713,38 @@ describe("cargarTextos: el bloque comisiones (0.9, Sprint 6c)", () => {
     const sobra = copia();
     (sobra.comisiones as Record<string, unknown>).sin_limite = "Sin límite";
     expect(errorDe(sobra).todo).toContain("sin_limite");
+  });
+});
+
+describe("cargarTextos: PDF de comisiones y Total estimado del mes (0.11, Sprint 7a)", () => {
+  it("el aviso fijo del PDF, el total y el botón, exactos", () => {
+    const c = cargarBien(textosJson).comisiones;
+    expect(c.avisoPdf).toBe("Simulación informativa con las reglas vigentes. No garantiza ingresos. El sueldo base es una propuesta.");
+    expect(c.totalEstimadoMes).toBe("Total estimado del mes (simulación)");
+    expect(c.descargarPdf).toBe("Descargar PDF");
+    expect(c.sueldoBase).toBe("Sueldo base (propuesta)");
+  });
+
+  it.each([
+    ["pdf_avance", "{porcentaje} {captacion} {meta}", "{falta}"],
+    ["pdf_falta_umbral", "{falta} {umbral}", "{meta}"],
+    ["pdf_regla_cierre", "{nota}", "{falta}"],
+    ["pdf_regla_quincenas", "{dia_corte} {dia_pago} {dia_siguiente} {dia_pago_siguiente}", "{mes}"],
+    ["pdf_pago_inversiones", "{lista}", "{n}"],
+  ] as const)("comisiones.%s acepta %s y rechaza %s", (clave, aceptado, rechazado) => {
+    const bien = copia();
+    (bien.comisiones as Record<string, string>)[clave] = `Texto ${aceptado}`;
+    cargarBien(bien);
+    const mal = copia();
+    (mal.comisiones as Record<string, string>)[clave] = `Texto ${rechazado}`;
+    expect(errorDe(mal).todo).toContain(`comisiones.${clave}`);
+  });
+
+  it("aviso_pdf, total_estimado_mes y descargar_pdf no admiten marcadores", () => {
+    for (const clave of ["aviso_pdf", "total_estimado_mes", "descargar_pdf"]) {
+      const mal = copia();
+      (mal.comisiones as Record<string, string>)[clave] = "Texto {fecha}";
+      expect(errorDe(mal).todo).toContain(`comisiones.${clave}`);
+    }
   });
 });

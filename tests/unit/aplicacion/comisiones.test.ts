@@ -350,3 +350,49 @@ describe("modeloComisiones: Mis externos, comisión por externos (30%, supuesto 
     expect(error({ externos: [deExterno("nueva", "20,000", 12)] }).mensaje).toMatch(/^Inversión de tus externos 1: .*\$30,000\.00/);
   });
 });
+
+describe("modeloComisiones: Total estimado del mes (simulación), Sprint 7a", () => {
+  it("EJECUTIVO, 1,000,000 a 12 meses: sueldo base + comisión pagable + bono, con su desglose", () => {
+    const m = modelo({ inversiones: [nueva("1,000,000", 12)] });
+    expect(m.totalMes).toEqual({
+      total: "$43,380.00",
+      partes: [
+        { clave: "sueldoBase", monto: "$15,000.00" },
+        { clave: "comisionPagable", monto: "$28,380.00" },
+        { clave: "bono", monto: "$0.00" },
+      ],
+      operacion: "$15,000.00 + $28,380.00 + $0.00 = $43,380.00",
+    });
+  });
+
+  it("EJECUTIVO, 1,000,000 a 24 meses: 74,340.00; 1,500,000 a 12 meses: 63,560.00 con bono 5,000", () => {
+    expect(modelo({ inversiones: [nueva("1000000", 24)] }).totalMes.total).toBe("$74,340.00");
+    const m = modelo({ inversiones: [nueva("1500000", 12)] });
+    expect(m.lineas[0].tasa).toBe("2.904%");
+    expect(m.totalMes.operacion).toBe("$15,000.00 + $43,560.00 + $5,000.00 = $63,560.00");
+  });
+
+  it("799,999.99 no desbloquea (total = sueldo base); 800,000 sí", () => {
+    expect(modelo({ inversiones: [nueva("799,999.99", 12)] }).totalMes.total).toBe("$15,000.00");
+    expect(modelo({ inversiones: [nueva("800,000", 12)] }).avance?.desbloqueada).toBe(true);
+  });
+
+  it("la comisión por externos y el bono de gerente NO entran al total", () => {
+    const conExternos = modelo({ inversiones: [nueva("1000000", 12)], externos: TRES_DE_EXTERNOS });
+    expect(conExternos.redExterna).not.toBeNull();
+    expect(conExternos.totalMes.total).toBe("$43,380.00");
+    const gerente = modelo({ rol: "GERENTE", inversiones: [nueva("2000000", 12)], equipo: [delEquipo("nueva", "500000", 12)] });
+    expect(gerente.bonoGerente).not.toBeNull();
+    expect(gerente.totalMes).toEqual({
+      total: gerente.totales.comisionPagable,
+      partes: [{ clave: "comisionPagable", monto: gerente.totales.comisionPagable }],
+      operacion: null,
+    });
+  });
+
+  it("externo: comisión más bono, sin sueldo base", () => {
+    const m = modelo({ perfil: "externo", rol: null, inversiones: [nueva("1000000", 12)] });
+    expect(m.totalMes.operacion).toBe("$28,380.00 + $15,000.00 = $43,380.00");
+    expect(m.totalMes.partes.map((p) => p.clave)).toEqual(["comisionPagable", "bono"]);
+  });
+});

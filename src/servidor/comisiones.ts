@@ -13,8 +13,8 @@ export const MENSAJE_FORMA_COMISIONES =
 /** Tope de inversiones por mes en el simulador (protege al servidor de listas enormes). */
 export const MAXIMO_INVERSIONES = 50;
 
-const esquemaCampos = z.strictObject({
-  peticion: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+/** Los campos del simulador, sin el número de petición: los usa también el PDF de comisiones. */
+export const esquemaCamposComisiones = z.strictObject({
   perfil: z.enum(["interno", "externo"]),
   rol: z.enum(ROLES_CON_META).nullable(),
   inversiones: z
@@ -48,6 +48,8 @@ const esquemaCampos = z.strictObject({
     )
     .max(MAXIMO_INVERSIONES),
 });
+
+const esquemaCampos = esquemaCamposComisiones.extend({ peticion: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER) });
 
 /** Respuesta de la acción: solo texto y números (sin Decimal ni semilla). */
 export interface RespuestaComisiones {

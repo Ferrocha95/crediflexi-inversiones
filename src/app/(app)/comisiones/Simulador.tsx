@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Download, Plus, Trash2 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { OpcionesComisiones } from "../../../aplicacion/comisiones";
 import type { TextosComisiones } from "../../../aplicacion/textos";
@@ -12,6 +12,7 @@ import { Boton } from "../../../componentes/ui/Boton";
 import { Campo, Entrada } from "../../../componentes/ui/Campo";
 import { Opciones } from "../../../componentes/ui/Opciones";
 import { Selector } from "../../../componentes/ui/Selector";
+import { clasificarRespuestaPdf, mensajeDeErrorPdf } from "../cotizador/peticionPdf";
 import { simular } from "./acciones";
 import { llenar } from "./plantilla";
 import { Resultado } from "./Resultado";
@@ -36,6 +37,22 @@ interface Fila {
 /** Inversión del equipo del gerente o de los externos de un interno: sin fecha. */
 type FilaSinFecha = Omit<Fila, "fecha">;
 type ListaSinFecha = "equipo" | "externos";
+type Mensaje = { readonly tipo: "estado" | "error"; readonly texto: string };
+
+const RE_NOMBRE = /filename="([^"]+)"/;
+
+/** Lo que se manda al servidor (simulación y PDF): sin claves de la pantalla. */
+function paraServidor(perfil: Perfil, rol: Rol, filas: readonly Fila[], equipo: readonly FilaSinFecha[], externos: readonly FilaSinFecha[]) {
+  return {
+    perfil,
+    rol: perfil === "interno" ? rol : null,
+    inversiones: filas.map(({ tipo, monto, plazo, fecha }) => ({ tipo, monto, plazo, fecha })),
+    // El equipo solo cuenta con el rol GERENTE (el bloque no se muestra en los demás casos).
+    equipo: perfil === "interno" && rol === "GERENTE" ? equipo.map(({ tipo, monto, plazo }) => ({ tipo, monto, plazo })) : [],
+    // Mis externos solo cuenta con el perfil interno (el bloque no se muestra al externo).
+    externos: perfil === "interno" ? externos.map(({ tipo, monto, plazo }) => ({ tipo, monto, plazo })) : [],
+  };
+}
 
 export interface PropsSimulador {
   readonly opciones: OpcionesComisiones;
@@ -65,9 +82,14 @@ export function Simulador({ opciones, textos, rolInicial, fechaInicial, maximoIn
   const [version, setVersion] = useState(0);
   const [respuesta, setRespuesta] = useState<RespuestaComisiones | null>(null);
   const [sesionExpirada, setSesionExpirada] = useState(false);
+  const [generando, setGenerando] = useState(false);
+  const [mensajePdf, setMensajePdf] = useState<Mensaje | null>(null);
   const enfocarFila = useRef<number | null>(null);
 
-  const cambio = () => setVersion((v) => v + 1);
+  const cambio = () => {
+    setVersion((v) => v + 1);
+    setMensajePdf(null);
+  };
 
   function cambiarFila(clave: number, cambioFila: Partial<Fila>) {
     setFilas((fs) => fs.map((f) => (f.clave === clave ? { ...f, ...cambioFila } : f)));
@@ -124,16 +146,7 @@ export function Simulador({ opciones, textos, rolInicial, fechaInicial, maximoIn
     if (!hayFilas) return;
     let vigente = true;
     const temporizador = setTimeout(async () => {
-      const campos = {
-        peticion: version,
-        perfil,
-        rol: perfil === "interno" ? rol : null,
-        inversiones: filas.map(({ tipo, monto, plazo, fecha }) => ({ tipo, monto, plazo, fecha })),
-        // El equipo solo cuenta con el rol GERENTE (el bloque no se muestra en los demás casos).
-        equipo: perfil === "interno" && rol === "GERENTE" ? equipo.map(({ tipo, monto, plazo }) => ({ tipo, monto, plazo })) : [],
-        // Mis externos solo cuenta con el perfil interno (el bloque no se muestra al externo).
-        externos: perfil === "interno" ? externos.map(({ tipo, monto, plazo }) => ({ tipo, monto, plazo })) : [],
-      };
+      const campos = { peticion: version, ...paraServidor(perfil, rol, filas, equipo, externos) };
       let r: RespuestaComisiones;
       try {
         r = await simular(campos);
@@ -154,6 +167,47 @@ export function Simulador({ opciones, textos, rolInicial, fechaInicial, maximoIn
   }, [perfil, rol, filas, equipo, externos, version, hayFilas]);
 
   const actual = hayFilas && respuesta !== null && respuesta.peticion === version ? respuesta : null;
+  // El PDF es para Gerente y Ejecutivo (perfil interno), con una simulación sin errores.
+  const puedePdf = perfil === "interno" && actual?.resultado.tipo === "modelo";
+
+  /** POST al PDF: el servidor recalcula todo y responde el archivo o un error en español. */
+  async function descargarPdf() {
+    if (!puedePdf || generando) return;
+    setGenerando(true);
+    setMensajePdf({ tipo: "estado", texto: TEXTOS.generandoPdf });
+    try {
+      const r = await fetch("/comisiones/pdf", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify(paraServidor(perfil, rol, filas, equipo, externos)),
+      });
+      const clase = clasificarRespuestaPdf(r.status, r.headers.get("content-type"));
+      if (clase === "sesion_expirada") {
+        setSesionExpirada(true);
+        setMensajePdf(null);
+        return;
+      }
+      if (clase !== "pdf") {
+        const cuerpo: unknown = clase === "error" ? await r.json().catch(() => undefined) : undefined;
+        setMensajePdf({ tipo: "error", texto: mensajeDeErrorPdf(r.status, cuerpo) });
+        return;
+      }
+      const url = URL.createObjectURL(await r.blob());
+      const enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.download = RE_NOMBRE.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? TEXTOS.nombrePdfComisiones;
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setMensajePdf({ tipo: "estado", texto: TEXTOS.pdfListo });
+    } catch {
+      setMensajePdf({ tipo: "error", texto: TEXTOS.errorConexion });
+    } finally {
+      setGenerando(false);
+    }
+  }
 
   return (
     <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:gap-8">
@@ -368,6 +422,23 @@ export function Simulador({ opciones, textos, rolInicial, fechaInicial, maximoIn
           </Aviso>
         ) : (
           <Resultado modelo={actual.resultado.modelo} textos={textos} />
+        )}
+        {puedePdf && (
+          <div className="flex flex-col gap-2">
+            <Boton className="self-start" icono={<Download aria-hidden="true" className="size-5" />} cargando={generando} onClick={descargarPdf}>
+              {textos.descargarPdf}
+            </Boton>
+            {mensajePdf !== null &&
+              (mensajePdf.tipo === "error" ? (
+                <Aviso role="alert" tono="error" titulo={TEXTOS.tituloErrorPdf}>
+                  <p>{mensajePdf.texto}</p>
+                </Aviso>
+              ) : (
+                <p role="status" className="text-hielo">
+                  {mensajePdf.texto}
+                </p>
+              ))}
+          </div>
         )}
         {/* Solo se anuncia el total, no toda la tabla. */}
         <p className="sr-only" aria-live="polite">

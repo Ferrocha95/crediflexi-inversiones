@@ -5,9 +5,11 @@ import type { ComisionInversion, SolicitudComision } from "../domain/comisiones/
 import { liquidarMes, type InversionDelMes, type Liquidacion } from "../domain/comisiones/liquidacion";
 import { comisionPorRedExterna } from "../domain/comisiones/redExterna";
 import type { IncentivoExterno, IncentivoInterno, RolConMeta, SemillaComisiones, TipoInversion } from "../domain/comisiones/semilla";
+import { totalEstimadoDelMes } from "../domain/comisiones/totalMes";
 import { fechaDeTextoIso } from "./fecha";
 import { normalizarMonto } from "./monto";
 import { error, ok, type ResultadoApp } from "./resultado";
+import type { TextosComisiones } from "./textos";
 
 // Pantalla /comisiones: convierte lo escrito en la entrada del motor y el
 // resultado en texto. No calcula: las cifras salen de liquidarMes, para el
@@ -142,6 +144,27 @@ export interface ModeloComisiones {
   readonly pagos: readonly { readonly fecha: string; readonly monto: string; readonly inversiones: readonly number[] }[];
   /** Días del calendario de pago, para escribir la regla en pantalla. */
   readonly regla: SemillaComisiones["pago"];
+  /**
+   * "Total estimado del mes (simulación)" (Sprint 7a), de totalEstimadoDelMes:
+   * sueldo base (solo EJECUTIVO) + comisión pagable + bono. La comisión por
+   * externos y el bono de gerente van aparte y no entran.
+   */
+  readonly totalMes: {
+    readonly total: string;
+    /** Los sumandos que aplican, en orden. */
+    readonly partes: readonly { readonly clave: "sueldoBase" | "comisionPagable" | "bono"; readonly monto: string }[];
+    /** "$15,000.00 + $28,380.00 + $0.00 = $43,380.00"; null con un solo sumando. */
+    readonly operacion: string | null;
+  };
+}
+
+/** Lo que dibuja el PDF de comisiones (Sprint 7a): el mismo modelo de la pantalla, con su fecha y sus textos. */
+export interface ModeloPdfComisiones {
+  readonly textos: TextosComisiones;
+  /** Fecha del documento (hoy en la Ciudad de México), DD/MM/AAAA. */
+  readonly fecha: string;
+  readonly rol: RolConMeta;
+  readonly comisiones: ModeloComisiones;
 }
 
 /** Tasa de comisión completa en porcentaje, con hasta 3 decimales: "2.904%", "1.23%", "1.20%". */
@@ -270,6 +293,12 @@ export function modeloComisiones(s: SemillaComisiones, c: CamposComisiones): Res
   if (!l.ok) return error("COMISION_INVALIDA", l.error.mensaje, l.error.detalles);
   const v = l.valor;
   const pagoDe = fechasDePago(v);
+  const tm = totalEstimadoDelMes(v);
+  const partes: ModeloComisiones["totalMes"]["partes"] = [
+    ...(tm.sueldoBase === null ? [] : [{ clave: "sueldoBase" as const, monto: pesos(tm.sueldoBase) }]),
+    { clave: "comisionPagable" as const, monto: pesos(tm.comisionPagable) },
+    ...(tm.bono === null ? [] : [{ clave: "bono" as const, monto: pesos(tm.bono) }]),
+  ];
 
   let bonoGerente: ModeloComisiones["bonoGerente"] = null;
   if (gerente && equipo.valor.length > 0) {
@@ -338,5 +367,10 @@ export function modeloComisiones(s: SemillaComisiones, c: CamposComisiones): Res
     bonoGerente,
     pagos: v.pagos.map((p) => ({ fecha: fechaDeTextoIso(p.fecha), monto: pesos(p.monto), inversiones: p.lineas.map((i) => i + 1) })),
     regla: s.pago,
+    totalMes: {
+      total: pesos(tm.total),
+      partes,
+      operacion: partes.length < 2 ? null : `${partes.map((p) => p.monto).join(" + ")} = ${pesos(tm.total)}`,
+    },
   });
 }
