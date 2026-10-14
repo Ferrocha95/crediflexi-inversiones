@@ -153,7 +153,7 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
       resumenPlazo: "Plazo",
       resumenTasa: "Tasa anual neta",
       resumenEsquema: "Esquema",
-      seccionResultados: "Tus resultados",
+      seccionResultados: "Rendimientos esperados del periodo",
       seccionCalculo: "Cómo se calculó",
       plazoEspecial: "Plazo especial",
       tasaAcordada: "Tasa acordada",

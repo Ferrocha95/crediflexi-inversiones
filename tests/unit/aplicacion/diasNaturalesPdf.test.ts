@@ -67,7 +67,7 @@ function modeloF(): ModeloPdf {
 
 describe("textos 0.10 y semilla 0.9.2 (Sprint 6b)", () => {
   it("versiones", () => {
-    expect(textos.version).toBe("0.13");
+    expect(textos.version).toBe("0.14");
     expect(semillaJson.version).toBe("0.9.2");
   });
 
@@ -159,7 +159,7 @@ describe("página 1 por días (caso A)", () => {
     expect(m.cifras[1].formula).toBe("monto × tasa anual neta");
   });
 
-  it("al final del plazo, \"Cómo se calculó\" usa la etiqueta sin la nota de pago (la nota sigue en Tus resultados)", () => {
+  it("al final del plazo, \"Cómo se calculó\" usa la etiqueta sin la nota de pago (la nota sigue en Rendimientos esperados del periodo)", () => {
     const s = { ...solicitud("1000000", 6), esquema: "final_del_plazo" as const };
     const c = cotizacion(s, AJUSTE_AD);
     const m = sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, {}, AHORA, datosPagina2(semillaReal, s, INICIO, AJUSTE_AD)));

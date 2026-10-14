@@ -273,7 +273,7 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
       caso.esquema === "mensual" ? "19.00%" : "21.00%",
       "Esquema",
       caso.esquemaCorto,
-      "Tus resultados",
+      "Rendimientos esperados del periodo",
       "Cómo se calculó",
     ]) {
       expect(texto).toContain(t);

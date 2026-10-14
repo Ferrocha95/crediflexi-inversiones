@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import textosJson from "../../../seed/textos_cotizacion.json";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { cargarTextos, type TextosCotizacion } from "../../../src/aplicacion/textos";
 
 const ARCHIVO = "seed/textos_cotizacion.json";
@@ -37,7 +39,7 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 describe("cargarTextos: el archivo real", () => {
   it("carga seed/textos_cotizacion.json versión 0.9", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.13");
+    expect(t.version).toBe("0.14");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual neta indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +
@@ -199,7 +201,7 @@ describe("cargarTextos: el bloque pdf", () => {
       resumenPlazo: "Plazo",
       resumenTasa: "Tasa anual neta",
       resumenEsquema: "Esquema",
-      seccionResultados: "Tus resultados",
+      seccionResultados: "Rendimientos esperados del periodo",
       seccionCalculo: "Cómo se calculó",
       lineaTasas: "Tasas versión {version_tasas} del {fecha_tasas}.",
       plazoEspecial: "Plazo especial",
@@ -791,5 +793,21 @@ describe("cargarTextos: reclutamiento para internos (0.12, Sprint 7a)", () => {
     const mal = copia();
     (mal.reclutamiento as Record<string, unknown>)[clave] = `Texto ${rechazado}`;
     expect(errorDe(mal).todo).toContain(`reclutamiento.${clave}`);
+  });
+});
+
+describe("cargarTextos: la cotización ya no dice 'ganancia' ni 'tasa esperada' (0.14, Sprint 7a)", () => {
+  it("ningún texto de la cotización (todo el archivo salvo los bloques comisiones y reclutamiento) conserva 'ganancia' ni 'tasa esperada'", () => {
+    const deLaCotizacion = JSON.stringify({ ...textosJson, comisiones: null, reclutamiento: null });
+    expect(deLaCotizacion).not.toMatch(/ganancia|tasa esperada/i);
+  });
+
+  it("el bloque de resultados de la página 1 se titula 'Rendimientos esperados del periodo'", () => {
+    expect(cargarBien(textosJson).pdf.seccionResultados).toBe("Rendimientos esperados del periodo");
+  });
+
+  it("los textos fijos de la pantalla del cotizador no dicen 'ganancia' ni 'tasa esperada'", () => {
+    const pantalla = readFileSync(path.join(process.cwd(), "src/app/(app)/cotizador/textosPantalla.ts"), "utf8");
+    expect(pantalla).not.toMatch(/ganancia|tasa esperada/i);
   });
 });

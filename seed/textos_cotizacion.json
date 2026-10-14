@@ -1,5 +1,5 @@
 {
-  "version": "0.13",
+  "version": "0.14",
   "glosario": {
     "rendimiento_mensual": "Rendimiento mensual",
     "rendimiento_mensual_promedio": "Rendimiento mensual (promedio)",
@@ -33,7 +33,7 @@
     "resumen_monto": "Monto de inversión",
     "resumen_plazo": "Plazo",
     "resumen_esquema": "Esquema",
-    "seccion_resultados": "Tus resultados",
+    "seccion_resultados": "Rendimientos esperados del periodo",
     "seccion_calculo": "Cómo se calculó",
     "linea_tasas": "Tasas versión {version_tasas} del {fecha_tasas}.",
     "plazo_especial": "Plazo especial",
