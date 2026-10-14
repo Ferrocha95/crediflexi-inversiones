@@ -37,6 +37,8 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
       "src/app/(app)/pipeline/page.tsx",
     ]);
     expect(rutas.map(relativo).sort()).toEqual([
+      "src/app/(app)/biblioteca/[id]/archivo/route.ts",
+      "src/app/(app)/biblioteca/subir/route.ts",
       "src/app/(app)/comisiones/pdf/route.ts",
       "src/app/(app)/comisiones/reclutamiento/pdf/route.ts",
       "src/app/(app)/cotizador/pdf/route.ts",
@@ -44,6 +46,7 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
       "src/app/(app)/pipeline/importar/route.ts",
     ]);
     expect(acciones.map(relativo).sort()).toEqual([
+      "src/app/(app)/biblioteca/acciones.ts",
       "src/app/(app)/comisiones/acciones.ts",
       "src/app/(app)/comisiones/reclutamiento/acciones.ts",
       "src/app/(app)/cotizador/acciones.ts",
@@ -75,6 +78,26 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
   it.each(acciones.map(relativo))("%s repite el guardia de host en cada acción", (f) => {
     const funciones = funcionesExportadas(leer(path.join(process.cwd(), f)));
     for (const { nombre, cuerpo } of funciones) expect(cuerpo, nombre).toMatch(/esHostLocal\(/);
+  });
+
+  // /biblioteca/subir no pasa por el proxy (ver src/proxy.ts): sus guardias van
+  // en este orden y todos antes de leer el cuerpo.
+  it("src/app/(app)/biblioteca/subir/route.ts revisa host, Origin, sesión, rol, tipo y tamaño antes de leer el cuerpo", () => {
+    const codigo = leer(path.join(RAIZ, "biblioteca", "subir", "route.ts"));
+    const cuerpo = funcionesExportadas(codigo).find((f) => f.nombre === "POST")!.cuerpo;
+    const orden = [
+      "rechazoPorHost(",
+      "origenCoincide(",
+      "await usuarioActual()",
+      "puedeAdministrar(",
+      "esMultipart(",
+      'headers.get("content-length")',
+      "leerConTope(",
+    ].map((marca) => ({ marca, en: cuerpo.indexOf(marca) }));
+    for (const { marca, en } of orden) expect(en, marca).toBeGreaterThanOrEqual(0);
+    expect(orden.map((o) => o.en)).toEqual([...orden.map((o) => o.en)].sort((a, b) => a - b));
+    // Ninguna otra lectura del cuerpo antes del tope (ni después: solo leerConTope).
+    expect(cuerpo).not.toMatch(/request\.(arrayBuffer|formData|text|json|blob)\(/);
   });
 
   it("ningún otro archivo de src/app/(app) queda fuera de la revisión por ser .js o .jsx", () => {

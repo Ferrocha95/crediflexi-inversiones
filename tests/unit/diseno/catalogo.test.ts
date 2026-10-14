@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 import { proxy } from "../../../src/proxy";
 import * as proxyModulo from "../../../src/proxy";
 import {
@@ -22,8 +23,11 @@ vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "llave-sintetica-de-prueba");
 const leer = (f: string) => readFileSync(path.join(process.cwd(), f), "utf8");
 
 describe("catálogo /diseno: solo local", () => {
-  it("el proxy no tiene matcher, así que también cubre /diseno", () => {
-    expect("config" in proxyModulo).toBe(false);
+  it("el matcher del proxy solo excluye exactamente /biblioteca/subir, así que también cubre /diseno", () => {
+    expect(proxyModulo.config).toEqual({ matcher: ["/((?!biblioteca/subir$).*)"] });
+    for (const url of ["/diseno", "/diseno/x"]) {
+      expect(unstable_doesMiddlewareMatch({ config: proxyModulo.config, url }), url).toBe(true);
+    }
   });
 
   it("una petición a /diseno con Host no local recibe 403", async () => {

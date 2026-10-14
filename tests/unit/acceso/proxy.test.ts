@@ -28,7 +28,8 @@ vi.mock("@supabase/ssr", () => ({
   ),
 }));
 
-const { proxy } = await import("../../../src/proxy");
+const { proxy, config: proxyConfig } = await import("../../../src/proxy");
+const { unstable_doesMiddlewareMatch } = await import("next/experimental/testing/server");
 const { actualizarSesion } = await import("../../../src/servidor/supabase/proxy");
 const { ARCHIVOS_PUBLICOS, rutaSinRefresco } = await import("../../../src/aplicacion/acceso/rutas");
 const { configSupabase } = await import("../../../src/servidor/supabase/config");
@@ -187,6 +188,46 @@ describe("proxy", () => {
     const r = await proxy(peticion("/diseno"));
     expect(r.status).toBe(307);
     expect(new URL(r.headers.get("location")!).pathname).toBe("/acceso");
+  });
+});
+
+// El proxy corre en todo, salvo exactamente en /biblioteca/subir: ahí el proxy
+// guardaría el cuerpo en memoria y lo recortaría en proxyClientMaxBodySize
+// (6 MB, next.config.ts). Esa ruta repite por su cuenta el guardia de host,
+// el Origin, la sesión y el rol, y lee el cuerpo con su propio tope.
+describe("proxy: matcher", () => {
+  it("exporta exactamente un matcher que excluye solo /biblioteca/subir", () => {
+    expect(proxyConfig).toEqual({ matcher: ["/((?!biblioteca/subir$).*)"] });
+  });
+
+  it("/biblioteca/subir queda fuera del proxy", () => {
+    expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url: "/biblioteca/subir" })).toBe(false);
+  });
+
+  it.each([
+    "/",
+    "/biblioteca",
+    "/biblioteca/subir/x",
+    "/biblioteca/subirx",
+    "/biblioteca/0b6c7d2e-1f3a-4b5c-8d9e-0a1b2c3d4e5f/archivo",
+    "/bibliotecas/subir",
+    "/otra/biblioteca/subir",
+    "/acceso",
+    "/acceso/salir",
+    "/cotizador",
+    "/cotizador/pdf",
+    "/pipeline/importar",
+    "/_next/static/x",
+    "/_next/static/chunks/app.js",
+    "/_next/image",
+    "/favicon.ico",
+    "/logo-blanco.png",
+  ])("%s sigue pasando por el proxy", (url) => {
+    expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url })).toBe(true);
+  });
+
+  it("con consulta, /biblioteca/subir?x=1 también queda fuera (la consulta no es parte de la ruta)", () => {
+    expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url: "/biblioteca/subir?x=1" })).toBe(false);
   });
 });
 
