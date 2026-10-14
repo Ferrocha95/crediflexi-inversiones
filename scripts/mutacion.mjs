@@ -66,6 +66,22 @@ function politicaProspectos(ramas) {
 const politicaDeProspectos = (nombre) =>
   `from pg_policies where schemaname = 'public' and tablename = 'prospectos' and policyname = '${nombre}'`;
 
+const BIBLIOTECA_LEER = '"biblioteca: leer los de mi organización"';
+const BIBLIOTECA_CREAR = '"biblioteca: crear Director y Gerente"';
+
+// Filtro de pg_policies para una política de biblioteca (nombre sin comillas).
+const politicaDeBiblioteca = (nombre) =>
+  `from pg_policies where schemaname = 'public' and tablename = 'biblioteca' and policyname = '${nombre}'`;
+
+// Filtro de pg_policies para una política del bucket (nombre sin comillas).
+const politicaDelBucket = (nombre) =>
+  `from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = '${nombre}'`;
+
+// Rama de rol de las políticas de biblioteca tal como está en la migración.
+const RAMA_DIRECTOR_O_GERENTE = `exists (
+      select 1 from privado.usuario_actual() yo where yo.rol in ('DIRECTOR_REGIONAL', 'GERENTE')
+    )`;
+
 const MUTACIONES = [
   {
     id: "1",
@@ -292,16 +308,45 @@ as $$
 $$;`,
     comprobar: `select position('CLABE' in ${definicion("privado.parece_dato_sensible(text)")}) = 0 as ok`,
   },
+  {
+    id: "19",
+    nombre: "19. Lectura de biblioteca sin el filtro de organización",
+    sql: `alter policy ${BIBLIOTECA_LEER} on public.biblioteca using (archivado_en is null or ${RAMA_DIRECTOR_O_GERENTE});`,
+    comprobar: `select position('organizacion_actual_id' in qual) = 0 as ok ${politicaDeBiblioteca("biblioteca: leer los de mi organización")}`,
+  },
+  {
+    id: "20",
+    nombre: "20. Insertar en biblioteca sin comprobar el rol",
+    sql: `alter policy ${BIBLIOTECA_CREAR} on public.biblioteca
+            with check (
+              subido_por = (select privado.usuario_actual_id())
+              and organizacion_id = (select privado.organizacion_actual_id())
+            );`,
+    comprobar: `select position('GERENTE' in with_check) = 0 as ok ${politicaDeBiblioteca("biblioteca: crear Director y Gerente")}`,
+  },
+  {
+    id: "21",
+    nombre: "21. Borrar en biblioteca (grant delete + política for delete using (true))",
+    sql: [
+      `grant delete on public.biblioteca to authenticated`,
+      `create policy "mutacion: borrar biblioteca" on public.biblioteca
+         for delete to authenticated using (true)`,
+    ],
+    comprobar: `select has_table_privilege('authenticated', 'public.biblioteca', 'DELETE')
+                   and exists (select 1 ${politicaDeBiblioteca("mutacion: borrar biblioteca")}) as ok`,
+  },
 ];
 
 // Estado normal esperado después de db:reset.
 const COMPROBACIONES_FINALES = [
   {
-    nombre: "1 política de lectura en cada tabla de organización y 3 en prospectos (leer, crear, editar)",
-    sql: `select count(*) = 6
-                 and count(*) filter (where tablename <> 'prospectos' and cmd = 'SELECT') = 3
-                 and count(distinct tablename) filter (where tablename <> 'prospectos') = 3
+    nombre: "1 política de lectura en cada tabla de organización y 3 en prospectos y en biblioteca (leer, crear, editar o archivar)",
+    sql: `select count(*) = 9
+                 and count(*) filter (where tablename not in ('prospectos', 'biblioteca') and cmd = 'SELECT') = 3
+                 and count(distinct tablename) filter (where tablename not in ('prospectos', 'biblioteca')) = 3
                  and array_agg(cmd::text order by cmd::text) filter (where tablename = 'prospectos')
+                     = array['INSERT', 'SELECT', 'UPDATE']
+                 and array_agg(cmd::text order by cmd::text) filter (where tablename = 'biblioteca')
                      = array['INSERT', 'SELECT', 'UPDATE']
                  and bool_and(permissive = 'PERMISSIVE') as ok
           from pg_policies where schemaname = 'public'`,
@@ -333,15 +378,47 @@ const COMPROBACIONES_FINALES = [
           where a.attrelid = 'public.prospectos'::regclass and a.attnum > 0 and not a.attisdropped`,
   },
   {
-    nombre: "las seis funciones de privado",
+    nombre: "biblioteca: authenticated lee, inserta solo las columnas de contenido y actualiza solo archivado_en, sin borrar; anon nada",
+    sql: `select has_table_privilege('authenticated', 'public.biblioteca', 'SELECT')
+                 and not has_table_privilege('authenticated', 'public.biblioteca', 'INSERT')
+                 and not has_table_privilege('authenticated', 'public.biblioteca', 'UPDATE')
+                 and not has_table_privilege('authenticated', 'public.biblioteca', 'DELETE')
+                 and array_agg(a.attname::text order by a.attname)
+                       filter (where has_column_privilege('authenticated', 'public.biblioteca', a.attname, 'INSERT'))
+                     = array['categoria', 'descripcion', 'enlace', 'nombre', 'ruta', 'tamano_bytes', 'tipo', 'tipo_mime']
+                 and array_agg(a.attname::text order by a.attname)
+                       filter (where has_column_privilege('authenticated', 'public.biblioteca', a.attname, 'UPDATE'))
+                     = array['archivado_en']
+                 and not has_any_column_privilege('anon', 'public.biblioteca', 'SELECT, INSERT, UPDATE')
+                 and not has_table_privilege('anon', 'public.biblioteca', 'DELETE')
+                 and (select relrowsecurity from pg_class where oid = 'public.biblioteca'::regclass) as ok
+          from pg_attribute a
+          where a.attrelid = 'public.biblioteca'::regclass and a.attnum > 0 and not a.attisdropped`,
+  },
+  {
+    nombre: "bucket biblioteca privado, 26,214,400 bytes y 12 tipos; storage.objects solo con 2 políticas (leer y subir)",
+    sql: `select (select count(*) = 1 from storage.buckets
+                  where id = 'biblioteca' and not public and file_size_limit = 26214400
+                    and cardinality(allowed_mime_types) = 12
+                    and not ('text/html' = any (allowed_mime_types))
+                    and not ('image/svg+xml' = any (allowed_mime_types)))
+                 and (select array_agg(policyname::text || ':' || cmd::text order by policyname::text)
+                      from pg_policies where schemaname = 'storage' and tablename = 'objects')
+                     = array['biblioteca: leer objetos de mi organización:SELECT',
+                             'biblioteca: subir objetos Director y Gerente:INSERT']
+                 and (select bool_and(permissive = 'PERMISSIVE' and roles = '{authenticated}')
+                      from pg_policies where schemaname = 'storage' and tablename = 'objects') as ok`,
+  },
+  {
+    nombre: "las siete funciones de privado",
     sql: `select array_agg(p.proname::text order by p.proname)
-                 = array['parece_dato_sensible', 'subordinados', 'sucursal_visible', 'usuario_actual',
-                         'usuario_actual_id', 'usuarios_de_mi_organizacion'] as ok
+                 = array['organizacion_actual_id', 'parece_dato_sensible', 'subordinados', 'sucursal_visible',
+                         'usuario_actual', 'usuario_actual_id', 'usuarios_de_mi_organizacion'] as ok
           from pg_proc p join pg_namespace n on n.oid = p.pronamespace
           where n.nspname = 'privado'`,
   },
   {
-    nombre: "las definiciones de privado y las políticas de prospectos son las originales",
+    nombre: "las definiciones de privado y las políticas de prospectos, biblioteca y el bucket son las originales",
     sql: `select position('u.activo' in ${definicion("privado.usuario_actual()")}) > 0
                  and position('s.organizacion_id = mia.organizacion_id' in ${definicion("privado.sucursal_visible(uuid)")}) > 0
                  and position('join abajo' in ${definicion("privado.subordinados(uuid)")}) > 0
@@ -352,11 +429,26 @@ const COMPROBACIONES_FINALES = [
                  and (select position('usuario_actual_id' in with_check) > 0
                       ${politicaDeProspectos("prospectos: crear los propios")})
                  and (select position('usuario_actual_id' in qual) > 0 and position('usuario_actual_id' in with_check) > 0
-                      ${politicaDeProspectos("prospectos: editar los propios")}) as ok`,
+                      ${politicaDeProspectos("prospectos: editar los propios")})
+                 and position('mia.organizacion_id' in ${definicion("privado.organizacion_actual_id()")}) > 0
+                 and (select position('organizacion_actual_id' in qual) > 0 and position('GERENTE' in qual) > 0
+                      ${politicaDeBiblioteca("biblioteca: leer los de mi organización")})
+                 and (select position('usuario_actual_id' in with_check) > 0
+                         and position('organizacion_actual_id' in with_check) > 0 and position('GERENTE' in with_check) > 0
+                      ${politicaDeBiblioteca("biblioteca: crear Director y Gerente")})
+                 and (select position('organizacion_actual_id' in qual) > 0 and position('GERENTE' in qual) > 0
+                         and position('organizacion_actual_id' in with_check) > 0 and position('GERENTE' in with_check) > 0
+                      ${politicaDeBiblioteca("biblioteca: archivar Director y Gerente")})
+                 and (select position('organizacion_actual_id' in qual) > 0 and position('GERENTE' in qual) > 0
+                         and position('biblioteca b' in qual) > 0
+                      ${politicaDelBucket("biblioteca: leer objetos de mi organización")})
+                 and (select position('organizacion_actual_id' in with_check) > 0 and position('GERENTE' in with_check) > 0
+                      ${politicaDelBucket("biblioteca: subir objetos Director y Gerente")}) as ok`,
   },
   {
     nombre: "los triggers",
     sql: `select array_agg(tgname::text order by tgname) = array[
+                   'biblioteca_fijar_archivado_en',
                    'organizaciones_fijar_actualizado_en',
                    'prospectos_fijar_actualizado_en',
                    'prospectos_fijar_archivado_en',
@@ -368,7 +460,8 @@ const COMPROBACIONES_FINALES = [
           from pg_trigger
           where not tgisinternal
             and tgrelid in ('public.organizaciones'::regclass, 'public.sucursales'::regclass,
-                            'public.usuarios'::regclass, 'public.prospectos'::regclass)`,
+                            'public.usuarios'::regclass, 'public.prospectos'::regclass,
+                            'public.biblioteca'::regclass)`,
   },
   {
     nombre: "las restricciones de prospectos",
@@ -380,6 +473,22 @@ const COMPROBACIONES_FINALES = [
                    'prospectos_sin_datos_sensibles'] as ok
           from pg_constraint
           where conrelid = 'public.prospectos'::regclass and contype = 'c'`,
+  },
+  {
+    nombre: "las restricciones de biblioteca",
+    sql: `select array_agg(conname::text order by conname) = array[
+                   'biblioteca_coherencia_tipo',
+                   'biblioteca_descripcion_largo_maximo',
+                   'biblioteca_enlace_https',
+                   'biblioteca_nombre_largo_maximo',
+                   'biblioteca_nombre_no_vacio',
+                   'biblioteca_ruta_de_su_organizacion',
+                   'biblioteca_ruta_formato',
+                   'biblioteca_sin_datos_sensibles',
+                   'biblioteca_tamano_maximo',
+                   'biblioteca_tipo_mime_permitido'] as ok
+          from pg_constraint
+          where conrelid = 'public.biblioteca'::regclass and contype = 'c'`,
   },
 ];
 

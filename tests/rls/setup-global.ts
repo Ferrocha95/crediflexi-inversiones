@@ -92,6 +92,10 @@ async function limpiar(admin: SupabaseClient): Promise<void> {
     idsSucursales = data.map((s) => s.id as string);
   }
 
+  // biblioteca.organizacion_id y biblioteca.subido_por son "on delete
+  // restrict": sus filas y sus objetos del bucket se borran antes.
+  await limpiarBiblioteca(admin, idsOrganizaciones);
+
   // prospectos.ejecutivo_id es "on delete restrict": los prospectos de los
   // usuarios de prueba se borran antes que ellos.
   const idsUsuariosDePrueba = new Set<string>();
@@ -144,6 +148,26 @@ async function limpiar(admin: SupabaseClient): Promise<void> {
   for (const id of idsAuth) {
     const { error } = await admin.auth.admin.deleteUser(id);
     if (error) falla("borrar una cuenta de prueba", error.message);
+  }
+}
+
+// Filas de biblioteca y objetos del bucket bajo el prefijo de cada
+// organización de prueba.
+async function limpiarBiblioteca(admin: SupabaseClient, idsOrganizaciones: string[]): Promise<void> {
+  if (idsOrganizaciones.length === 0) return;
+  const { error } = await admin.from("biblioteca").delete().in("organizacion_id", idsOrganizaciones);
+  if (error) falla("borrar las filas de biblioteca de prueba", error.message);
+  for (const organizacion of idsOrganizaciones) {
+    for (;;) {
+      const lista = await admin.storage.from("biblioteca").list(organizacion, { limit: 1000 });
+      if (lista.error) falla("listar los objetos de prueba del bucket", lista.error.message);
+      if (lista.data.length === 0) break;
+      const borrar = await admin.storage
+        .from("biblioteca")
+        .remove(lista.data.map((o) => `${organizacion}/${o.name}`));
+      if (borrar.error) falla("borrar los objetos de prueba del bucket", borrar.error.message);
+      if (borrar.data.length === 0) falla("borrar los objetos de prueba del bucket", "no se borró ninguno");
+    }
   }
 }
 

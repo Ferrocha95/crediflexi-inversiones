@@ -73,8 +73,8 @@ describe("RLS privado: las funciones de trigger de public no se pueden llamar po
   }
 });
 
-describe("RLS privado: las funciones auxiliares de prospectos no se exponen por la API", () => {
-  for (const funcion of ["usuario_actual_id", "usuarios_de_mi_organizacion", "parece_dato_sensible"]) {
+describe("RLS privado: las funciones auxiliares de prospectos y biblioteca no se exponen por la API", () => {
+  for (const funcion of ["usuario_actual_id", "usuarios_de_mi_organizacion", "parece_dato_sensible", "organizacion_actual_id"]) {
     it(`authenticated no puede llamar por RPC a ${funcion} (no está en public)`, async () => {
       esperarFalloSinDatos(await e1.rpc(funcion));
     });
