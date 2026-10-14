@@ -41,7 +41,8 @@ test.describe("comisiones", () => {
     await expect(page.getByRole("progressbar", { name: "Avance de la meta" })).toHaveAttribute("aria-valuenow", "90");
     // El pago del calendario: la fecha y el monto en el mismo renglón.
     await expect(page.getByRole("listitem").filter({ hasText: "16/10/2026" }).filter({ hasText: "$18,450.00" })).toBeVisible();
-    await expect(page.getByText("Sueldo base (propuesta)", { exact: true })).toBeVisible();
+    // Sprint 7a: el rótulo también va en el "Total estimado del mes"; aquí se revisa el de la tabla de metas.
+    await expect(page.getByRole("region", { name: "Metas del mes" }).getByText("Sueldo base (propuesta)", { exact: true })).toBeVisible();
     await expect(page.getByText("$15,000", { exact: true })).toBeVisible();
     await sinViolaciones(page);
   });
