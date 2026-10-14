@@ -8,7 +8,9 @@ import { FAMILIA } from "./fuente";
 // "Propuesta de ingresos" del modo reclutamiento: una sola hoja carta, visual.
 // Solo presenta el modelo: aquí no se calcula nada y no hay textos propios
 // (todo sale de seed/textos_cotizacion.json, bloque reclutamiento). Nada baja
-// de 8 pt. El aviso interno de RH sobre las frases nunca va aquí.
+// de 8 pt. Los avisos internos de RH (frases y textos para internos) nunca van
+// aquí. Externo: escalera de bonos y aviso de incorporación. Interno (Sprint
+// 7a): total con sueldo base (propuesta), desbloqueo y tabla de bonos.
 
 const MARGEN = 36;
 const ANCHO_UTIL = 612 - 2 * MARGEN;
@@ -74,6 +76,18 @@ const e = StyleSheet.create({
   escalonTextoActual: { fontWeight: "bold" },
   incorporacion: { marginTop: 6, fontSize: 9, color: COLOR.marino, lineHeight: 1.3 },
 
+  desglose: { marginTop: 4, flexDirection: "row", gap: 14 },
+  desgloseEtiqueta: { fontSize: 8.5, color: COLOR.gris },
+  desgloseValor: { fontSize: 11, fontWeight: "bold" },
+  estado: { marginTop: 3, fontSize: 10, fontWeight: "bold" },
+  bloqueada: { fontSize: 8.5, color: COLOR.gris, fontWeight: "normal" },
+  filaTabla: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: COLOR.linea, paddingVertical: 2.5 },
+  encabezadoTabla: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: COLOR.marino, paddingBottom: 2, fontSize: 9, fontWeight: "bold" },
+  celda: { fontSize: 10 },
+  derecha: { textAlign: "right" },
+  alcanzada: { backgroundColor: COLOR.fondoVerde, fontWeight: "bold" },
+  marcaAlcanzada: { fontSize: 8.5, color: COLOR.bandaVerde, fontWeight: "bold" },
+
   relleno: { flexGrow: 1, minHeight: 8 },
   avisos: {
     padding: 10,
@@ -108,7 +122,7 @@ export function DocumentoReclutamiento({ modelo: m, logo }: { modelo: ModeloRecl
 
         {/* La cifra grande: comisión más bono, con el plazo (o la mezcla) en el detalle. */}
         <View style={e.tarjeta} wrap={false}>
-          <Text style={e.tarjetaEtiqueta}>{t.tituloResultado}</Text>
+          <Text style={e.tarjetaEtiqueta}>{m.tituloCifra}</Text>
           <Text style={e.tarjetaCifra}>{m.cifra.total}</Text>
           <Text style={e.tarjetaDetalle}>{m.cifra.detalle}</Text>
           {m.mezcla?.map((l) => (
@@ -116,6 +130,28 @@ export function DocumentoReclutamiento({ modelo: m, logo }: { modelo: ModeloRecl
               {l.plazo}: {l.operacion}
             </Text>
           ))}
+          {/* Interno: desglose del total, cálculo y desbloqueo de la meta. */}
+          {m.interno !== null && (
+            <>
+              <View style={e.desglose}>
+                {[
+                  [m.interno.rotuloSueldoBase, m.interno.sueldoBase],
+                  [t.comisionInterno, m.interno.comision],
+                  [t.bonoInterno, m.interno.bono],
+                ].map(([etiqueta, valor]) => (
+                  <View key={etiqueta}>
+                    <Text style={e.desgloseEtiqueta}>{etiqueta}</Text>
+                    <Text style={e.desgloseValor}>{valor}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={e.tarjetaMezcla}>
+                {t.calculo}: {m.interno.operacion}
+              </Text>
+              <Text style={e.estado}>{m.interno.estadoDesbloqueo}</Text>
+              <Text style={e.tarjetaMezcla}>{m.interno.notaDesbloqueo}</Text>
+            </>
+          )}
         </View>
 
         {/* Comparativo por plazos: una barra y una sola línea por plazo. */}
@@ -139,7 +175,10 @@ export function DocumentoReclutamiento({ modelo: m, logo }: { modelo: ModeloRecl
                     strokeWidth={p.elegido ? 1.5 : 0.5}
                   />
                 </Svg>
-                <Text style={e.plazoCifra}>{p.comision}</Text>
+                <Text style={e.plazoCifra}>
+                  {p.comision}
+                  {p.bloqueada && <Text style={e.bloqueada}> ({t.comparativoBloqueada})</Text>}
+                </Text>
               </View>
               <Text style={e.plazoLinea}>{p.linea}</Text>
             </View>
@@ -147,19 +186,45 @@ export function DocumentoReclutamiento({ modelo: m, logo }: { modelo: ModeloRecl
           {m.fraseVeces !== null && <Text style={e.veces}>{m.fraseVeces}</Text>}
         </View>
 
-        {/* Escalera de bonos, con la captación del ejemplo resaltada; el aviso de incorporación va SOLO aquí. */}
-        <View style={e.seccion} wrap={false}>
-          <Text style={e.seccionTitulo}>{t.tituloBonos}</Text>
-          <View style={e.escalera}>
-            {m.escalera.map((x, i) => (
-              <View key={x.texto} style={[e.escalon, { minHeight: ESCALERA.altoBase + i * ESCALERA.subida }, ...(x.actual ? [e.escalonActual] : [])]}>
-                {x.actual && <Text style={e.escalonMarca}>{t.escalonActual}</Text>}
-                <Text style={[e.escalonTexto, ...(x.actual ? [e.escalonTextoActual] : [])]}>{x.texto}</Text>
+        {/* Interno: tabla de bonos con rangos y la fila alcanzada. */}
+        {m.interno !== null && (
+          <View style={e.seccion} wrap={false}>
+            <Text style={e.seccionTitulo}>{t.tituloBonosInterno}</Text>
+            <View style={e.encabezadoTabla}>
+              <Text style={[e.celda, { width: 200 }]}>{t.columnaCumplimiento}</Text>
+              <Text style={[e.celda, e.derecha, { width: 110 }]}>{t.columnaDesde}</Text>
+              <Text style={[e.celda, e.derecha, { width: 110 }]}>{t.columnaHasta}</Text>
+              <Text style={[e.celda, e.derecha, { width: 120 }]}>{t.columnaBono}</Text>
+            </View>
+            {m.interno.bonos.map((b) => (
+              <View key={b.desde} style={[e.filaTabla, ...(b.actual ? [e.alcanzada] : [])]}>
+                <Text style={[e.celda, { width: 200 }]}>
+                  {b.cumplimiento}
+                  {b.actual && <Text style={e.marcaAlcanzada}> · {t.escalonActual}</Text>}
+                </Text>
+                <Text style={[e.celda, e.derecha, { width: 110 }]}>{b.desde}</Text>
+                <Text style={[e.celda, e.derecha, { width: 110 }]}>{b.hasta}</Text>
+                <Text style={[e.celda, e.derecha, { width: 120 }]}>{b.bono}</Text>
               </View>
             ))}
           </View>
-          <Text style={e.incorporacion}>{m.avisoIncorporacion}</Text>
-        </View>
+        )}
+
+        {/* Externo: escalera de bonos, con la captación del ejemplo resaltada; el aviso de incorporación va SOLO aquí. */}
+        {m.escalera.length > 0 && (
+          <View style={e.seccion} wrap={false}>
+            <Text style={e.seccionTitulo}>{t.tituloBonos}</Text>
+            <View style={e.escalera}>
+              {m.escalera.map((x, i) => (
+                <View key={x.texto} style={[e.escalon, { minHeight: ESCALERA.altoBase + i * ESCALERA.subida }, ...(x.actual ? [e.escalonActual] : [])]}>
+                  {x.actual && <Text style={e.escalonMarca}>{t.escalonActual}</Text>}
+                  <Text style={[e.escalonTexto, ...(x.actual ? [e.escalonTextoActual] : [])]}>{x.texto}</Text>
+                </View>
+              ))}
+            </View>
+            {m.avisoIncorporacion !== null && <Text style={e.incorporacion}>{m.avisoIncorporacion}</Text>}
+          </View>
+        )}
 
         <View style={e.relleno} />
         <View style={e.avisos}>

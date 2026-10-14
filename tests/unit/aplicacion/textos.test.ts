@@ -37,7 +37,7 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 describe("cargarTextos: el archivo real", () => {
   it("carga seed/textos_cotizacion.json versión 0.9", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.11");
+    expect(t.version).toBe("0.12");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual neta indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +
@@ -746,5 +746,41 @@ describe("cargarTextos: PDF de comisiones y Total estimado del mes (0.11, Sprint
       (mal.comisiones as Record<string, string>)[clave] = "Texto {fecha}";
       expect(errorDe(mal).todo).toContain(`comisiones.${clave}`);
     }
+  });
+});
+
+describe("cargarTextos: reclutamiento para internos (0.12, Sprint 7a)", () => {
+  it("la bandera de RH para internos empieza en falso, con su aviso de pantalla exacto", () => {
+    const r = cargarBien(textosJson).reclutamiento;
+    expect(r.frasesInternasAprobadasPorRh).toBe(false);
+    expect(r.avisoFrasesInternasRh).toBe("Texto para internos pendiente de aprobación de RH");
+  });
+
+  it("selector, títulos y rótulos del perfil interno, exactos", () => {
+    const r = cargarBien(textosJson).reclutamiento;
+    expect([r.perfil, r.perfilInterno, r.perfilExterno]).toEqual(["Perfil", "Interno", "Externo"]);
+    expect(r.tituloResultadoInterno).toBe("Total estimado del mes (simulación)");
+    expect(r.sueldoBaseInterno).toBe("Sueldo base (propuesta)");
+    expect(r.notaDesbloqueoInterno).toBe("Las comisiones se desbloquean desde el {porcentaje} de la meta ({umbral}).");
+  });
+
+  it("frases_internas_aprobadas_por_rh debe ser true o false", () => {
+    const mal = copia();
+    (mal.reclutamiento as Record<string, unknown>).frases_internas_aprobadas_por_rh = "no";
+    expect(errorDe(mal).todo).toContain("frases_internas_aprobadas_por_rh");
+  });
+
+  it.each([
+    ["cifra_detalle_interno", "{captacion} {meses} {sueldo} {comision} {bono}", "{falta}"],
+    ["cifra_detalle_interno_mezcla", "{captacion} {sueldo} {comision} {bono}", "{meses}"],
+    ["interno_bloqueada", "{falta} {umbral}", "{meta}"],
+    ["nota_desbloqueo_interno", "{porcentaje} {umbral}", "{sueldo}"],
+  ] as const)("reclutamiento.%s acepta %s y rechaza %s", (clave, aceptado, rechazado) => {
+    const bien = copia();
+    (bien.reclutamiento as Record<string, unknown>)[clave] = `Texto ${aceptado}`;
+    cargarBien(bien);
+    const mal = copia();
+    (mal.reclutamiento as Record<string, unknown>)[clave] = `Texto ${rechazado}`;
+    expect(errorDe(mal).todo).toContain(`reclutamiento.${clave}`);
   });
 });

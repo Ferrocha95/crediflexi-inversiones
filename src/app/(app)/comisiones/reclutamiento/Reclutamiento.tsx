@@ -1,6 +1,6 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { Download, Info } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import type { ModeloReclutamiento } from "../../../../aplicacion/reclutamiento";
 import type { TextosReclutamiento } from "../../../../aplicacion/textos";
@@ -10,6 +10,7 @@ import { errorEsSesionExpirada, vistaPreviaSinSesion } from "../../../../compone
 import { Aviso } from "../../../../componentes/ui/Aviso";
 import { Boton } from "../../../../componentes/ui/Boton";
 import { Campo, Entrada } from "../../../../componentes/ui/Campo";
+import { Opciones } from "../../../../componentes/ui/Opciones";
 import { clasificarRespuestaPdf, mensajeDeErrorPdf } from "../../cotizador/peticionPdf";
 import { TEXTOS } from "../textosPantalla";
 import { simularReclutamiento } from "./acciones";
@@ -19,6 +20,8 @@ const PAUSA_MS = 400;
 const RE_NOMBRE = /filename="([^"]+)"/;
 
 interface Campos {
+  /** "Interno" (ejecutivo) o "Externo". */
+  readonly perfil: "interno" | "externo";
   readonly presenta: string;
   /** "¿Cuánto captarías al mes?", tal como se escribe. */
   readonly monto: string;
@@ -32,6 +35,7 @@ interface Campos {
 
 /** Lo que se manda al servidor: inversiones por plazo como número (0 si no es un entero: el servidor lo rechaza). */
 const paraServidor = (c: Campos) => ({
+  perfil: c.perfil,
   presenta: c.presenta,
   monto: c.monto,
   ...(c.plazo === null ? {} : { plazo: c.plazo }),
@@ -148,12 +152,40 @@ export function Reclutamiento({ textos: t, plazos, montosEjemplo, inicial, model
     }
   }
 
+  const interno = campos.perfil === "interno";
+
   return (
     <div className="flex w-full max-w-3xl flex-col gap-6">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-4xl font-extrabold tracking-tight">{interno ? t.tituloPaginaInterno : t.tituloPagina}</h1>
+        {m !== null && m.frases.length > 0 && <p className="text-2xl font-bold text-verde-texto">{m.frases[0]}</p>}
+        <p className="max-w-prose text-lg text-hielo">{interno ? t.introduccionInterno : t.introduccion}</p>
+        {/* Solo para quien presenta: no salen en el PDF. */}
+        {[m?.avisoFrasesRh ?? null, m?.avisoTextoInternoRh ?? null].map(
+          (aviso) =>
+            aviso !== null && (
+              <p key={aviso} className="inline-flex items-center gap-1.5 self-start rounded-full border border-hielo/30 px-3 py-1 text-sm text-hielo-tenue">
+                <Info aria-hidden="true" className="size-4" />
+                {aviso}
+              </p>
+            ),
+        )}
+      </header>
+
       {sesionExpirada && <AvisoSesionExpirada siguiente="/comisiones/reclutamiento" />}
 
-      {/* El único dato visible: la captación del mes, con montos de un toque. */}
+      {/* El dato visible: la captación del mes, con montos de un toque; arriba, el perfil. */}
       <form className="superficie flex flex-col gap-3 rounded-2xl p-5 sm:p-6" autoComplete="off" onSubmit={(e) => e.preventDefault()}>
+        <Opciones
+          nombre={`${id}-perfil`}
+          leyenda={t.perfil}
+          valor={campos.perfil}
+          alCambiar={(perfil) => cambiar({ perfil })}
+          opciones={[
+            { valor: "interno", etiqueta: t.perfilInterno },
+            { valor: "externo", etiqueta: t.perfilExterno },
+          ]}
+        />
         <Campo id={`${id}-monto`} etiqueta={<span className="text-xl font-bold text-blanco">{t.preguntaMonto}</span>} ayuda={t.ayudaMonto}>
           <Entrada
             id={`${id}-monto`}
@@ -200,7 +232,7 @@ export function Reclutamiento({ textos: t, plazos, montosEjemplo, inicial, model
           {/* Resultado grande, en lenguaje simple. */}
           <section aria-labelledby={`${id}-resultado`} className="superficie flex flex-col gap-1 rounded-2xl border-l-4 border-verde-texto p-5 sm:p-6">
             <h2 id={`${id}-resultado`} className="text-lg font-semibold text-hielo">
-              {t.tituloResultado}
+              {m.tituloCifra}
             </h2>
             <p data-testid="cifra-grande" className="text-5xl font-extrabold tracking-tight text-verde-texto tabular-nums">
               {m.cifra.total}
@@ -214,6 +246,28 @@ export function Reclutamiento({ textos: t, plazos, montosEjemplo, inicial, model
                   </li>
                 ))}
               </ul>
+            )}
+            {/* Interno: el desglose del total y el desbloqueo de la meta. */}
+            {m.interno !== null && (
+              <>
+                <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-3">
+                  {[
+                    [m.interno.rotuloSueldoBase, m.interno.sueldoBase],
+                    [t.comisionInterno, m.interno.comision],
+                    [t.bonoInterno, m.interno.bono],
+                  ].map(([etiqueta, valor]) => (
+                    <div key={etiqueta} className="flex justify-between gap-3 sm:flex-col sm:justify-start">
+                      <dt className="text-sm text-hielo">{etiqueta}</dt>
+                      <dd className="font-bold tabular-nums">{valor}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="text-sm break-words text-hielo-tenue">
+                  {t.calculo}: {m.interno.operacion}
+                </p>
+                <p className="mt-1 font-semibold">{m.interno.estadoDesbloqueo}</p>
+                <p className="text-sm text-hielo">{m.interno.notaDesbloqueo}</p>
+              </>
             )}
           </section>
 
@@ -238,7 +292,10 @@ export function Reclutamiento({ textos: t, plazos, montosEjemplo, inicial, model
                   >
                     <span className="flex items-baseline justify-between gap-3">
                       <span className="font-bold">{p.etiqueta}</span>
-                      <span className="text-lg font-extrabold tabular-nums">{p.comision}</span>
+                      <span className="text-lg font-extrabold tabular-nums">
+                        {p.comision}
+                        {p.bloqueada && <span className="ml-1.5 text-sm font-semibold text-hielo">({t.comparativoBloqueada})</span>}
+                      </span>
                     </span>
                     {/* La cifra va en texto: la barra no depende del color. */}
                     <span aria-hidden="true" className="h-3 w-full rounded-full bg-hielo/15">
@@ -255,26 +312,66 @@ export function Reclutamiento({ textos: t, plazos, montosEjemplo, inicial, model
             {m.fraseVeces !== null && <p className="text-lg font-bold">{m.fraseVeces}</p>}
           </section>
 
-          {/* Escalera de bonos, con la captación de arriba marcada. El aviso de incorporación va solo aquí. */}
-          <section aria-labelledby={`${id}-bonos`} className="flex flex-col gap-3">
-            <h2 id={`${id}-bonos`} className="text-xl font-bold">
-              {t.tituloBonos}
-            </h2>
-            <ol className="flex flex-col gap-2">
-              {m.escalera.map((x, i) => (
-                <li
-                  key={x.texto}
-                  aria-current={x.actual ? "true" : undefined}
-                  className={`rounded-xl border p-3 ${x.actual ? "border-2 border-verde-texto bg-verde-texto/10 font-bold" : "border-hielo/20 text-hielo"}`}
-                  style={{ marginInlineStart: `${i * 0.75}rem` }}
-                >
-                  {x.actual && <span className="mb-0.5 block text-sm text-verde-texto">{t.escalonActual}</span>}
-                  {x.texto}
-                </li>
-              ))}
-            </ol>
-            <p className="text-hielo">{m.avisoIncorporacion}</p>
-          </section>
+          {/* Interno: tabla de bonos con rangos y la fila alcanzada. */}
+          {m.interno !== null && (
+            <section aria-labelledby={`${id}-bonos-interno`} className="flex flex-col gap-3">
+              <h2 id={`${id}-bonos-interno`} className="text-xl font-bold">
+                {t.tituloBonosInterno}
+              </h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="text-hielo">
+                    <tr className="border-b border-hielo/20">
+                      <th scope="col" className="py-2 pr-3">{t.columnaCumplimiento}</th>
+                      <th scope="col" className="py-2 pr-3 text-right">{t.columnaDesde}</th>
+                      <th scope="col" className="py-2 pr-3 text-right">{t.columnaHasta}</th>
+                      <th scope="col" className="py-2 text-right">{t.columnaBono}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {m.interno.bonos.map((b) => (
+                      <tr
+                        key={b.desde}
+                        aria-current={b.actual ? "true" : undefined}
+                        className={`border-b border-hielo/10 ${b.actual ? "bg-verde-texto/10 font-bold" : ""}`}
+                      >
+                        <th scope="row" className="py-2 pr-3 font-semibold">
+                          {b.cumplimiento}
+                          {b.actual && <span className="block text-xs text-verde-texto">{t.escalonActual}</span>}
+                        </th>
+                        <td className="py-2 pr-3 text-right tabular-nums">{b.desde}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{b.hasta}</td>
+                        <td className="py-2 text-right tabular-nums">{b.bono}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {/* Externo: escalera de bonos, con la captación de arriba marcada. El aviso de incorporación va solo aquí. */}
+          {m.escalera.length > 0 && (
+            <section aria-labelledby={`${id}-bonos`} className="flex flex-col gap-3">
+              <h2 id={`${id}-bonos`} className="text-xl font-bold">
+                {t.tituloBonos}
+              </h2>
+              <ol className="flex flex-col gap-2">
+                {m.escalera.map((x, i) => (
+                  <li
+                    key={x.texto}
+                    aria-current={x.actual ? "true" : undefined}
+                    className={`rounded-xl border p-3 ${x.actual ? "border-2 border-verde-texto bg-verde-texto/10 font-bold" : "border-hielo/20 text-hielo"}`}
+                    style={{ marginInlineStart: `${i * 0.75}rem` }}
+                  >
+                    {x.actual && <span className="mb-0.5 block text-sm text-verde-texto">{t.escalonActual}</span>}
+                    {x.texto}
+                  </li>
+                ))}
+              </ol>
+              {m.avisoIncorporacion !== null && <p className="text-hielo">{m.avisoIncorporacion}</p>}
+            </section>
+          )}
         </>
       )}
 
@@ -334,16 +431,18 @@ export function Reclutamiento({ textos: t, plazos, montosEjemplo, inicial, model
             <p>{m.avisoTasas}</p>
           </div>
 
-          <section aria-labelledby={`${id}-fechas`} className="flex flex-col gap-1 text-sm">
-            <h2 id={`${id}-fechas`} className="font-bold">
-              {t.tituloFechas}
-            </h2>
-            {m.fechas.map((f) => (
-              <p key={f} className="text-hielo">
-                {f}
-              </p>
-            ))}
-          </section>
+          {m.fechas !== null && (
+            <section aria-labelledby={`${id}-fechas`} className="flex flex-col gap-1 text-sm">
+              <h2 id={`${id}-fechas`} className="font-bold">
+                {t.tituloFechas}
+              </h2>
+              {m.fechas.map((f) => (
+                <p key={f} className="text-hielo">
+                  {f}
+                </p>
+              ))}
+            </section>
+          )}
 
           <div className="flex flex-col gap-2">
             <Boton className="self-start" icono={<Download aria-hidden="true" className="size-5" />} cargando={generando} onClick={descargarPdf}>

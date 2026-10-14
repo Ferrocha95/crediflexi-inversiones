@@ -14,6 +14,8 @@ export const MENSAJE_FORMA_RECLUTAMIENTO =
  * servidor; el recorte fino (60 caracteres) y las reglas los aplica el modelo.
  */
 export const esquemaReclutamiento = z.strictObject({
+  /** Opcional (por omisión, externo). */
+  perfil: z.enum(["interno", "externo"]).optional(),
   presenta: z.string().max(200),
   /** "¿Cuánto captarías al mes?", tal como se escribe. */
   monto: z.string().max(40),

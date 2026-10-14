@@ -1,4 +1,4 @@
-import { ChevronLeft, Info } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -20,7 +20,9 @@ export const metadata: Metadata = {
 /**
  * Modo reclutamiento (componente de servidor): solo dentro de la app y con
  * sesión. Calcula el resultado inicial con los escenarios de ejemplo, así el
- * aviso con la fecha de las tablas se ve desde el primer momento. Nada se guarda.
+ * aviso con la fecha de las tablas se ve desde el primer momento. Empieza en el
+ * perfil externo; el título y la introducción cambian con el perfil, así que
+ * los dibuja la pantalla. Nada se guarda.
  */
 export default async function PaginaReclutamiento() {
   // Cada página revisa al usuario: el layout no se vuelve a ejecutar al navegar.
@@ -53,6 +55,7 @@ export default async function PaginaReclutamiento() {
   const enPesos = (v: string) => formatearPesos(new Decimal(v)).replace(/\.00$/, "");
   const montosEjemplo = textos.montosEjemplo.map((valor) => ({ valor, etiqueta: enPesos(valor), escrito: enPesos(valor).replace("$", "") }));
   const inicial = {
+    perfil: "externo" as const,
     presenta,
     monto: enPesos(textos.montoPorOmision).replace("$", ""),
     plazo: null,
@@ -71,16 +74,6 @@ export default async function PaginaReclutamiento() {
           <ChevronLeft aria-hidden="true" className="size-4" />
           {TEXTOS.volverComisiones}
         </Link>
-        <h1 className="text-4xl font-extrabold tracking-tight">{textos.tituloPagina}</h1>
-        {modelo.ok && modelo.valor.frases.length > 0 && <p className="text-2xl font-bold text-verde-texto">{modelo.valor.frases[0]}</p>}
-        <p className="max-w-prose text-lg text-hielo">{textos.introduccion}</p>
-        {/* Solo para quien presenta: no sale en el PDF. */}
-        {modelo.ok && modelo.valor.avisoFrasesRh !== null && (
-          <p className="inline-flex items-center gap-1.5 self-start rounded-full border border-hielo/30 px-3 py-1 text-sm text-hielo-tenue">
-            <Info aria-hidden="true" className="size-4" />
-            {modelo.valor.avisoFrasesRh}
-          </p>
-        )}
       </header>
 
       <Reclutamiento

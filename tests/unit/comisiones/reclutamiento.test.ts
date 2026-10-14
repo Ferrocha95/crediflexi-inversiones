@@ -84,6 +84,7 @@ describe("acción simularReclutamiento", () => {
     ["monto que no es texto", { monto: 1000000 }],
     ["plazo que no es entero", { plazo: 12.5 }],
     ["mezcla con un monto que no es texto", { mezcla: { "12": 300000 } }],
+    ["perfil desconocido", { perfil: "gerente" }],
   ])("forma inválida (%s)", async (_, cambio) => {
     expect(error(await simularReclutamiento({ ...base, ...cambio })).mensaje).toBe(MENSAJE_FORMA_RECLUTAMIENTO);
   });
@@ -191,7 +192,7 @@ describe("PDF de reclutamiento (documento real, una página)", () => {
     expect(aviso).toBeLessThan(t.indexOf(AVISO_EXACTO));
   });
 
-  it("sin el aviso interno de las frases ni sueldo base", { timeout: TIEMPO }, async () => {
+  it("PDF de externo: sin el aviso interno de las frases ni sueldo base", { timeout: TIEMPO }, async () => {
     const { texto: t } = await texto();
     expect(t).not.toContain("Frases pendientes de aprobación de RH");
     expect(t.toLowerCase()).not.toContain("sueldo base");
@@ -244,6 +245,74 @@ describe("PDF de reclutamiento (documento real, una página)", () => {
 describe("PDF de reclutamiento: los dos logos juntos", () => {
   it("lleva una sola imagen en el encabezado: la combinada de 601 × 145 (public/logos-crediflexi-rami-sise.png)", { timeout: TIEMPO }, async () => {
     const r = await pdf();
+    expect(await imagenesPorPagina(new Uint8Array(await r.arrayBuffer()))).toEqual([[{ ancho: 601, alto: 145 }]]);
+  });
+});
+
+describe("PDF de reclutamiento interno (documento real, una página)", () => {
+  async function interno(cambio: Record<string, unknown> = {}) {
+    const r = await pdf({ perfil: "interno", ...cambio });
+    expect(r.status).toBe(200);
+    return extraerTexto(new Uint8Array(await r.arrayBuffer()));
+  }
+
+  it("con 1,000,000: EXACTAMENTE 1 página con el total, el sueldo base (propuesta), el desbloqueo, el comparativo, la tabla de bonos y los avisos", { timeout: TIEMPO }, async () => {
+    const { paginas, texto: t } = await interno();
+    expect(paginas).toBe(1);
+    for (const esperado of [
+      "Propuesta de ingresos",
+      "Presenta: Persona Sintética Uno",
+      "08/10/2026",
+      "Total estimado del mes (simulación)",
+      "$43,380.00",
+      "$1,000,000 a 12 meses: sueldo base $15,000.00 (propuesta) más comisión $28,380.00 más bono $0.00",
+      "Sueldo base (propuesta)",
+      "$15,000.00 + $28,380.00 + $0.00 = $43,380.00",
+      "Las comisiones se desbloquean desde el 80% de la meta ($800,000).",
+      "Con esta captación las comisiones quedan desbloqueadas.",
+      "$1,000,000 × 1.29% = $12,900.00",
+      "$1,000,000 × 5.934% = $59,340.00",
+      "A 24 meses se ganaría 4.60 veces lo de 6 meses.",
+      "100% de la meta",
+      "$1,499,999",
+      "200% de la meta",
+      "En adelante",
+      "Con esta captación",
+      AVISO_EXACTO,
+      "Las tasas están sujetas a cambio.",
+    ]) {
+      expect(t).toContain(esperado);
+    }
+  });
+
+  it("sin aviso de incorporación, sin escalera de externos y sin el aviso de RH para internos (el PDF sale limpio)", { timeout: TIEMPO }, async () => {
+    const { texto: t } = await interno();
+    expect(t).not.toContain(AVISO_INCORPORACION);
+    expect(t).not.toContain("más la comisión");
+    expect(t).not.toContain("Texto para internos pendiente de aprobación de RH");
+    expect(t).not.toContain("Sin meta mensual");
+  });
+
+  it("1,500,000: tasa 2.904%, bono 5,000 y total 63,560.00; 799,999.99: bloqueada y total 15,000.00", { timeout: TIEMPO }, async () => {
+    const alto = (await interno({ monto: "1500000" })).texto;
+    for (const esperado of ["$1,500,000 × 2.904% = $43,560.00", "$63,560.00", "$15,000.00 + $43,560.00 + $5,000.00 = $63,560.00"]) expect(alto).toContain(esperado);
+    const bajo = (await interno({ monto: "799999.99" })).texto;
+    expect(bajo).toContain("Con esta captación las comisiones quedan bloqueadas: faltan $0.01 para llegar a $800,000.");
+    expect(bajo).toContain("$15,000.00 + $0.00 + $0.00 = $15,000.00");
+  });
+
+  it("con 3 inversiones por plazo y la mezcla sigue en una página", { timeout: TIEMPO }, async () => {
+    const { paginas } = await interno({ inversionesPorPlazo: 3, mezcla: { "6": "250000", "12": "250000", "18": "250000", "24": "250000" } });
+    expect(paginas).toBe(1);
+  });
+
+  it("pasa la revisión de lenguaje prohibido (fuera del aviso exacto)", { timeout: TIEMPO }, async () => {
+    const { texto: t } = await interno();
+    expect(t.split(AVISO_EXACTO).join(" ")).not.toMatch(RE_PROHIBIDO_RECLUTAMIENTO);
+  });
+
+  it("los dos logos juntos", { timeout: TIEMPO }, async () => {
+    const r = await pdf({ perfil: "interno" });
     expect(await imagenesPorPagina(new Uint8Array(await r.arrayBuffer()))).toEqual([[{ ancho: 601, alto: 145 }]]);
   });
 });

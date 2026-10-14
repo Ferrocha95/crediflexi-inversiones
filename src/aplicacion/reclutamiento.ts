@@ -3,7 +3,9 @@ import { formatearPesos } from "../domain/comun/formato";
 import { bonoDeExterno } from "../domain/comisiones/bonoExterno";
 import { comisionDeInversion, type ComisionInversion } from "../domain/comisiones/comision";
 import { fechaDePagoComision } from "../domain/comisiones/fechas";
+import { liquidarMes, type InversionDelMes } from "../domain/comisiones/liquidacion";
 import type { SemillaComisiones } from "../domain/comisiones/semilla";
+import { totalEstimadoDelMes } from "../domain/comisiones/totalMes";
 import { limpiarCampo } from "./campos";
 import { plazosDeComision, porcentajeComision } from "./comisiones";
 import { fechaDeTextoIso, fechaEnMexico, fechaIsoEnMexico, fechaLarga, nombreDeMes } from "./fecha";
@@ -22,12 +24,19 @@ import type { TextosReclutamiento } from "./textos";
 // las "inversiones por plazo" (el sobrante va a la primera); cada parte paga
 // con su propio tramo. No calcula por su cuenta: las comisiones salen de
 // comisionDeInversion y el bono de bonoDeExterno.
+//
+// Perfil interno (Sprint 7a): la misma captación como ejecutivo. La cifra es
+// el "Total estimado del mes (simulación)" de totalEstimadoDelMes (sueldo base
+// de propuesta + comisión pagable + bono INTERNOS), con el desbloqueo de la
+// meta; todo sale de liquidarMes, con las inversiones fechadas hoy.
 
 export const TOPES_RECLUTAMIENTO = { presenta: 60 } as const;
 /** Inversiones por plazo: entero de 1 a 20 (decisión de Fernando); por omisión, 1. */
 export const INVERSIONES_POR_PLAZO = { minimo: 1, maximo: 20, porOmision: 1 } as const;
 
 export interface CamposReclutamiento {
+  /** "Interno" (ejecutivo) o "Externo"; por omisión, externo. */
+  readonly perfil?: "interno" | "externo";
   readonly presenta: string;
   /** "¿Cuánto captarías al mes?", tal como se escribe ("1,000,000"). */
   readonly monto: string;
@@ -50,18 +59,43 @@ export interface PlazoComparativo {
   readonly fraccion: number;
   /** El plazo de la cifra grande (ninguno con la mezcla). */
   readonly elegido: boolean;
+  /** Solo interno: la captación no llega al desbloqueo, así que esta comisión no se pagaría. */
+  readonly bloqueada: boolean;
+}
+
+/** Lo propio del perfil interno (Sprint 7a); los montos en pesos con centavos. */
+export interface InternoReclutamiento {
+  readonly rotuloSueldoBase: string;
+  readonly sueldoBase: string;
+  /** Comisión pagable: $0.00 si la captación no llega al desbloqueo. */
+  readonly comision: string;
+  readonly bono: string;
+  /** "$15,000.00 + $28,380.00 + $0.00 = $43,380.00". */
+  readonly operacion: string;
+  readonly desbloqueada: boolean;
+  /** "Las comisiones se desbloquean desde el 80% de la meta ($800,000)." */
+  readonly notaDesbloqueo: string;
+  /** Desbloqueadas, o bloqueadas con lo que falta. */
+  readonly estadoDesbloqueo: string;
+  /** Tabla de bonos INTERNOS con rangos; la fila alcanzada, marcada. */
+  readonly bonos: readonly { readonly cumplimiento: string; readonly desde: string; readonly hasta: string; readonly bono: string; readonly actual: boolean }[];
 }
 
 export interface ModeloReclutamiento {
+  readonly perfil: "interno" | "externo";
   readonly textos: TextosReclutamiento;
   /** "Presenta: Nombre"; null si no se escribió. */
   readonly presenta: string | null;
   /** Fecha del documento (hoy en la Ciudad de México), DD/MM/AAAA. */
   readonly fecha: string;
-  /** Las frases, con el monto mínimo de la semilla. */
+  /** Las frases, con el monto mínimo de la semilla (son de externos: vacías en interno). */
   readonly frases: readonly string[];
   /** Aviso interno solo para la pantalla mientras RH no apruebe las frases; null si ya las aprobó. */
   readonly avisoFrasesRh: string | null;
+  /** Solo pantalla, perfil interno: los textos para internos esperan a RH; null si ya los aprobó o en externo. */
+  readonly avisoTextoInternoRh: string | null;
+  /** Título de la cifra grande: "Lo que se ganaría en un mes" o "Total estimado del mes (simulación)". */
+  readonly tituloCifra: string;
   /** La captación del mes: "$1,000,000". */
   readonly captacion: string;
   readonly cifra: {
@@ -78,16 +112,19 @@ export interface ModeloReclutamiento {
   readonly fraseVeces: string | null;
   /** Desglose de la mezcla de plazos (solo los plazos con monto); null sin mezcla. */
   readonly mezcla: readonly { readonly plazo: string; readonly monto: string; readonly comision: string; readonly operacion: string }[] | null;
-  /** Escalera de bonos: debajo del primer rango y cada rango, con el de esta captación marcado. */
+  /** Escalera de bonos de externos: debajo del primer rango y cada rango, con el de esta captación marcado (vacía en interno). */
   readonly escalera: readonly { readonly texto: string; readonly actual: boolean }[];
-  readonly avisoIncorporacion: string;
+  /** Solo externo. */
+  readonly avisoIncorporacion: string | null;
+  /** Solo interno. */
+  readonly interno: InternoReclutamiento | null;
   /** El aviso fijo aprobado por RH, con la fecha de las tablas vigentes. */
   readonly aviso: string;
   /** "Cálculo con {n} inversión(es) por plazo: ..." (siempre visible, en pantalla y en el PDF). */
   readonly avisoInversiones: string;
   readonly avisoTasas: string;
-  /** Las dos líneas de fechas de pago (quincena 1 y 2) del mes en curso. */
-  readonly fechas: readonly [string, string];
+  /** Las dos líneas de fechas de pago (quincena 1 y 2) del mes en curso; null en interno (antes se paga solo lo desbloqueado). */
+  readonly fechas: readonly [string, string] | null;
 }
 
 const dos = (n: number) => String(n).padStart(2, "0");
@@ -95,6 +132,7 @@ const CERO = new Decimal(0);
 
 /** Pesos sin centavos cuando son cero ("$1,000,000"); con centavos, completos. */
 const pesosEnteros = (d: Decimal) => (d.isInteger() ? formatearPesos(d).replace(/\.00$/, "") : formatearPesos(d));
+const porcentajeEntero = (d: Decimal) => `${d.times(100).toFixed(0, Decimal.ROUND_DOWN)}%`;
 
 /** Reparte el monto en `n` partes iguales a centavos; el sobrante de centavos va a la primera. */
 function repartir(monto: Decimal, n: number): Decimal[] {
@@ -182,7 +220,7 @@ export function modeloReclutamiento(
   const mezclaEscrita = Object.entries(c.mezcla ?? {})
     .filter(([, v]) => v.trim() !== "")
     .sort(([a], [b]) => Number(a) - Number(b));
-  let mezcla: { plazo: string; monto: Decimal; comision: Decimal; operacion: string }[] | null = null;
+  let mezcla: { plazo: string; meses: number; monto: Decimal; comision: Decimal; operacion: string }[] | null = null;
   if (mezclaEscrita.length > 0) {
     mezcla = [];
     for (const [plazo, escrito] of mezclaEscrita) {
@@ -195,7 +233,7 @@ export function modeloReclutamiento(
       const monto = new Decimal(m.valor);
       const r = comisionDePlazo(s, monto, Number(plazo), n);
       if (!r.ok) return error("COMISION_INVALIDA", prefijo + r.error.mensaje);
-      mezcla.push({ plazo: rellenar(t.plazoMeses, { meses: plazo }), monto, comision: r.valor.comision, operacion: r.valor.linea });
+      mezcla.push({ plazo: rellenar(t.plazoMeses, { meses: plazo }), meses: Number(plazo), monto, comision: r.valor.comision, operacion: r.valor.linea });
     }
     const suma = mezcla.reduce((a, l) => a.plus(l.monto), CERO);
     if (!suma.equals(captacion)) {
@@ -214,15 +252,60 @@ export function modeloReclutamiento(
     const r = comisionDeInversion(s, { tipo: "nueva", monto: captacion.toFixed(2), plazo: plazoElegido });
     return error("COMISION_INVALIDA", r.ok ? `El plazo de ${plazoElegido} meses no está en la tabla.` : r.error.mensaje);
   }
+  const esInterno = c.perfil === "interno";
   const bono = bonoDeExterno(s, captacion);
   const comision = mezcla === null ? elegido!.comision : mezcla.reduce((a, l) => a.plus(l.comision), CERO);
   const valores = { captacion: pesosEnteros(captacion), comision: formatearPesos(comision), bono: formatearPesos(bono.bono) };
-  const cifra = {
+  let cifra = {
     total: formatearPesos(comision.plus(bono.bono)),
     detalle:
       mezcla === null ? rellenar(t.cifraDetalle, { ...valores, meses: String(plazoElegido) }) : rellenar(t.cifraDetalleMezcla, valores),
     plazo: mezcla === null ? plazoElegido : null,
   };
+
+  // Interno: el mes del ejecutivo con las mismas inversiones (repartidas igual), fechadas hoy.
+  let interno: InternoReclutamiento | null = null;
+  if (esInterno) {
+    const hoy = fechaIsoEnMexico(ahora);
+    const porMeses = mezcla === null ? [{ meses: plazoElegido, monto: captacion }] : mezcla.map((l) => ({ meses: l.meses, monto: l.monto }));
+    const inversiones: InversionDelMes[] = porMeses.flatMap((p) =>
+      repartir(p.monto, n).map((parte) => ({ tipo: "nueva" as const, monto: parte.toFixed(2), plazo: p.meses, fecha: hoy })),
+    );
+    const l = liquidarMes(s, { perfil: "interno", rol: "EJECUTIVO", inversiones });
+    if (!l.ok) return error("COMISION_INVALIDA", l.error.mensaje, l.error.detalles);
+    const d = l.valor.desbloqueo!;
+    const tm = totalEstimadoDelMes(l.valor);
+    const montos = { sueldo: formatearPesos(tm.sueldoBase!), comision: formatearPesos(tm.comisionPagable), bono: formatearPesos(tm.bono!) };
+    const total = formatearPesos(tm.total);
+    interno = {
+      rotuloSueldoBase: t.sueldoBaseInterno,
+      sueldoBase: montos.sueldo,
+      comision: montos.comision,
+      bono: montos.bono,
+      operacion: `${montos.sueldo} + ${montos.comision} + ${montos.bono} = ${total}`,
+      desbloqueada: d.desbloqueada,
+      notaDesbloqueo: rellenar(t.notaDesbloqueoInterno, { porcentaje: porcentajeEntero(s.umbralDesbloqueo), umbral: pesosEnteros(d.umbral) }),
+      estadoDesbloqueo: d.desbloqueada
+        ? t.internoDesbloqueada
+        : rellenar(t.internoBloqueada, { falta: formatearPesos(d.umbral.minus(l.valor.captacionParaMeta)), umbral: pesosEnteros(d.umbral) }),
+      bonos: s.incentivosInternos.map((f, i) => ({
+        cumplimiento: f.cumplimiento,
+        desde: pesosEnteros(f.desde),
+        hasta: f.hasta === null ? t.enAdelante : pesosEnteros(f.hasta),
+        bono: pesosEnteros(f.bono),
+        actual: l.valor.filaIncentivo === i,
+      })),
+    };
+    const delInterno = { captacion: pesosEnteros(captacion), ...montos };
+    cifra = {
+      total,
+      detalle:
+        mezcla === null
+          ? rellenar(t.cifraDetalleInterno, { ...delInterno, meses: String(plazoElegido) })
+          : rellenar(t.cifraDetalleInternoMezcla, delInterno),
+      plazo: cifra.plazo,
+    };
+  }
 
   // "A 24 meses se ganaría N.NN veces lo de 6 meses": plazo mayor entre plazo menor, a 2 decimales.
   const menor = porPlazo[0];
@@ -237,8 +320,8 @@ export function modeloReclutamiento(
         });
   const tope = porPlazo.reduce((m, p) => (p.comision.greaterThan(m) ? p.comision : m), CERO);
 
-  // La escalera de bonos, con los rangos de la semilla.
-  const rangos = s.incentivosExternos;
+  // La escalera de bonos de externos, con los rangos de la semilla (el interno lleva su tabla de bonos).
+  const rangos = esInterno ? [] : s.incentivosExternos;
   const escalera = [
     ...(rangos.length === 0 ? [] : [{ texto: rellenar(t.escalonSinBono, { desde: pesosEnteros(rangos[0].desde) }), actual: bono.rango === null }]),
     ...rangos.map((r) => ({
@@ -257,11 +340,15 @@ export function modeloReclutamiento(
   const { ultimoDiaQuincena1 } = s.pago;
 
   return ok({
+    perfil: esInterno ? "interno" : "externo",
     textos: t,
     presenta: presenta === "" ? null : rellenar(t.pdfPresenta, { presenta }),
     fecha: fechaEnMexico(ahora),
-    frases: t.frases.map((f) => rellenar(f, { monto_minimo: pesosEnteros(s.montoMinimo) })),
-    avisoFrasesRh: t.frasesAprobadasPorRh ? null : t.avisoFrasesRh,
+    // Las frases son de externos ("Sin meta mensual…"): el interno no las lleva.
+    frases: esInterno ? [] : t.frases.map((f) => rellenar(f, { monto_minimo: pesosEnteros(s.montoMinimo) })),
+    avisoFrasesRh: esInterno || t.frasesAprobadasPorRh ? null : t.avisoFrasesRh,
+    avisoTextoInternoRh: esInterno && !t.frasesInternasAprobadasPorRh ? t.avisoFrasesInternasRh : null,
+    tituloCifra: esInterno ? t.tituloResultadoInterno : t.tituloResultado,
     captacion: pesosEnteros(captacion),
     cifra,
     comparativo: porPlazo.map((p) => ({
@@ -272,6 +359,7 @@ export function modeloReclutamiento(
       // Coordenada de dibujo (no es dinero): número.
       fraccion: tope.isZero() ? 0 : p.comision.div(tope).toNumber(),
       elegido: mezcla === null && p.plazo === plazoElegido,
+      bloqueada: interno !== null && !interno.desbloqueada,
     })),
     fraseVeces,
     mezcla:
@@ -279,13 +367,16 @@ export function modeloReclutamiento(
         ? null
         : mezcla.map((l) => ({ plazo: l.plazo, monto: pesosEnteros(l.monto), comision: formatearPesos(l.comision), operacion: l.operacion })),
     escalera,
-    avisoIncorporacion: t.avisoIncorporacion,
+    avisoIncorporacion: esInterno ? null : t.avisoIncorporacion,
+    interno,
     aviso: rellenar(t.aviso, { fecha: fechaLarga(s.generado) }),
     avisoInversiones: rellenar(t.avisoInversionesPorPlazo, { n: String(n) }),
     avisoTasas: t.avisoTasas,
-    fechas: [
-      rellenar(t.fechaQuincena1, { dia_corte: String(ultimoDiaQuincena1), mes: nombreMes, fecha_pago: pago(s, delMes(1)) }),
-      rellenar(t.fechaQuincena2, { dia_siguiente: String(ultimoDiaQuincena1 + 1), mes: nombreMes, fecha_pago: pago(s, delMes(ultimoDiaQuincena1 + 1)) }),
-    ],
+    fechas: esInterno
+      ? null
+      : [
+          rellenar(t.fechaQuincena1, { dia_corte: String(ultimoDiaQuincena1), mes: nombreMes, fecha_pago: pago(s, delMes(1)) }),
+          rellenar(t.fechaQuincena2, { dia_siguiente: String(ultimoDiaQuincena1 + 1), mes: nombreMes, fecha_pago: pago(s, delMes(ultimoDiaQuincena1 + 1)) }),
+        ],
   });
 }

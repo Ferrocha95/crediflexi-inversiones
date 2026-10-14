@@ -40,6 +40,7 @@ export const MARCADORES = [
   "dia_pago",
   "dia_pago_siguiente",
   "lista",
+  "sueldo",
 ] as const;
 export type Marcador = (typeof MARCADORES)[number];
 
@@ -76,6 +77,10 @@ export const MARCADORES_POR_CAMPO = {
   "reclutamiento.pdf_presenta": ["presenta"],
   "reclutamiento.fecha_quincena_1": ["dia_corte", "mes", "fecha_pago"],
   "reclutamiento.fecha_quincena_2": ["dia_siguiente", "mes", "fecha_pago"],
+  "reclutamiento.cifra_detalle_interno": ["captacion", "meses", "sueldo", "comision", "bono"],
+  "reclutamiento.cifra_detalle_interno_mezcla": ["captacion", "sueldo", "comision", "bono"],
+  "reclutamiento.nota_desbloqueo_interno": ["porcentaje", "umbral"],
+  "reclutamiento.interno_bloqueada": ["falta", "umbral"],
   "comisiones.nota_meta_interna": ["meta"],
   "comisiones.incentivo_mas_comision": ["bono"],
   "comisiones.nota_desbloqueo": ["porcentaje", "umbral"],
@@ -407,6 +412,35 @@ export interface TextosReclutamiento {
   /** Frases aspiracionales (pendientes de RH); la primera es la que se usa. Admiten {monto_minimo}. */
   readonly frases: readonly string[];
   readonly frasesAprobadasPorRh: boolean;
+  // Reclutamiento para internos (Sprint 7a).
+  readonly perfil: string;
+  readonly perfilInterno: string;
+  readonly perfilExterno: string;
+  readonly tituloPaginaInterno: string;
+  readonly introduccionInterno: string;
+  readonly tituloResultadoInterno: string;
+  /** Plantillas de la cifra del interno: con {captacion}, {meses}, {sueldo}, {comision} y {bono}; la de la mezcla, sin {meses}. */
+  readonly cifraDetalleInterno: string;
+  readonly cifraDetalleInternoMezcla: string;
+  readonly sueldoBaseInterno: string;
+  readonly comisionInterno: string;
+  readonly bonoInterno: string;
+  readonly calculo: string;
+  /** Plantilla con {porcentaje} y {umbral}. */
+  readonly notaDesbloqueoInterno: string;
+  readonly internoDesbloqueada: string;
+  /** Plantilla con {falta} y {umbral}. */
+  readonly internoBloqueada: string;
+  readonly comparativoBloqueada: string;
+  readonly tituloBonosInterno: string;
+  readonly columnaCumplimiento: string;
+  readonly columnaDesde: string;
+  readonly columnaHasta: string;
+  readonly columnaBono: string;
+  readonly enAdelante: string;
+  /** Mientras sea falsa, la pantalla (nunca el PDF) avisa que los textos para internos esperan a RH. */
+  readonly frasesInternasAprobadasPorRh: boolean;
+  readonly avisoFrasesInternasRh: string;
 }
 
 /** Clave del archivo (snake_case) -> clave de TextosReclutamiento (solo los textos sueltos). */
@@ -447,8 +481,37 @@ const CLAVES_RECLUTAMIENTO = {
   pdf_presenta: "pdfPresenta",
   pdf_fecha: "pdfFecha",
   descargar_pdf: "descargarPdf",
+  perfil: "perfil",
+  perfil_interno: "perfilInterno",
+  perfil_externo: "perfilExterno",
+  titulo_pagina_interno: "tituloPaginaInterno",
+  introduccion_interno: "introduccionInterno",
+  titulo_resultado_interno: "tituloResultadoInterno",
+  cifra_detalle_interno: "cifraDetalleInterno",
+  cifra_detalle_interno_mezcla: "cifraDetalleInternoMezcla",
+  sueldo_base_interno: "sueldoBaseInterno",
+  comision_interno: "comisionInterno",
+  bono_interno: "bonoInterno",
+  calculo: "calculo",
+  nota_desbloqueo_interno: "notaDesbloqueoInterno",
+  interno_desbloqueada: "internoDesbloqueada",
+  interno_bloqueada: "internoBloqueada",
+  comparativo_bloqueada: "comparativoBloqueada",
+  titulo_bonos_interno: "tituloBonosInterno",
+  columna_cumplimiento: "columnaCumplimiento",
+  columna_desde: "columnaDesde",
+  columna_hasta: "columnaHasta",
+  columna_bono: "columnaBono",
+  en_adelante: "enAdelante",
+  aviso_frases_internas_rh: "avisoFrasesInternasRh",
 } as const satisfies Readonly<
-  Record<string, Exclude<keyof TextosReclutamiento, "montosEjemplo" | "montoPorOmision" | "plazoPorOmision" | "frases" | "frasesAprobadasPorRh">>
+  Record<
+    string,
+    Exclude<
+      keyof TextosReclutamiento,
+      "montosEjemplo" | "montoPorOmision" | "plazoPorOmision" | "frases" | "frasesAprobadasPorRh" | "frasesInternasAprobadasPorRh"
+    >
+  >
 >;
 
 type ClaveArchivoReclutamiento = keyof typeof CLAVES_RECLUTAMIENTO;
@@ -703,6 +766,7 @@ const esquemaTextos = z
           plazo_por_omision: z.string().regex(/^[1-9]\d*$/, { error: 'El plazo va en meses, como texto (por ejemplo "12").' }),
           frases: z.array(texto("reclutamiento.frases", MARCADORES_POR_CAMPO["reclutamiento.frases"])).min(1, { error: "Pon al menos una frase." }),
           frases_aprobadas_por_rh: z.boolean({ error: "Debe ser true o false." }),
+          frases_internas_aprobadas_por_rh: z.boolean({ error: "Debe ser true o false." }),
         },
         { error: claveDesconocida },
       ),
@@ -790,12 +854,16 @@ const esquemaTextos = z
       reclutamiento: {
         ...(Object.fromEntries(
           (Object.entries(CLAVES_RECLUTAMIENTO) as [ClaveArchivoReclutamiento, string][]).map(([archivo, clave]) => [clave, t.reclutamiento[archivo]]),
-        ) as unknown as Omit<TextosReclutamiento, "montosEjemplo" | "montoPorOmision" | "plazoPorOmision" | "frases" | "frasesAprobadasPorRh">),
+        ) as unknown as Omit<
+          TextosReclutamiento,
+          "montosEjemplo" | "montoPorOmision" | "plazoPorOmision" | "frases" | "frasesAprobadasPorRh" | "frasesInternasAprobadasPorRh"
+        >),
         montosEjemplo: t.reclutamiento.montos_ejemplo,
         montoPorOmision: t.reclutamiento.monto_por_omision,
         plazoPorOmision: Number(t.reclutamiento.plazo_por_omision),
         frases: t.reclutamiento.frases,
         frasesAprobadasPorRh: t.reclutamiento.frases_aprobadas_por_rh,
+        frasesInternasAprobadasPorRh: t.reclutamiento.frases_internas_aprobadas_por_rh,
       },
       comisiones: Object.fromEntries(
         (Object.entries(CLAVES_COMISIONES) as [ClaveArchivoComisiones, keyof TextosComisiones][]).map(([archivo, clave]) => [clave, t.comisiones[archivo]]),
