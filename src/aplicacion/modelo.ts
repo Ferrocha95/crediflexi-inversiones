@@ -213,12 +213,10 @@ export interface ModeloPdf {
     readonly preparadoPor: string | null;
     readonly vigencia: string | null;
     readonly notaAdicional: string | null;
-    /** Disclaimer del fondo: va en el pie de las dos páginas, con las dos entidades. */
+    /** Pie de la cotización (textos 0.13, ya incluye "Cotización con tasas netas"): va en las dos páginas, con las dos entidades. */
     readonly avisoFondo: string;
     /** Línea SIPRES: va en el pie de las dos páginas, con las dos entidades (textos 0.7). */
     readonly sipres: string;
-    /** "Tasa neta: ya después de impuestos.": va en el pie de las dos páginas. */
-    readonly notaNeta: string;
   };
   /** Página 2: calendario de las dos modalidades, comparación y comparativo de tasas. */
   readonly pagina2: ModeloPagina2 & { readonly benchmark: BenchmarkPdf };
@@ -314,7 +312,6 @@ export function modeloPdf(
       notaAdicional: oNulo(notaAdicional),
       avisoFondo: textos.pieAvisoFondo,
       sipres: textos.pieSipres,
-      notaNeta: textos.pieNotaNeta,
     },
     pagina2: {
       ...modeloPagina2(c, datos, textos.pdfPagina2),

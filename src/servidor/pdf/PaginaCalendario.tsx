@@ -437,7 +437,7 @@ export function PaginaCalendario({
 }: {
   modelo: ModeloPagina2 & { readonly benchmark: BenchmarkPdf };
   logo: LogoPdf;
-  pie: { readonly sipres: string; readonly avisoFondo: string; readonly notaNeta: string };
+  pie: { readonly sipres: string; readonly avisoFondo: string };
 }) {
   const { textos } = modelo;
   const [m1, m2] = modelo.tarjetas;
@@ -471,7 +471,7 @@ export function PaginaCalendario({
       <View>
         <Text style={e.pie}>{pie.sipres}</Text>
         {/* La nota de la tasa neta va en el mismo párrafo del disclaimer, después de él. */}
-        <Text style={e.pie}>{`${pie.avisoFondo} ${pie.notaNeta}`}</Text>
+        <Text style={e.pie}>{pie.avisoFondo}</Text>
       </View>
     </>
   );
@@ -489,7 +489,7 @@ export function PaginaCalendarioMensual({
 }: {
   modelo: ModeloPagina2;
   logo: LogoPdf;
-  pie: { readonly sipres: string; readonly avisoFondo: string; readonly notaNeta: string };
+  pie: { readonly sipres: string; readonly avisoFondo: string };
 }) {
   const { textos } = modelo;
   const m1 = modelo.tarjetas[0];
@@ -523,7 +523,7 @@ export function PaginaCalendarioMensual({
       <View>
         <Text style={e.pie}>{pie.sipres}</Text>
         {/* La nota de la tasa neta va en el mismo párrafo del disclaimer, después de él. */}
-        <Text style={e.pie}>{`${pie.avisoFondo} ${pie.notaNeta}`}</Text>
+        <Text style={e.pie}>{pie.avisoFondo}</Text>
       </View>
     </>
   );

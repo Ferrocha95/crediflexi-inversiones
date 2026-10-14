@@ -73,14 +73,22 @@ const TEXTOS_PAGINA2 = [
 const LINEA_SIPRES =
   "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES";
 
-/** El disclaimer exacto del pie de las dos páginas, para las dos entidades (Sprint 6a). */
+/**
+ * El pie exacto de las dos páginas, para las dos entidades (Sprint 7a, textos
+ * 0.13): reemplaza al disclaimer anterior y a la nota "Tasa neta: ya después
+ * de impuestos.". Junto con la línea SIPRES, es el único lugar del pie donde se
+ * permite "netas".
+ */
 const DISCLAIMER =
-  "Crediflexi, fondo de inversión privado, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R., inscrita en el SIPRES de la CONDUSEF " +
-  "(clave de registro 696338), autoridad supervisora indicada en dicho registro, y sujeta a las disposiciones aplicables. Por ser un " +
-  "fondo de inversión privado, para invertir se requiere adquirir una acción de $1,000.00 MXN. Las tasas están sujetas a cambio.";
+  "Cotización de CREDIFLEXI, Fondo Privado de Inversión, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. Tasas sujetas a cambios. " +
+  "Para acceder al fondo privado se requiere la compra de una acción de $1,000.00 MXN. Cotización con tasas netas. La presente cotización " +
+  "no representa un contrato ni un documento con valor legal; es solo informativa.";
 
-/** Las únicas frases donde se permite "neta" (Sprint 6a). */
-const NOTA_NETA = "Tasa neta: ya después de impuestos.";
+/** Lo que el pie ya no lleva (Sprint 7a). */
+const NOTA_NETA_ANTERIOR = "Tasa neta: ya después de impuestos.";
+const AUTORIDAD_ANTERIOR = "autoridad supervisora indicada en dicho registro";
+
+/** La nota neta/bruta del comparativo (página 2), sin cambios. */
 const NOTA_NETA_BENCHMARK = "La tasa de Crediflexi se muestra neta; las demás, brutas, antes de impuestos.";
 
 /** Los diez términos del glosario único; "Rendimiento total" y el pago al final llevan los meses de la inversión. */
@@ -98,17 +106,17 @@ const GLOSARIO = (meses: number) => [
 ];
 
 const RE_PROHIBIDO =
-  /(?<![\p{L}\p{N}])(garantiz\p{L}*|asegur\p{L}*|sin riesgo|libre de impuestos|neta|neto|sin comisiones|supervis\p{L}*|promesa|recib(es|ir[aá]s)|CNBV|CONDUSEF|SIPRES|SHCP)(?![\p{L}\p{N}])/iu;
+  /(?<![\p{L}\p{N}])(garantiz\p{L}*|asegur\p{L}*|sin riesgo|libre de impuestos|netas?|netos?|sin comisiones|supervis\p{L}*|promesa|recib(es|ir[aá]s)|CNBV|CONDUSEF|SIPRES|SHCP)(?![\p{L}\p{N}])/iu;
 
 /**
- * Únicas excepciones exactas a la revisión de lenguaje: la línea SIPRES y el
- * disclaimer (CONDUSEF y SIPRES solo ahí) y las dos negaciones del grupo
- * histórico del comparativo (seed/benchmark.json).
+ * Únicas excepciones exactas a la revisión de lenguaje: la línea SIPRES
+ * (CONDUSEF y SIPRES solo ahí), el pie de la cotización ("netas" solo ahí), la
+ * nota neta/bruta del comparativo y las dos negaciones del grupo histórico
+ * (seed/benchmark.json).
  */
 const EXCEPCIONES_EXACTAS = [
   LINEA_SIPRES,
   DISCLAIMER,
-  NOTA_NETA,
   NOTA_NETA_BENCHMARK,
   "Rendimiento histórico, no garantizado",
   "Rendimientos pasados no garantizan resultados futuros",
@@ -185,12 +193,15 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
     expect(porPagina[1]).toContain(`${P2.pagina} 2 ${P2.paginaDe} 2`);
   });
 
-  it("el pie de las dos páginas trae la línea SIPRES y el disclaimer exactos, sin 'supervisada por todas las autoridades'", { timeout: TIEMPO }, async () => {
+  it("el pie de las dos páginas trae la línea SIPRES y el pie nuevo exactos, sin el disclaimer anterior ni la nota neta anterior", { timeout: TIEMPO }, async () => {
     const { porPagina } = await render(modelo(caso.entidad, caso.esquema));
+    expect(porPagina).toHaveLength(2);
     for (const p of porPagina) {
       expect(p).toContain(LINEA_SIPRES);
       expect(p).toContain(DISCLAIMER);
-      expect(p).not.toMatch(/supervisad|todas las autoridades/i);
+      expect(p).not.toContain(AUTORIDAD_ANTERIOR);
+      expect(p).not.toContain(NOTA_NETA_ANTERIOR);
+      expect(p).not.toMatch(/supervis|todas las autoridades|CNBV/i);
       // CONDUSEF y SIPRES solo dentro de esos dos textos.
       expect(sinLineaSipres(p)).not.toMatch(/CONDUSEF|SIPRES/i);
     }
@@ -207,8 +218,8 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
     for (const termino of GLOSARIO(12)) expect(texto).toContain(termino);
     expect(texto).not.toMatch(/ganancia/i);
     expect(texto).not.toMatch(/Modalidad 1 \(cobrado\)|Modalidad 2 \(acumulado\)/);
-    // La nota de la tasa neta va en el pie de las dos páginas; la del comparativo, en la página 2.
-    for (const p of porPagina) expect(p).toContain(NOTA_NETA);
+    // "Cotización con tasas netas" va en el pie de las dos páginas; la nota del comparativo, sin cambios, en la página 2.
+    for (const p of porPagina) expect(p).toContain("Cotización con tasas netas.");
     expect(porPagina[1]).toContain(NOTA_NETA_BENCHMARK);
     expect(porPagina[1]).toContain("Tasas anuales brutas, antes de impuestos.");
   });
@@ -324,7 +335,9 @@ describe("PDF real: la revisión de lenguaje detecta lo prohibido", () => {
     "Sin riesgo",
     "libre de impuestos",
     "ganancia neta",
+    "tasas netas",
     "monto neto",
+    "montos netos",
     "sin comisiones",
     "supervisada",
     "CNBV",
@@ -348,26 +361,27 @@ describe("PDF real: la revisión de lenguaje detecta lo prohibido", () => {
     expect(sinLineaSipres(`${LINEA_SIPRES} Supervisada por la CNBV.`)).toMatch(RE_PROHIBIDO);
   });
 
-  it("el disclaimer se perdona solo exacto: alterado, o con CONDUSEF fuera de él, ya no", () => {
+  it("el pie se perdona solo exacto: alterado, o con CONDUSEF o SIPRES fuera de la línea SIPRES, ya no", () => {
     expect(sinLineaSipres(DISCLAIMER)).not.toMatch(RE_PROHIBIDO);
-    expect(sinLineaSipres(DISCLAIMER.replace("sujeta a las disposiciones aplicables", "supervisada por todas las autoridades"))).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres(DISCLAIMER.replace("es solo informativa", "está supervisada por todas las autoridades"))).toMatch(RE_PROHIBIDO);
     expect(sinLineaSipres(`${DISCLAIMER} Registrada ante la CONDUSEF.`)).toMatch(RE_PROHIBIDO);
     expect(sinLineaSipres("Inscrita en el SIPRES")).toMatch(RE_PROHIBIDO);
   });
 
-  it("'neta' solo se perdona en 'Tasa anual neta' y en las dos notas exactas", () => {
-    expect(sinLineaSipres(`Tasa anual neta TASA ANUAL NETA Tu tasa anual neta ${NOTA_NETA} ${NOTA_NETA_BENCHMARK}`)).not.toMatch(RE_PROHIBIDO);
+  it("'neta' solo se perdona en 'Tasa anual neta', en el pie exacto y en la nota exacta del comparativo; la nota neta anterior ya no", () => {
+    expect(sinLineaSipres(`Tasa anual neta TASA ANUAL NETA Tu tasa anual neta ${DISCLAIMER} ${NOTA_NETA_BENCHMARK}`)).not.toMatch(RE_PROHIBIDO);
     expect(sinLineaSipres("Rendimiento neto")).toMatch(RE_PROHIBIDO);
     expect(sinLineaSipres("Tasa neta anual")).toMatch(RE_PROHIBIDO);
-    expect(sinLineaSipres("Tasa neta: ya después de impuestos y comisiones.")).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres("Cotización con tasas netas.")).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres(DISCLAIMER.replace("Cotización con tasas netas.", "Cotización con tasas netas y sin comisiones."))).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres(NOTA_NETA_ANTERIOR)).toMatch(RE_PROHIBIDO);
   });
 
-  it("el disclaimer nuevo se perdona solo exacto; 'supervisada' y 'CNBV' siguen prohibidas", () => {
+  it("con el pie nuevo, 'supervisada' y 'CNBV' siguen prohibidas", () => {
     expect(sinLineaSipres(DISCLAIMER)).not.toMatch(RE_PROHIBIDO);
-    expect(sinLineaSipres(DISCLAIMER.replace("autoridad supervisora indicada en dicho registro", "supervisada por todas las autoridades del país"))).toMatch(
-      RE_PROHIBIDO,
-    );
+    expect(sinLineaSipres(DISCLAIMER.replace("Tasas sujetas a cambios.", "Supervisada por la CNBV."))).toMatch(RE_PROHIBIDO);
     expect(sinLineaSipres(`${DISCLAIMER} Supervisada por la CNBV.`)).toMatch(RE_PROHIBIDO);
+    expect(sinLineaSipres(`${LINEA_SIPRES} supervisada`)).toMatch(RE_PROHIBIDO);
   });
 
   it("las negaciones del grupo histórico se perdonan solo exactas; \"garantizado\" en cualquier otro lugar sigue prohibido", () => {

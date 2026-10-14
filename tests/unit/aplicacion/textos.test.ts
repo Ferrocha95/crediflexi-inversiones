@@ -37,7 +37,7 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 describe("cargarTextos: el archivo real", () => {
   it("carga seed/textos_cotizacion.json versión 0.9", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.12");
+    expect(t.version).toBe("0.13");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual neta indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +
@@ -79,10 +79,11 @@ const GLOSARIO = {
   tasa_anual_neta: "Tasa anual neta",
 };
 
+/** Pie de la cotización (Sprint 7a, 0.13): reemplaza al disclaimer anterior y a la nota "Tasa neta: ya después de impuestos.". */
 const DISCLAIMER =
-  "Crediflexi, fondo de inversión privado, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R., inscrita en el SIPRES de la CONDUSEF " +
-  "(clave de registro 696338), autoridad supervisora indicada en dicho registro, y sujeta a las disposiciones aplicables. Por ser un " +
-  "fondo de inversión privado, para invertir se requiere adquirir una acción de $1,000.00 MXN. Las tasas están sujetas a cambio.";
+  "Cotización de CREDIFLEXI, Fondo Privado de Inversión, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. Tasas sujetas a cambios. " +
+  "Para acceder al fondo privado se requiere la compra de una acción de $1,000.00 MXN. Cotización con tasas netas. La presente cotización " +
+  "no representa un contrato ni un documento con valor legal; es solo informativa.";
 
 describe("cargarTextos: glosario único (Sprint 6a, versión 0.8)", () => {
   it("el bloque glosario trae exactamente los once términos (Sprint 6b: más el rendimiento mensual promedio)", () => {
@@ -121,19 +122,27 @@ describe("cargarTextos: glosario único (Sprint 6a, versión 0.8)", () => {
     expect(t.pdfPagina2.benchmarkTuTasa).toBe("Tu tasa anual neta");
   });
 
-  it("la nota de pie de la tasa neta y la nota neta/bruta del comparativo, exactas", () => {
+  it("la nota de pie 'Tasa neta' ya no existe (Sprint 7a: va dentro del pie); la nota neta/bruta del comparativo sigue exacta", () => {
     const t = cargarBien(textosJson);
-    expect(t.pieNotaNeta).toBe("Tasa neta: ya después de impuestos.");
+    expect(textosJson).not.toHaveProperty("pie_nota_neta");
+    expect(t).not.toHaveProperty("pieNotaNeta");
+    expect(JSON.stringify(textosJson)).not.toContain("Tasa neta: ya después de impuestos.");
     expect(t.pdfPagina2.benchmarkNotaNeta).toBe("La tasa de Crediflexi se muestra neta; las demás, brutas, antes de impuestos.");
   });
 
-  it("el pie, para las dos entidades: la línea SIPRES y el disclaimer nuevo, exactos, sin 'supervisada'", () => {
+  it("pie_nota_neta ahora es una clave desconocida", () => {
+    const j = copia() as Record<string, unknown>;
+    j.pie_nota_neta = "Tasa neta: ya después de impuestos.";
+    expect(errorDe(j).detalles.join("\n")).toContain("pie_nota_neta");
+  });
+
+  it("el pie, para las dos entidades: la línea SIPRES y el pie nuevo, exactos, sin 'supervisada' ni la autoridad supervisora", () => {
     const t = cargarBien(textosJson);
     expect(t.pieSipres).toBe(
       "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES",
     );
     expect(t.pieAvisoFondo).toBe(DISCLAIMER);
-    expect(JSON.stringify(textosJson)).not.toMatch(/supervisad|todas las autoridades|CNBV/i);
+    expect(JSON.stringify(textosJson)).not.toMatch(/supervisad|todas las autoridades|CNBV|autoridad supervisora/i);
   });
 
   it("fuera de comisiones (bloque reclutamiento), el archivo ya no dice 'ganancia'", () => {

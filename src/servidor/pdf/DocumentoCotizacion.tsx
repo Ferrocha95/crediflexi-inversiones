@@ -281,7 +281,7 @@ export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo:
           {/* SIPRES (si la entidad lo lleva) y el aviso del fondo, en un solo párrafo para ahorrar renglones. */}
           <Text style={e.pieNota}>{pie.sipres}</Text>
           {/* La nota de la tasa neta va en el mismo párrafo del disclaimer, después de él. */}
-          <Text style={e.pieNota}>{`${pie.avisoFondo} ${pie.notaNeta}`}</Text>
+          <Text style={e.pieNota}>{pie.avisoFondo}</Text>
         </View>
         {numero(1)}
       </Page>

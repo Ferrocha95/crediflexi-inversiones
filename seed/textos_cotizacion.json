@@ -1,5 +1,5 @@
 {
-  "version": "0.12",
+  "version": "0.13",
   "glosario": {
     "rendimiento_mensual": "Rendimiento mensual",
     "rendimiento_mensual_promedio": "Rendimiento mensual (promedio)",
@@ -16,9 +16,8 @@
   "detalle_pago_mensual": "cada mes, del mes 1 al mes {meses}",
   "nota_mensual_al_final": "se acumula y se paga al final del plazo",
   "pie_base": "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual neta indicada y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente a 12 meses; el rendimiento total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables son las del contrato que se firme.",
-  "pie_aviso_fondo": "Crediflexi, fondo de inversión privado, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R., inscrita en el SIPRES de la CONDUSEF (clave de registro 696338), autoridad supervisora indicada en dicho registro, y sujeta a las disposiciones aplicables. Por ser un fondo de inversión privado, para invertir se requiere adquirir una acción de $1,000.00 MXN. Las tasas están sujetas a cambio.",
+  "pie_aviso_fondo": "Cotización de CREDIFLEXI, Fondo Privado de Inversión, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. Tasas sujetas a cambios. Para acceder al fondo privado se requiere la compra de una acción de $1,000.00 MXN. Cotización con tasas netas. La presente cotización no representa un contrato ni un documento con valor legal; es solo informativa.",
   "pie_sipres": "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES",
-  "pie_nota_neta": "Tasa neta: ya después de impuestos.",
   "linea_preparado_por": "Preparado por {ejecutivo}.",
   "linea_vigencia": "Vigencia: {vigencia}.",
   "estatus_tramo": {

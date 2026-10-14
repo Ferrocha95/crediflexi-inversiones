@@ -67,7 +67,7 @@ function modeloF(): ModeloPdf {
 
 describe("textos 0.10 y semilla 0.9.2 (Sprint 6b)", () => {
   it("versiones", () => {
-    expect(textos.version).toBe("0.12");
+    expect(textos.version).toBe("0.13");
     expect(semillaJson.version).toBe("0.9.2");
   });
 

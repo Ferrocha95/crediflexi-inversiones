@@ -148,12 +148,10 @@ export interface TextosCotizacion {
   /** "Mensual" o "Al final del plazo" (del glosario): el valor de "Esquema" en la página 1 y en la vista previa. */
   readonly esquemaCorto: Readonly<Record<Esquema, string>>;
   readonly monedaDeshabilitada: string;
-  /** Disclaimer del fondo, en el pie de las dos páginas del PDF (las dos entidades). */
+  /** Pie de la cotización (Sprint 7a: con "Cotización con tasas netas"), en las dos páginas del PDF (las dos entidades). */
   readonly pieAvisoFondo: string;
   /** Línea SIPRES, en el pie de las dos páginas del PDF (las dos entidades). */
   readonly pieSipres: string;
-  /** "Tasa neta: ya después de impuestos.", en el pie de las dos páginas del PDF. */
-  readonly pieNotaNeta: string;
   /** Etiqueta de cada resultado, por esquema (pantalla y PDF), del glosario; la del rendimiento total lleva {meses}. */
   readonly etiquetasResultados: Readonly<Record<Esquema, Readonly<Record<Salida, string>>>>;
   /** Plantilla con {meses}, del glosario: cuándo se paga el rendimiento, por esquema (página 1, página 2 y vista previa). */
@@ -732,7 +730,6 @@ const esquemaTextos = z
       moneda_deshabilitada: texto("moneda_deshabilitada", MARCADORES_POR_CAMPO.moneda_deshabilitada),
       pie_aviso_fondo: texto("pie_aviso_fondo"),
       pie_sipres: texto("pie_sipres"),
-      pie_nota_neta: texto("pie_nota_neta"),
       pdf: z.strictObject(
         {
           titulo: texto("pdf.titulo"),
@@ -814,7 +811,6 @@ const esquemaTextos = z
       monedaDeshabilitada: t.moneda_deshabilitada,
       pieAvisoFondo: t.pie_aviso_fondo,
       pieSipres: t.pie_sipres,
-      pieNotaNeta: t.pie_nota_neta,
       etiquetasResultados: {
         mensual: etiquetas(g.rendimiento_mensual_promedio),
         final_del_plazo: etiquetas(`${g.rendimiento_mensual_promedio}, ${t.nota_mensual_al_final}`),
