@@ -12,6 +12,7 @@
     "db:reset": "supabase db reset",
     "db:status": "supabase status",
     "usuarios:sinteticos": "node scripts/crear-usuarios-sinteticos.mjs",
+    "seed:dev": "node scripts/generar-seed-dev.mjs",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:rls": "vitest run --project rls",

@@ -24,6 +24,8 @@ backups/
 *.sql
 !supabase/migrations/*.sql
 !supabase/seed.sql
+# Seed de usuarios de desarrollo: lleva la contraseña local (npm run seed:dev)
+supabase/seeds/local/
 !supabase/tests/**/*.sql
 
 # Hojas de cálculo y datos tabulares

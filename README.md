@@ -61,6 +61,26 @@ Si los datos ya existen, el script se niega: para empezar de cero,
 `npm run db:reset` (borra **todos** los datos de la base local) y vuelve a
 correrlo. Roles válidos: `DIRECTOR_REGIONAL`, `GERENTE` y `EJECUTIVO`.
 
+### Usuarios fijos de desarrollo (seed)
+
+Para tener siempre los mismos cuatro usuarios después de cada reset, con una
+sola contraseña que **no se sube a git**:
+
+```sh
+npm run seed:dev                                # contraseña aleatoria (se muestra una vez)
+npm run seed:dev -- --contrasena <contraseña>   # o una elegida (12 caracteres o más)
+npm run db:reset                                # BORRA los datos locales y aplica migraciones + seed
+```
+
+`seed:dev` escribe `supabase/seeds/local/usuarios_dev.sql` (ignorado por git) y
+`supabase/config.toml` lo carga en cada `db reset`. Crea la "Organización de
+Prueba" con la "Sucursal de Prueba" y la cadena de mando
+`director@prueba.local` (director regional) → `gerente@prueba.local` (gerente) →
+`ejecutivo1@prueba.local` y `ejecutivo2@prueba.local` (ejecutivos). Después,
+cada `npm run db:reset` los vuelve a crear con la misma contraseña; para
+cambiarla, corre `seed:dev` otra vez. En un clon nuevo el archivo no existe y
+el reset simplemente no crea estos usuarios.
+
 Entra en `http://127.0.0.1:3000/acceso` con el correo y la contraseña. El menú
 muestra tu nombre, rol y sucursal, y el botón **Cerrar sesión**. Si la sesión
 expira mientras usas el cotizador, la pantalla lo avisa con un enlace para
