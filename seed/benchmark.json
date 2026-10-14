@@ -1,6 +1,6 @@
 {
-  "version": "0.4.2",
-  "actualizado_al": "2026-10-08",
+  "version": "0.5",
+  "actualizado_al": "2026-10-14",
   "tipo_de_dato": "Última tasa o rendimiento publicado de cada instrumento; la fecha de cada uno se muestra junto a él",
   "reglas": {
     "mostrar_fecha_por_instrumento": true,
@@ -30,6 +30,46 @@
   },
   "instrumentos": [
     {
+      "id": "banamex_pagare_60",
+      "nombre": "Banamex · Pagaré 60 días",
+      "grupo": "Bancos",
+      "tipo_dato": "tasa_vigente",
+      "tasa_anual": "0.0628",
+      "moneda": "MXN",
+      "periodo": null,
+      "fecha_dato": "2026-10-30",
+      "fecha_tipo": "vigencia_hasta",
+      "condiciones": "Pagaré Banamex a 60 días (100% CETE 60 días), tasa anual fija antes de impuestos, desde $2,500; campaña del 03/08 al 30/10/2026",
+      "nota_asterisco": "Pagaré Banamex a 60 días, desde $2,500; no es a un año.",
+      "fuente": {
+        "nombre": "Banamex, Pagaré Banamex: 100% CETE 60 días, vigente al 30/10/2026",
+        "nombre_corto": "Banamex",
+        "url": "https://www.banamex.com/hazmasdinero/index.html"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "blackrock_blkgub1",
+      "nombre": "BlackRock · BLKGUB1 (12 meses)",
+      "grupo": "BlackRock",
+      "tipo_dato": "rendimiento_historico",
+      "tasa_anual": "0.0653",
+      "moneda": "MXN",
+      "periodo": "12 meses al 30/09/2026",
+      "fecha_dato": "2026-09-30",
+      "fecha_tipo": "corte",
+      "condiciones": "Fondo de deuda gubernamental, serie C0-D; rendimiento de 12 meses al 30/09/2026, que en la ficha considera las retenciones de ISR de la serie; capital en riesgo; la ficha no publica el rendimiento acumulado del año",
+      "nota_asterisco": null,
+      "fuente": {
+        "nombre": "BlackRock México, ficha del fondo BLKGUB1 (serie C0-D) al 30/09/2026",
+        "nombre_corto": "BlackRock",
+        "url": "https://www.blackrock.com/mx/intermediarios/productos/298845/liquidez-gubernamental-mexico-muy-corto-plazo"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
       "id": "cetes_364",
       "nombre": "CETES 1 año",
       "grupo": "CETES",
@@ -48,6 +88,88 @@
       },
       "verificacion": "OFICIAL",
       "incluir_en_pdf": true
+    },
+    {
+      "id": "mercado_pago",
+      "nombre": "Mercado Pago, hasta 12%",
+      "grupo": "Mercado Pago",
+      "tipo_dato": "tasa_vigente",
+      "tasa_anual": "0.1200",
+      "moneda": "MXN",
+      "periodo": null,
+      "fecha_dato": "2026-10-07",
+      "fecha_tipo": "publicacion",
+      "condiciones": "'Hasta' 12% anual, sujeto a las condiciones del producto (la página oficial no muestra fecha propia; consultada el 2026-10-07)",
+      "nota_asterisco": "Hasta 12% anual, sujeto a condiciones del producto.",
+      "fuente": {
+        "nombre": "Mercado Pago México, página oficial de la cuenta",
+        "nombre_corto": "Mercado Pago",
+        "url": "https://www.mercadopago.com.mx/cuenta"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "sp500_2a",
+      "nombre": "S&P 500 (2 años anualizado)",
+      "grupo": "S&P 500",
+      "tipo_dato": "rendimiento_historico",
+      "tasa_anual": "0.2140",
+      "moneda": "USD",
+      "periodo": "2 años al 31/12/2025",
+      "fecha_dato": "2025-12-31",
+      "fecha_tipo": "corte",
+      "condiciones": "Rendimiento total anualizado de 2024 y 2025 (dividendos reinvertidos), en dólares; cálculo propio con los rendimientos anuales de 25.02% y 17.88%",
+      "nota_asterisco": "Cálculo propio con rendimientos anuales de fuentes secundarias.",
+      "fuente": {
+        "nombre": "Cálculo propio con los rendimientos totales anuales del S&P 500 de 2024 (25.02%) y 2025 (17.88%), fuentes secundarias (YCharts y SlickCharts)",
+        "nombre_corto": "S&P 500 (cálculo propio)",
+        "url": "https://www.slickcharts.com/sp500/returns"
+      },
+      "verificacion": "SECUNDARIA",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "bancos",
+      "nombre": "Bancos (pagaré Inbursa)",
+      "grupo": "Bancos",
+      "tipo_dato": "tasa_vigente",
+      "tasa_anual": "0.0709",
+      "moneda": "MXN",
+      "periodo": null,
+      "fecha_dato": "2026-01-14",
+      "fecha_tipo": "vigencia_hasta",
+      "condiciones": "Tasa más alta del folleto, para inversiones desde $750,000; el folleto lista cuatro plazos (6.37%, 6.55%, 6.91% y 7.09%) y no pude confirmar a qué plazo corresponde cada una",
+      "nota_asterisco": "Tasa más alta del folleto de pagarés de Inbursa para inversiones desde $750,000.",
+      "fuente": {
+        "nombre": "Folleto de pagaré de Inbursa, tasas del 08 al 14 de enero de 2026",
+        "nombre_corto": "Inbursa",
+        "url": "https://autoexpressinbursa.com/sites/gfi/document/folleto-pagare.pdf"
+      },
+      "verificacion": "SECUNDARIA",
+      "incluir_en_pdf": false,
+      "motivo_si_no_se_incluye": "Reemplazado por Banamex, que pidió el dueño (14 de octubre de 2026)"
+    },
+    {
+      "id": "cetes_182",
+      "nombre": "CETES 6 meses",
+      "grupo": "CETES",
+      "tipo_dato": "tasa_vigente",
+      "tasa_anual": "0.0691",
+      "moneda": "MXN",
+      "periodo": null,
+      "fecha_dato": "2026-10-08",
+      "fecha_tipo": "publicacion",
+      "condiciones": "Subasta primaria de Banxico",
+      "nota_asterisco": null,
+      "fuente": {
+        "nombre": "Cetesdirecto (Nacional Financiera), tabla de valores gubernamentales del 08/10/2026",
+        "nombre_corto": "Cetesdirecto",
+        "url": "https://www.cetesdirecto.com/tablas/valores_gubernamentales/cetes.html"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": false,
+      "motivo_si_no_se_incluye": "El dueño pidió los CETES anuales"
     },
     {
       "id": "cetes_28",
@@ -92,45 +214,67 @@
       "motivo_si_no_se_incluye": "El dueño pidió los CETES anuales"
     },
     {
-      "id": "cetes_182",
-      "nombre": "CETES 6 meses",
-      "grupo": "CETES",
+      "id": "caja_libertad_final",
+      "nombre": "Caja Libertad · Al final del plazo",
+      "grupo": "Caja Libertad",
       "tipo_dato": "tasa_vigente",
-      "tasa_anual": "0.0691",
+      "tasa_anual": null,
       "moneda": "MXN",
       "periodo": null,
-      "fecha_dato": "2026-10-08",
-      "fecha_tipo": "publicacion",
-      "condiciones": "Subasta primaria de Banxico",
+      "fecha_dato": null,
+      "fecha_tipo": null,
+      "condiciones": "Por confirmar producto, plazo y monto",
       "nota_asterisco": null,
       "fuente": {
-        "nombre": "Cetesdirecto (Nacional Financiera), tabla de valores gubernamentales del 08/10/2026",
-        "nombre_corto": "Cetesdirecto",
-        "url": "https://www.cetesdirecto.com/tablas/valores_gubernamentales/cetes.html"
+        "nombre": "Caja Libertad, tasas por definir",
+        "nombre_corto": "Caja Libertad",
+        "url": "https://www.cajalibertad.org.mx/"
       },
-      "verificacion": "OFICIAL",
+      "verificacion": "SIN_DATO",
       "incluir_en_pdf": false,
-      "motivo_si_no_se_incluye": "El dueño pidió los CETES anuales"
+      "motivo_si_no_se_incluye": "Falta la tabla de tasas de Caja Libertad"
     },
     {
-      "id": "mercado_pago",
-      "nombre": "Mercado Pago, hasta 12%",
-      "grupo": "Mercado Pago",
+      "id": "caja_libertad_mensual",
+      "nombre": "Caja Libertad · Mensual",
+      "grupo": "Caja Libertad",
       "tipo_dato": "tasa_vigente",
-      "tasa_anual": "0.1200",
+      "tasa_anual": null,
       "moneda": "MXN",
       "periodo": null,
-      "fecha_dato": "2026-10-07",
-      "fecha_tipo": "publicacion",
-      "condiciones": "'Hasta' 12% anual, sujeto a las condiciones del producto (la página oficial no muestra fecha propia; consultada el 2026-10-07)",
-      "nota_asterisco": "Hasta 12% anual, sujeto a condiciones del producto.",
+      "fecha_dato": null,
+      "fecha_tipo": null,
+      "condiciones": "Por confirmar producto, plazo y monto",
+      "nota_asterisco": null,
       "fuente": {
-        "nombre": "Mercado Pago México, página oficial de la cuenta",
-        "nombre_corto": "Mercado Pago",
-        "url": "https://www.mercadopago.com.mx/cuenta"
+        "nombre": "Caja Libertad, tasas por definir",
+        "nombre_corto": "Caja Libertad",
+        "url": "https://www.cajalibertad.org.mx/"
       },
-      "verificacion": "OFICIAL",
-      "incluir_en_pdf": true
+      "verificacion": "SIN_DATO",
+      "incluir_en_pdf": false,
+      "motivo_si_no_se_incluye": "Falta la tabla de tasas de Caja Libertad"
+    },
+    {
+      "id": "nasdaq",
+      "nombre": "NASDAQ",
+      "grupo": "NASDAQ",
+      "tipo_dato": "rendimiento_historico",
+      "tasa_anual": null,
+      "moneda": "USD",
+      "periodo": null,
+      "fecha_dato": null,
+      "fecha_tipo": null,
+      "condiciones": "Por definir si es NASDAQ Composite o Nasdaq-100",
+      "nota_asterisco": null,
+      "fuente": {
+        "nombre": "Por definir",
+        "nombre_corto": "Por definir",
+        "url": "https://www.nasdaq.com/"
+      },
+      "verificacion": "SIN_DATO",
+      "incluir_en_pdf": false,
+      "motivo_si_no_se_incluye": "Solo encontré cifras de fuentes secundarias sin una fecha confiable y falta decidir qué índice; no puedo confirmar esto"
     },
     {
       "id": "nu_cajita_247",
@@ -150,7 +294,8 @@
         "url": "https://nubank.com.mx/cuenta/rendimientos/"
       },
       "verificacion": "OFICIAL",
-      "incluir_en_pdf": true
+      "incluir_en_pdf": false,
+      "motivo_si_no_se_incluye": "El dueño pidió cambiar Nu por Caja Libertad (14 de octubre de 2026)"
     },
     {
       "id": "nu_turbo",
@@ -170,88 +315,8 @@
         "url": "https://nubank.com.mx/cuenta/rendimientos/"
       },
       "verificacion": "OFICIAL",
-      "incluir_en_pdf": true
-    },
-    {
-      "id": "bancos",
-      "nombre": "Bancos (pagaré Inbursa)",
-      "grupo": "Bancos",
-      "tipo_dato": "tasa_vigente",
-      "tasa_anual": "0.0709",
-      "moneda": "MXN",
-      "periodo": null,
-      "fecha_dato": "2026-01-14",
-      "fecha_tipo": "vigencia_hasta",
-      "condiciones": "Tasa más alta del folleto, para inversiones desde $750,000; el folleto lista cuatro plazos (6.37%, 6.55%, 6.91% y 7.09%) y no pude confirmar a qué plazo corresponde cada una",
-      "nota_asterisco": "Tasa más alta del folleto de pagarés de Inbursa, para inversiones desde $750,000; no se sabe a qué plazo corresponde.",
-      "fuente": {
-        "nombre": "Folleto de pagaré de Inbursa, tasas del 08 al 14 de enero de 2026",
-        "nombre_corto": "Inbursa",
-        "url": "https://autoexpressinbursa.com/sites/gfi/document/folleto-pagare.pdf"
-      },
-      "verificacion": "SECUNDARIA",
       "incluir_en_pdf": false,
-      "motivo_si_no_se_incluye": "El dueño pidió comparar con BBVA y Santander, a un año (8 de octubre de 2026)"
-    },
-    {
-      "id": "bbva_pagare_360",
-      "nombre": "BBVA · Pagaré 360 días",
-      "grupo": "Bancos",
-      "tipo_dato": "tasa_vigente",
-      "tasa_anual": "0.0340",
-      "moneda": "MXN",
-      "periodo": null,
-      "fecha_dato": "2026-10-01",
-      "fecha_tipo": "publicacion",
-      "condiciones": "Pagaré Tradicional a 360 días, más de $1 millón: tasa anual fija 3.40% antes de impuestos; GAT calculada el 01/10/2026, vigente hasta el 03/11/2026; tasas revisables diariamente",
-      "nota_asterisco": "Pagaré Tradicional a 360 días, para montos de más de $1,000,000.",
-      "fuente": {
-        "nombre": "BBVA México, GAT nominal y real de inversiones (cálculo del 01/10/2026)",
-        "nombre_corto": "BBVA",
-        "url": "https://portal.bbva.mx/siabinternet/Repositorio/import/doctos/analisis/00018907.pdf"
-      },
-      "verificacion": "OFICIAL",
-      "incluir_en_pdf": true
-    },
-    {
-      "id": "santander_super_cete_360",
-      "nombre": "Santander · Pagaré 360 días",
-      "grupo": "Bancos",
-      "tipo_dato": "tasa_vigente",
-      "tasa_anual": "0.0575",
-      "moneda": "MXN",
-      "periodo": null,
-      "fecha_dato": "2026-09-08",
-      "fecha_tipo": "publicacion",
-      "condiciones": "Pagaré Súper CETE a 360 días, oferta exclusiva para dinero nuevo, desde $50,000: tasa bruta 5.75%; tasas variables ligadas a CETES 28; calculadas el 08/09/2026, vigentes al 08/03/2027",
-      "nota_asterisco": "Pagaré Súper CETE a 360 días: solo para dinero nuevo y desde $50,000; tasa variable ligada a CETES 28.",
-      "fuente": {
-        "nombre": "Santander México, GAT nominal y real de inversiones (calculadas el 08/09/2026)",
-        "nombre_corto": "Santander",
-        "url": "https://www.santander.com.mx/personas/inversiones/gats-inversiones"
-      },
-      "verificacion": "OFICIAL",
-      "incluir_en_pdf": true
-    },
-    {
-      "id": "blackrock_blkgub1",
-      "nombre": "BlackRock · BLKGUB1 (12 meses)",
-      "grupo": "BlackRock",
-      "tipo_dato": "rendimiento_historico",
-      "tasa_anual": "0.0817",
-      "moneda": "MXN",
-      "periodo": "12 meses",
-      "fecha_dato": "2025-12-31",
-      "fecha_tipo": "corte",
-      "condiciones": "Fondo de deuda gubernamental; rendimiento de 12 meses al 31/12/2025; capital en riesgo",
-      "nota_asterisco": null,
-      "fuente": {
-        "nombre": "BlackRock México, ficha del fondo BLKGUB1",
-        "nombre_corto": "BlackRock",
-        "url": "https://www.blackrock.com/mx/intermediarios/productos/298845/liquidez-gubernamental-mexico-muy-corto-plazo"
-      },
-      "verificacion": "OFICIAL",
-      "incluir_en_pdf": true
+      "motivo_si_no_se_incluye": "El dueño pidió cambiar Nu por Caja Libertad (14 de octubre de 2026)"
     },
     {
       "id": "sp500",
@@ -260,7 +325,7 @@
       "tipo_dato": "rendimiento_historico",
       "tasa_anual": "0.1551",
       "moneda": "USD",
-      "periodo": "10 años",
+      "periodo": "10 años al 30/06/2026",
       "fecha_dato": "2026-06-30",
       "fecha_tipo": "corte",
       "condiciones": "Rendimiento total anualizado a 10 años del índice, con dividendos reinvertidos, en dólares",
@@ -271,48 +336,8 @@
         "url": "https://www.ssga.com/library-content/products/factsheets/etfs/us/factsheet-us-en-spy.pdf"
       },
       "verificacion": "OFICIAL",
-      "incluir_en_pdf": true
-    },
-    {
-      "id": "nasdaq",
-      "nombre": "Nasdaq-100 (10 años anualizado)",
-      "grupo": "NASDAQ",
-      "tipo_dato": "rendimiento_historico",
-      "tasa_anual": "0.2116",
-      "moneda": "USD",
-      "periodo": "10 años",
-      "fecha_dato": "2026-09-29",
-      "fecha_tipo": "corte",
-      "condiciones": "Rendimiento anualizado a 10 años del índice Nasdaq-100, en dólares, con corte al 29/09/2026 (renglón NASDAQ-100® Index de la página de desempeño de Invesco QQQ)",
-      "nota_asterisco": "Rendimiento anual con interés compuesto, en dólares; renta variable con riesgo más alto y más volátil.",
-      "fuente": {
-        "nombre": "Invesco, desempeño de QQQ, renglón NASDAQ-100® Index (al 29/09/2026)",
-        "nombre_corto": "Invesco (Nasdaq-100)",
-        "url": "https://www.invesco.com/qqq-etf/en/performance.html"
-      },
-      "verificacion": "OFICIAL",
-      "incluir_en_pdf": true
-    },
-    {
-      "id": "caja_libertad",
-      "nombre": "Caja Libertad",
-      "grupo": "Caja Libertad",
-      "tipo_dato": "tasa_vigente",
-      "tasa_anual": null,
-      "moneda": "MXN",
-      "periodo": null,
-      "fecha_dato": null,
-      "fecha_tipo": null,
-      "condiciones": "Por confirmar producto y plazo",
-      "nota_asterisco": null,
-      "fuente": {
-        "nombre": "Por definir",
-        "nombre_corto": "Por definir",
-        "url": "https://www.cajalibertad.org.mx/"
-      },
-      "verificacion": "SIN_DATO",
       "incluir_en_pdf": false,
-      "motivo_si_no_se_incluye": "No encontré ninguna tasa publicada por Caja Libertad"
+      "motivo_si_no_se_incluye": "El dueño pidió la ventana de 2 años en lugar de la de 10"
     }
   ]
 }

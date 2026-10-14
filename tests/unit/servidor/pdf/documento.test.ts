@@ -430,15 +430,15 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
     return sinError(modeloPdf(c, { razonesSociales, textos, benchmark: benchmarkReal }, OPCIONALES, ahora, datosPagina2(semillaReal, c.solicitud, INICIO)));
   }
 
-  it("el 8 de octubre trae los dos grupos, cada barra con su tasa y su fecha, los avisos, los asteriscos y las fuentes", { timeout: TIEMPO }, async () => {
+  it("el 8 de octubre trae los cinco instrumentos en dos grupos, cada barra con su tasa y su fecha, los avisos, las notas y las fuentes", { timeout: TIEMPO }, async () => {
     const { paginas, porPagina } = await render(conFecha(new Date("2026-10-08T18:00:00Z")));
     expect(paginas).toBe(2);
     const p2 = porPagina[1];
     expect(p2).toContain(P2.benchmarkTitulo);
     expect(p2).toContain(
-      "Última tasa publicada de cada instrumento; la fecha de cada uno se indica junto a su barra. Actualizado al 8 de octubre de 2026.",
+      "Última tasa publicada de cada instrumento; la fecha de cada uno se indica junto a su barra. Actualizado al 14 de octubre de 2026.",
     );
-    expect(p2).toContain("Fuentes: Cetesdirecto, Mercado Pago, Nu México, BBVA, Santander, BlackRock, State Street (S&P 500) y Invesco (Nasdaq-100)");
+    expect(p2).toContain("Fuentes: Banamex, BlackRock, Cetesdirecto, Mercado Pago y S&P 500 (cálculo propio)");
     expect(p2).toContain("en dólares (USD)");
     for (const t of [
       "Última tasa publicada",
@@ -447,37 +447,34 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
       "CETES 1 año",
       "7.44%",
       "publicada el 8 de octubre de 2026",
-      "Mercado Pago, hasta 12% (1)",
-      "Nu · Cajita Turbo (hasta $25,000) (2)",
-      "vigente hasta el 7 de octubre de 2026",
-      "BBVA · Pagaré 360 días (3)",
-      "3.40%",
-      "publicada el 1 de octubre de 2026",
-      "Santander · Pagaré 360 días (4)",
-      "5.75%",
-      "publicada el 8 de septiembre de 2026",
-      "Nasdaq-100 (10 años anualizado) (5)",
-      "21.16%",
-      "al corte del 29 de septiembre de 2026",
-      "S&P 500 (10 años anualizado)",
-      "15.51%",
-      "al corte del 30 de junio de 2026",
-      "BlackRock · BLKGUB1 (12 meses)",
+      "Mercado Pago, hasta 12% (2)",
+      "12.00%",
+      "publicada el 7 de octubre de 2026",
+      "Banamex · Pagaré 60 días (1)",
+      "6.28%",
+      "vigente hasta el 30 de octubre de 2026",
+      "S&P 500 (2 años anualizado) (3)",
+      "21.40%",
       "al corte del 31 de diciembre de 2025",
+      "2 años al 31/12/2025",
+      "BlackRock · BLKGUB1 (12 meses)",
+      "6.53%",
+      "al corte del 30 de septiembre de 2026",
     ]) {
       expect(p2).toContain(t);
     }
+    // El S&P 500 va en el grupo histórico: después del título de ese grupo.
+    expect(p2.indexOf("S&P 500 (2 años anualizado)")).toBeGreaterThan(p2.indexOf("Rendimiento histórico, no garantizado"));
+    expect(p2.indexOf("Banamex · Pagaré 60 días")).toBeLessThan(p2.indexOf("Rendimiento histórico, no garantizado"));
     for (const a of [...benchmarkReal.avisos.tasa_vigente, ...benchmarkReal.avisos.rendimiento_historico]) expect(p2).toContain(a);
     for (const n of [
-      "(1) Hasta 12% anual",
-      "(2) Hasta $25,000",
-      "(3) Pagaré Tradicional a 360 días",
-      "(4) Pagaré Súper CETE a 360 días",
-      "(5) Rendimiento anual con interés compuesto, en dólares; renta variable con riesgo más alto y más volátil.",
+      "(1) Pagaré Banamex a 60 días, desde $2,500; no es a un año.",
+      "(2) Hasta 12% anual, sujeto a condiciones del producto.",
+      "(3) Cálculo propio con rendimientos anuales de fuentes secundarias.",
     ]) {
       expect(p2).toContain(n);
     }
-    for (const fuera of ["CETES 28 días", "Inbursa", "Caja Libertad"]) expect(p2).not.toContain(fuera);
+    for (const fuera of ["CETES 28 días", "Inbursa", "Caja Libertad", "BBVA", "Santander", "Nasdaq", "Nu ·", "10 años"]) expect(p2).not.toContain(fuera);
     expect(porPagina[0]).not.toContain(P2.benchmarkTitulo);
   });
 
@@ -486,10 +483,10 @@ describe("PDF real: comparativo de tasas (seed/benchmark.json)", () => {
     expect(porPagina[1]).toContain("Tu tasa anual neta 20.00%");
   });
 
-  it("con el archivo tal cual, el 9 de octubre Nu (vigente hasta el 7) se dibuja con su fecha", { timeout: TIEMPO }, async () => {
-    const { porPagina } = await render(conFecha(new Date("2026-10-09T12:00:00-06:00")));
-    expect(porPagina[1]).toContain("Nu · Cajita 24/7");
-    expect(porPagina[1]).toContain("vigente hasta el 7 de octubre de 2026");
+  it("con el archivo tal cual, el 31 de octubre Banamex (vigente hasta el 30) se dibuja con su fecha", { timeout: TIEMPO }, async () => {
+    const { porPagina } = await render(conFecha(new Date("2026-10-31T12:00:00-06:00")));
+    expect(porPagina[1]).toContain("Banamex · Pagaré 60 días (1)");
+    expect(porPagina[1]).toContain("vigente hasta el 30 de octubre de 2026");
   });
 
   it("en dólares lo omite con su nota", { timeout: TIEMPO }, async () => {
