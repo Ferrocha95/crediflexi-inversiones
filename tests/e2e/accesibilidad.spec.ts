@@ -64,11 +64,14 @@ test.describe("2. teclado en el menú", () => {
     await expect(cotizador).toHaveAttribute("aria-current", "page");
     await expect(menu.getByRole("link", { name: "Pipeline" })).toHaveAttribute("href", "/pipeline");
     await expect(menu.getByRole("link", { name: "Comisiones" })).toHaveAttribute("href", "/comisiones");
+    await expect(menu.getByRole("link", { name: "Biblioteca" })).toHaveAttribute("href", "/biblioteca");
+    await expect(menu.getByRole("button", { name: /Biblioteca/ })).toHaveCount(0);
 
-    for (const nombre of esperados.slice(3)) {
+    for (const nombre of ["Plan semanal", "Proyección", "Metas", "Cartera"]) {
       const b = menu.getByRole("button", { name: new RegExp(nombre) });
       await expect(b).toHaveAttribute("aria-disabled", "true");
       await expect(b).toContainText("Próximamente");
+      await expect(menu.getByRole("link", { name: new RegExp(nombre) })).toHaveCount(0);
     }
 
     // Enter sobre un destino "Próximamente" no navega.
@@ -106,9 +109,12 @@ test.describe("2. teclado en el menú", () => {
     await page.keyboard.press("Enter");
     const dialogo = page.getByRole("dialog", { name: "Más secciones" });
     await expect(dialogo).toBeVisible();
-    for (const nombre of ["Metas", "Cartera", "Biblioteca"]) {
+    for (const nombre of ["Metas", "Cartera"]) {
       await expect(dialogo.getByRole("button", { name: `${nombre}, Próximamente` })).toHaveAttribute("aria-disabled", "true");
+      await expect(dialogo.getByRole("link", { name: new RegExp(nombre) })).toHaveCount(0);
     }
+    await expect(dialogo.getByRole("link", { name: "Biblioteca" })).toHaveAttribute("href", "/biblioteca");
+    await expect(dialogo.getByRole("button", { name: /Biblioteca/ })).toHaveCount(0);
     await sinViolaciones(page);
     await page.keyboard.press("Escape");
     await expect(dialogo).toBeHidden();

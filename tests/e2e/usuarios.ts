@@ -141,6 +141,51 @@ export async function crearElementoBibliotecaE2E(datos: {
   return data.id as string;
 }
 
+/** Rutas en el bucket de los elementos con esos ids (los enlaces no tienen). */
+async function rutasDeElementos(ids: readonly string[]): Promise<string[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await admin().from("biblioteca").select("ruta").in("id", [...ids]);
+  if (error) falla("leer las rutas de la biblioteca E2E", error.message);
+  return data.map((f) => f.ruta as string | null).filter((r): r is string => r !== null);
+}
+
+/**
+ * Borra, con el administrador, las filas de biblioteca con esos ids y sus
+ * objetos del bucket. Devuelve las rutas borradas, para comprobar después que
+ * no quedó ninguna.
+ */
+export async function borrarElementosBibliotecaE2E(ids: readonly string[]): Promise<string[]> {
+  const rutas = await rutasDeElementos(ids);
+  if (ids.length > 0) {
+    const { error } = await admin().from("biblioteca").delete().in("id", [...ids]);
+    if (error) falla("borrar las filas de biblioteca E2E", error.message);
+  }
+  if (rutas.length > 0) {
+    const { error } = await admin().storage.from("biblioteca").remove(rutas);
+    if (error) falla("borrar los objetos de biblioteca E2E", error.message);
+  }
+  return rutas;
+}
+
+/** Cuántas de esas filas y de esos objetos siguen existiendo. */
+export async function restosBibliotecaE2E(ids: readonly string[], rutas: readonly string[]): Promise<{ filas: number; objetos: number }> {
+  let filas = 0;
+  if (ids.length > 0) {
+    const r = await admin().from("biblioteca").select("id", { count: "exact", head: true }).in("id", [...ids]);
+    if (r.error) falla("contar las filas de biblioteca E2E", r.error.message);
+    filas = r.count ?? -1;
+  }
+  let objetos = 0;
+  for (const ruta of rutas) {
+    const carpeta = ruta.slice(0, ruta.indexOf("/"));
+    const nombre = ruta.slice(ruta.indexOf("/") + 1);
+    const lista = await admin().storage.from("biblioteca").list(carpeta, { search: nombre });
+    if (lista.error) falla("listar los objetos de biblioteca E2E", lista.error.message);
+    objetos += lista.data.filter((o) => o.name === nombre).length;
+  }
+  return { filas, objetos };
+}
+
 /** Ids de Auth de todas las cuentas @e2e.test. */
 async function cuentasE2E(): Promise<string[]> {
   const ids: string[] = [];

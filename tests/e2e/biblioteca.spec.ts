@@ -12,6 +12,9 @@ const PDF_SINTETICO = Buffer.from("%PDF-1.4\n% Manual sintético E2E\n1 0 obj <<
 
 test.describe("biblioteca", () => {
   test("el gerente sube un PDF; el ejecutivo lo ve y lo descarga, y no ve Subir archivo", async ({ browser }) => {
+    // Con toda la suite en paralelo, dos inicios de sesión, la subida y la descarga
+    // pasaron de 30 s (pendiente de la descarga lenta); sola tarda unos 6 s.
+    test.setTimeout(90_000);
     const gerente = await crearUsuarioE2E({ correo: correoUnico("gerente.biblioteca"), nombre: "Gerente Sintético Biblioteca", rol: "GERENTE" });
     const ejecutivo = await crearUsuarioE2E({
       correo: correoUnico("ejecutivo.biblioteca"),
@@ -30,7 +33,7 @@ test.describe("biblioteca", () => {
     await paginaGerente.getByRole("button", { name: "Subir archivo" }).click();
     const dialogo = paginaGerente.getByRole("dialog", { name: "Subir archivo" });
     await expect(dialogo.getByText("No subas las cuentas bancarias de la empresa")).toBeVisible();
-    await dialogo.getByLabel("Archivo").setInputFiles({ name: "manual.pdf", mimeType: "application/pdf", buffer: PDF_SINTETICO });
+    await dialogo.getByLabel("Archivo", { exact: true }).setInputFiles({ name: "manual.pdf", mimeType: "application/pdf", buffer: PDF_SINTETICO });
     await dialogo.getByLabel("Nombre").fill(nombre);
     await dialogo.getByLabel("Categoría").selectOption({ label: "Capacitación (manuales y guías)" });
 
