@@ -431,6 +431,9 @@ const COMPROBACIONES_FINALES = [
                  and (select position('usuario_actual_id' in qual) > 0 and position('usuario_actual_id' in with_check) > 0
                       ${politicaDeProspectos("prospectos: editar los propios")})
                  and position('mia.organizacion_id' in ${definicion("privado.organizacion_actual_id()")}) > 0
+                 and position('new.subido_por_nombre' in ${definicion("public.fijar_subido_por_nombre()")}) > 0
+                 and (select prosecdef from pg_proc where oid = 'public.fijar_subido_por_nombre()'::regprocedure)
+                 and not has_function_privilege('authenticated', 'public.fijar_subido_por_nombre()', 'EXECUTE')
                  and (select position('organizacion_actual_id' in qual) > 0 and position('GERENTE' in qual) > 0
                       ${politicaDeBiblioteca("biblioteca: leer los de mi organización")})
                  and (select position('usuario_actual_id' in with_check) > 0
@@ -449,6 +452,7 @@ const COMPROBACIONES_FINALES = [
     nombre: "los triggers",
     sql: `select array_agg(tgname::text order by tgname) = array[
                    'biblioteca_fijar_archivado_en',
+                   'biblioteca_fijar_subido_por_nombre',
                    'organizaciones_fijar_actualizado_en',
                    'prospectos_fijar_actualizado_en',
                    'prospectos_fijar_archivado_en',

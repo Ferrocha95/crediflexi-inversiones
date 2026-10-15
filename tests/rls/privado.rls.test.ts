@@ -66,6 +66,7 @@ describe("RLS privado: las funciones de trigger de public no se pueden llamar po
     "impedir_cambio_organizacion_sucursal",
     "impedir_reasignar_prospecto",
     "fijar_archivado_en",
+    "fijar_subido_por_nombre",
   ]) {
     it(`authenticated no puede llamar por RPC a public.${funcion}`, async () => {
       esperarFalloSinDatos(await e1.rpc(funcion));

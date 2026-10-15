@@ -268,6 +268,51 @@ describe("RLS biblioteca: insertar solo Director regional y Gerente", () => {
   });
 });
 
+// La política de usuarios no deja que un ejecutivo vea a su gerente ni que un
+// gerente vea al director: el nombre de quien subió se copia en la fila al
+// insertar (trigger security definer) y nadie lo puede escribir.
+describe("RLS biblioteca: quién lo subió", () => {
+  it("E1 ve el nombre del gerente G1 en un elemento que subió G1, aunque no ve su fila de usuario", async () => {
+    const { data: subido } = await clientes.G1.from("biblioteca").insert(enlaceNuevo()).select("id").single();
+    if (subido) filasCreadas.push(subido.id as string);
+    const { data, error } = await clientes.E1.from("biblioteca").select("subido_por_nombre").eq("id", subido!.id).single();
+    expect(error).toBeNull();
+    expect(data?.subido_por_nombre).toBe("Gerente Uno");
+    const usuario = await clientes.E1.from("usuarios").select("id").eq("id", inject("rls").idsUsuarios.G1);
+    expect(usuario.data).toEqual([]);
+  });
+
+  it("G1 ve el nombre del director D1 en un elemento que subió D1", async () => {
+    const { data: subido } = await clientes.D1.from("biblioteca").insert(enlaceNuevo()).select("id").single();
+    if (subido) filasCreadas.push(subido.id as string);
+    const { data } = await clientes.G1.from("biblioteca").select("subido_por_nombre").eq("id", subido!.id).single();
+    expect(data?.subido_por_nombre).toBe("Director Uno");
+  });
+
+  it("el nombre lo pone la base aunque el administrador mande otro", async () => {
+    const { data } = await admin
+      .from("biblioteca")
+      .insert({ ...enlaceNuevo(), organizacion_id: org("A"), subido_por: inject("rls").idsUsuarios.G1, subido_por_nombre: "Otro Nombre" })
+      .select("id, subido_por_nombre")
+      .single();
+    if (data) filasCreadas.push(data.id as string);
+    expect(data?.subido_por_nombre).toBe("Gerente Uno");
+  });
+
+  it("G1 no puede mandar subido_por_nombre al insertar (42501)", async () => {
+    const fila = enlaceNuevo({ subido_por_nombre: "Otro Nombre" });
+    const { error } = await clientes.G1.from("biblioteca").insert(fila);
+    expect(error?.code).toBe(PERMISO_DENEGADO);
+    expect(await filasConNombre(fila.nombre as string)).toEqual([]);
+  });
+
+  it("G1 no puede cambiar subido_por_nombre (42501)", async () => {
+    const a = await crearFila({});
+    const { error } = await clientes.G1.from("biblioteca").update({ subido_por_nombre: "Otro Nombre" }).eq("id", a.id);
+    expect(error?.code).toBe(PERMISO_DENEGADO);
+  });
+});
+
 describe("RLS biblioteca: restricciones de la tabla", () => {
   it("26,214,400 bytes se aceptan", async () => {
     const { data, error } = await clientes.G1

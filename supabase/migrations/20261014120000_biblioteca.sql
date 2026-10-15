@@ -70,6 +70,10 @@ create table public.biblioteca (
   tamano_bytes    bigint,
   subido_por      uuid        not null default privado.usuario_actual_id()
                               references public.usuarios (id) on delete restrict,
+  -- Copia del nombre de quien subió, al insertar (trigger). La política de
+  -- usuarios no deja que un ejecutivo vea a su gerente ni que un gerente vea
+  -- al director, y la Biblioteca muestra quién subió cada elemento a todos.
+  subido_por_nombre text      not null,
   creado_en       timestamptz not null default now(),
   archivado_en    timestamptz,
   constraint biblioteca_nombre_no_vacio
@@ -141,18 +145,41 @@ create index biblioteca_subido_por_idx
 
 
 -- -----------------------------------------------------------------------------
--- 4. Trigger: al archivar, la hora la pone el servidor (misma función que
---    prospectos).
+-- 4. Triggers
 -- -----------------------------------------------------------------------------
+
+-- Al archivar, la hora la pone el servidor (misma función que prospectos).
 create trigger biblioteca_fijar_archivado_en
   before update of archivado_en on public.biblioteca
   for each row execute function public.fijar_archivado_en();
 
+-- Al insertar, el nombre de quien subió lo pone la base, sin importar lo que
+-- mande el cliente. security definer para leerlo sin la política de usuarios;
+-- solo lee la fila de subido_por, que la política de insertar ya obliga a ser
+-- el usuario actual.
+create function public.fijar_subido_por_nombre()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  new.subido_por_nombre := (select u.nombre from public.usuarios u where u.id = new.subido_por);
+  return new;
+end;
+$$;
+
+create trigger biblioteca_fijar_subido_por_nombre
+  before insert on public.biblioteca
+  for each row execute function public.fijar_subido_por_nombre();
+
+revoke execute on function public.fijar_subido_por_nombre() from public, anon, authenticated;
+
 
 -- -----------------------------------------------------------------------------
 -- 5. Seguridad: RLS y permisos mínimos, columna por columna.
--- organizacion_id, subido_por, creado_en y archivado_en (al crear) los pone la
--- base. Sin DELETE: nadie borra, se archiva.
+-- organizacion_id, subido_por, subido_por_nombre, creado_en y archivado_en (al
+-- crear) los pone la base. Sin DELETE: nadie borra, se archiva.
 -- -----------------------------------------------------------------------------
 alter table public.biblioteca enable row level security;
 
