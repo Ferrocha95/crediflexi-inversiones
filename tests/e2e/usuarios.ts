@@ -3,6 +3,7 @@
 // `supabase status`, igual que en las pruebas RLS) y nunca se imprime. El
 // proyecto "limpieza" borra todo al final.
 
+import { randomUUID } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -105,6 +106,41 @@ export async function crearProspectoE2E(datos: {
   return data.id as string;
 }
 
+/**
+ * Elemento sintético de la Biblioteca en la organización E2E, creado por el
+ * administrador (organización y autor explícitos). Si es archivo, sube al
+ * bucket unos bytes PDF sintéticos.
+ */
+export async function crearElementoBibliotecaE2E(datos: {
+  subidoPor: string;
+  categoria: "HERRAMIENTAS" | "MULTIMEDIA" | "EMPRESA" | "CAPACITACION";
+  nombre: string;
+  descripcion?: string;
+  enlace?: string;
+  archivado?: boolean;
+}): Promise<string> {
+  const org = await admin().from("organizaciones").select("id").eq("nombre", ORGANIZACION_E2E).single();
+  if (org.error) falla("leer la organización E2E", org.error.message);
+  const base = { organizacion_id: org.data.id, subido_por: datos.subidoPor, categoria: datos.categoria, nombre: datos.nombre, descripcion: datos.descripcion ?? "" };
+  let fila: Record<string, unknown>;
+  if (datos.enlace !== undefined) {
+    fila = { ...base, tipo: "ENLACE", enlace: datos.enlace };
+  } else {
+    const ruta = `${org.data.id}/${randomUUID()}.pdf`;
+    const bytes = new TextEncoder().encode(`%PDF-1.4
+% Documento sintético E2E
+%%EOF
+`);
+    const subida = await admin().storage.from("biblioteca").upload(ruta, bytes, { contentType: "application/pdf" });
+    if (subida.error) falla(`subir el archivo ${datos.nombre}`, subida.error.message);
+    fila = { ...base, tipo: "ARCHIVO", ruta, tipo_mime: "application/pdf", tamano_bytes: bytes.length };
+  }
+  if (datos.archivado) fila.archivado_en = new Date().toISOString();
+  const { data, error } = await admin().from("biblioteca").insert(fila).select("id").single();
+  if (error) falla(`crear el elemento ${datos.nombre}`, error.message);
+  return data.id as string;
+}
+
 /** Ids de Auth de todas las cuentas @e2e.test. */
 async function cuentasE2E(): Promise<string[]> {
   const ids: string[] = [];
@@ -147,8 +183,41 @@ export async function idsUsuariosE2E(): Promise<string[]> {
   return data.map((u) => u.id as string);
 }
 
-/** Borra todos los usuarios @e2e.test, sus prospectos, sus filas y la organización E2E. */
+/**
+ * Filas de biblioteca y objetos del bucket de la organización E2E: van antes
+ * que los usuarios y la organización (biblioteca.subido_por y
+ * biblioteca.organizacion_id son "on delete restrict").
+ */
+async function borrarBibliotecaE2E(): Promise<void> {
+  const orgs = await admin().from("organizaciones").select("id").eq("nombre", ORGANIZACION_E2E);
+  if (orgs.error) falla("buscar la organización E2E", orgs.error.message);
+  for (const { id } of orgs.data) {
+    const filas = await admin().from("biblioteca").delete().eq("organizacion_id", id);
+    if (filas.error) falla("borrar la biblioteca E2E", filas.error.message);
+    for (;;) {
+      const lista = await admin().storage.from("biblioteca").list(id as string, { limit: 1000 });
+      if (lista.error) falla("listar los archivos E2E", lista.error.message);
+      if (lista.data.length === 0) break;
+      const borrar = await admin().storage.from("biblioteca").remove(lista.data.map((o) => `${id}/${o.name}`));
+      if (borrar.error) falla("borrar los archivos E2E", borrar.error.message);
+      if (borrar.data.length === 0) falla("borrar los archivos E2E", "no se borró ninguno");
+    }
+  }
+}
+
+/** Cuántas filas de biblioteca quedan de la organización E2E. */
+export async function contarBibliotecaE2E(): Promise<number> {
+  const orgs = await admin().from("organizaciones").select("id").eq("nombre", ORGANIZACION_E2E);
+  if (orgs.error) falla("buscar la organización E2E", orgs.error.message);
+  if (orgs.data.length === 0) return 0;
+  const r = await admin().from("biblioteca").select("id", { count: "exact", head: true }).in("organizacion_id", orgs.data.map((o) => o.id as string));
+  if (r.error) falla("contar la biblioteca E2E", r.error.message);
+  return r.count ?? -1;
+}
+
+/** Borra todos los usuarios @e2e.test, sus prospectos, la biblioteca E2E, sus filas y la organización E2E. */
 export async function borrarTodoE2E(): Promise<void> {
+  await borrarBibliotecaE2E();
   const ids = await cuentasE2E();
   if (ids.length > 0) {
     // prospectos.ejecutivo_id es "on delete restrict": se borran antes que los usuarios.

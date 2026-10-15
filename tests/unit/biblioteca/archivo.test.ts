@@ -202,6 +202,16 @@ describe("GET /biblioteca/[id]/archivo: descarga", () => {
     expect(r.headers.get("content-security-policy")).toContain("default-src 'none'");
   });
 
+  // Verificado el 15/10/2026 con Chromium de Playwright, Edge y Chrome: el
+  // visor de PDF abre bien con esta política, así que el PDF no se exceptúa.
+  it("un PDF en línea también va con CSP sandbox, nosniff y el tipo exacto", async () => {
+    const r = await pedir({ consulta: "?modo=ver" });
+    expect(r.headers.get("content-disposition")).toMatch(/^inline; /);
+    expect(r.headers.get("content-type")).toBe("application/pdf");
+    expect(r.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(r.headers.get("content-security-policy")).toMatch(/^sandbox;/);
+  });
+
   it("los adjuntos también van con CSP sandbox", async () => {
     const r = await pedir();
     expect(r.headers.get("content-security-policy")).toMatch(/^sandbox;/);

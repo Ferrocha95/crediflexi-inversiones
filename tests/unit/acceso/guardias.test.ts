@@ -29,6 +29,7 @@ function funcionesExportadas(codigo: string): { nombre: string; cuerpo: string }
 describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => {
   it("encuentra las páginas, rutas y acciones esperadas", () => {
     expect(paginas.map(relativo).sort()).toEqual([
+      "src/app/(app)/biblioteca/page.tsx",
       "src/app/(app)/comisiones/page.tsx",
       "src/app/(app)/comisiones/reclutamiento/page.tsx",
       "src/app/(app)/cotizador/page.tsx",

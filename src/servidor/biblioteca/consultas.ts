@@ -1,4 +1,5 @@
 import "server-only";
+import type { FilaBiblioteca } from "../../aplicacion/biblioteca/vista";
 import type { crearClienteServidor } from "../supabase/servidor";
 
 /**
@@ -30,6 +31,22 @@ export interface ElementoArchivo {
   readonly tipo: string;
   readonly ruta: string | null;
   readonly tipo_mime: string | null;
+}
+
+export const MAXIMO_FILAS = 1000;
+
+/**
+ * Elementos visibles para el usuario: RLS ya decide (su organización; lo
+ * archivado, solo Director y Gerente). Lanza si la lectura falla.
+ */
+export async function listarElementos(cliente: Cliente): Promise<FilaBiblioteca[]> {
+  const { data, error } = await cliente
+    .from("biblioteca")
+    .select("id, categoria, nombre, descripcion, tipo, enlace, ruta, tipo_mime, tamano_bytes, subido_por_nombre, creado_en, archivado_en")
+    .order("creado_en", { ascending: false })
+    .limit(MAXIMO_FILAS);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as FilaBiblioteca[];
 }
 
 /** Organización del usuario (RLS solo devuelve la propia); null si no hay una sola. */

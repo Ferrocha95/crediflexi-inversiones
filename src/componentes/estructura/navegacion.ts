@@ -10,7 +10,7 @@ export interface Destino {
   readonly disponible: boolean;
 }
 
-/** Destinos del menú, en orden. Hoy existen el cotizador, el pipeline y las comisiones. */
+/** Destinos del menú, en orden. Hoy existen el cotizador, el pipeline, las comisiones y la Biblioteca. */
 export const DESTINOS: readonly Destino[] = [
   { ruta: "/cotizador", etiqueta: "Cotizador", corta: "Cotizador", Icono: Calculator, disponible: true },
   { ruta: "/pipeline", etiqueta: "Pipeline", corta: "Pipeline", Icono: Kanban, disponible: true },
@@ -19,7 +19,7 @@ export const DESTINOS: readonly Destino[] = [
   { ruta: "/proyeccion", etiqueta: "Proyección", corta: "Proyección", Icono: TrendingUp, disponible: false },
   { ruta: "/metas", etiqueta: "Metas", corta: "Metas", Icono: Target, disponible: false },
   { ruta: "/cartera", etiqueta: "Cartera", corta: "Cartera", Icono: Wallet, disponible: false },
-  { ruta: "/biblioteca", etiqueta: "Biblioteca", corta: "Biblioteca", Icono: Library, disponible: false },
+  { ruta: "/biblioteca", etiqueta: "Biblioteca", corta: "Biblioteca", Icono: Library, disponible: true },
 ];
 
 /** Cuántos destinos caben en la barra inferior del celular; el resto va en "Más". */

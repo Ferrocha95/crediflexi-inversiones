@@ -164,6 +164,8 @@ export interface TextosCotizacion {
   readonly reclutamiento: TextosReclutamiento;
   /** Simulador /comisiones (Sprint 6c): tablas de incentivos y Mis externos. */
   readonly comisiones: TextosComisiones;
+  /** Pantalla /biblioteca (Sprint 7b). */
+  readonly biblioteca: TextosBiblioteca;
 }
 
 /**
@@ -345,6 +347,132 @@ const CLAVES_COMISIONES = {
 } as const satisfies Readonly<Record<string, keyof TextosComisiones>>;
 
 type ClaveArchivoComisiones = keyof typeof CLAVES_COMISIONES;
+
+/**
+ * Textos de la pantalla /biblioteca (Sprint 7b, textos 0.15). Sin marcadores.
+ * Las cuatro categorías llegan juntas en `categorias`, con la clave del enum
+ * de la base.
+ */
+export interface TextosBiblioteca {
+  readonly categorias: Readonly<Record<"HERRAMIENTAS" | "MULTIMEDIA" | "EMPRESA" | "CAPACITACION", string>>;
+  readonly tituloPagina: string;
+  readonly intro: string;
+  readonly buscar: string;
+  readonly ayudaBuscar: string;
+  readonly sinResultados: string;
+  readonly categoriaVacia: string;
+  readonly bibliotecaVacia: string;
+  readonly bibliotecaVaciaEjecutivo: string;
+  readonly bibliotecaVaciaAdministrador: string;
+  readonly subirArchivo: string;
+  readonly agregarEnlace: string;
+  readonly archivar: string;
+  readonly ver: string;
+  readonly descargar: string;
+  readonly abrirEnlace: string;
+  readonly nuevaPestana: string;
+  readonly tipoEnlace: string;
+  readonly etiquetaTipo: string;
+  readonly etiquetaTamano: string;
+  readonly etiquetaFecha: string;
+  readonly etiquetaSubidoPor: string;
+  readonly etiquetaArchivado: string;
+  readonly verArchivados: string;
+  readonly verActivos: string;
+  readonly tituloArchivados: string;
+  readonly introArchivados: string;
+  readonly sinArchivados: string;
+  readonly campoArchivo: string;
+  readonly ayudaArchivo: string;
+  readonly campoNombre: string;
+  readonly ayudaNombreArchivo: string;
+  readonly campoDescripcion: string;
+  readonly campoCategoria: string;
+  readonly eligeCategoria: string;
+  readonly campoEnlace: string;
+  readonly ayudaEnlace: string;
+  readonly confirmacion: string;
+  readonly tituloAvisoCuentas: string;
+  readonly avisoCuentas: string;
+  readonly subir: string;
+  readonly agregar: string;
+  readonly cancelar: string;
+  readonly cerrar: string;
+  readonly subiendo: string;
+  readonly tituloArchivar: string;
+  readonly textoArchivar: string;
+  readonly notificacionSubido: string;
+  readonly notificacionEnlace: string;
+  readonly notificacionArchivado: string;
+  readonly tituloError: string;
+  readonly tituloErrorLectura: string;
+  readonly fallaRed: string;
+}
+
+const CLAVES_BIBLIOTECA = {
+  titulo_pagina: "tituloPagina",
+  intro: "intro",
+  buscar: "buscar",
+  ayuda_buscar: "ayudaBuscar",
+  sin_resultados: "sinResultados",
+  categoria_vacia: "categoriaVacia",
+  biblioteca_vacia: "bibliotecaVacia",
+  biblioteca_vacia_ejecutivo: "bibliotecaVaciaEjecutivo",
+  biblioteca_vacia_administrador: "bibliotecaVaciaAdministrador",
+  subir_archivo: "subirArchivo",
+  agregar_enlace: "agregarEnlace",
+  archivar: "archivar",
+  ver: "ver",
+  descargar: "descargar",
+  abrir_enlace: "abrirEnlace",
+  nueva_pestana: "nuevaPestana",
+  tipo_enlace: "tipoEnlace",
+  etiqueta_tipo: "etiquetaTipo",
+  etiqueta_tamano: "etiquetaTamano",
+  etiqueta_fecha: "etiquetaFecha",
+  etiqueta_subido_por: "etiquetaSubidoPor",
+  etiqueta_archivado: "etiquetaArchivado",
+  ver_archivados: "verArchivados",
+  ver_activos: "verActivos",
+  titulo_archivados: "tituloArchivados",
+  intro_archivados: "introArchivados",
+  sin_archivados: "sinArchivados",
+  campo_archivo: "campoArchivo",
+  ayuda_archivo: "ayudaArchivo",
+  campo_nombre: "campoNombre",
+  ayuda_nombre_archivo: "ayudaNombreArchivo",
+  campo_descripcion: "campoDescripcion",
+  campo_categoria: "campoCategoria",
+  elige_categoria: "eligeCategoria",
+  campo_enlace: "campoEnlace",
+  ayuda_enlace: "ayudaEnlace",
+  confirmacion: "confirmacion",
+  titulo_aviso_cuentas: "tituloAvisoCuentas",
+  aviso_cuentas: "avisoCuentas",
+  subir: "subir",
+  agregar: "agregar",
+  cancelar: "cancelar",
+  cerrar: "cerrar",
+  subiendo: "subiendo",
+  titulo_archivar: "tituloArchivar",
+  texto_archivar: "textoArchivar",
+  notificacion_subido: "notificacionSubido",
+  notificacion_enlace: "notificacionEnlace",
+  notificacion_archivado: "notificacionArchivado",
+  titulo_error: "tituloError",
+  titulo_error_lectura: "tituloErrorLectura",
+  falla_red: "fallaRed",
+} as const satisfies Readonly<Record<string, Exclude<keyof TextosBiblioteca, "categorias">>>;
+
+type ClaveArchivoBiblioteca = keyof typeof CLAVES_BIBLIOTECA;
+
+/** Nombre de cada categoría en el archivo → clave del enum categoria_biblioteca. */
+const CATEGORIAS_BIBLIOTECA = {
+  categoria_herramientas: "HERRAMIENTAS",
+  categoria_multimedia: "MULTIMEDIA",
+  categoria_empresa: "EMPRESA",
+  categoria_capacitacion: "CAPACITACION",
+} as const;
 
 /**
  * Textos del modo reclutamiento (Sprint 5: un solo dato, comparativo por
@@ -777,6 +905,12 @@ const esquemaTextos = z
         ) as Record<ClaveArchivoComisiones, ReturnType<typeof texto>>,
         { error: claveDesconocida },
       ),
+      biblioteca: z.strictObject(
+        Object.fromEntries(
+          [...Object.keys(CLAVES_BIBLIOTECA), ...Object.keys(CATEGORIAS_BIBLIOTECA)].map((clave) => [clave, texto(`biblioteca.${clave}`)]),
+        ) as Record<ClaveArchivoBiblioteca | keyof typeof CATEGORIAS_BIBLIOTECA, ReturnType<typeof texto>>,
+        { error: claveDesconocida },
+      ),
       pdf_pagina2: z.strictObject(
         Object.fromEntries(
           Object.keys(CLAVES_PAGINA2).map((clave) => {
@@ -864,6 +998,16 @@ const esquemaTextos = z
       comisiones: Object.fromEntries(
         (Object.entries(CLAVES_COMISIONES) as [ClaveArchivoComisiones, keyof TextosComisiones][]).map(([archivo, clave]) => [clave, t.comisiones[archivo]]),
       ) as unknown as TextosComisiones,
+      biblioteca: {
+        ...(Object.fromEntries(
+          (Object.entries(CLAVES_BIBLIOTECA) as [ClaveArchivoBiblioteca, string][]).map(([archivo, clave]) => [clave, t.biblioteca[archivo]]),
+        ) as unknown as Omit<TextosBiblioteca, "categorias">),
+        categorias: Object.fromEntries(
+          (Object.entries(CATEGORIAS_BIBLIOTECA) as [keyof typeof CATEGORIAS_BIBLIOTECA, keyof TextosBiblioteca["categorias"]][]).map(
+            ([archivo, clave]) => [clave, t.biblioteca[archivo]],
+          ),
+        ) as unknown as TextosBiblioteca["categorias"],
+      },
     };
   });
 

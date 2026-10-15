@@ -5,7 +5,7 @@ import { cargarBenchmark, type Benchmark } from "../aplicacion/benchmark";
 import { cargarRazonesSociales } from "../aplicacion/entidades";
 import { cargarRangoFechaInicio } from "../aplicacion/fechaInicio";
 import { error, ok, type ResultadoApp } from "../aplicacion/resultado";
-import { cargarTextos, type TextosComisiones, type TextosCotizacion, type TextosReclutamiento } from "../aplicacion/textos";
+import { cargarTextos, type TextosBiblioteca, type TextosComisiones, type TextosCotizacion, type TextosReclutamiento } from "../aplicacion/textos";
 import { cargarSemillaComisiones, type SemillaComisiones } from "../domain/comisiones/semilla";
 import type { RangoFechaInicio } from "../domain/interes/diasNaturales";
 import { cargarSemilla } from "../domain/tasas/semilla";
@@ -130,6 +130,15 @@ export async function leerTextosComisiones(ruta: string = RUTA_TEXTOS): Promise<
   const textos = cargarTextos(json.valor, nombreVisible(ruta));
   if (!textos.ok) return textos;
   return ok(textos.valor.comisiones);
+}
+
+/** Lee en cada llamada los textos de la pantalla /biblioteca (bloque biblioteca del archivo de textos). */
+export async function leerTextosBiblioteca(ruta: string = RUTA_TEXTOS): Promise<ResultadoApp<TextosBiblioteca>> {
+  const json = await leerJson(ruta);
+  if (!json.ok) return json;
+  const textos = cargarTextos(json.valor, nombreVisible(ruta));
+  if (!textos.ok) return textos;
+  return ok(textos.valor.biblioteca);
 }
 
 export interface ParametrosComisiones {
