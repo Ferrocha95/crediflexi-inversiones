@@ -78,7 +78,20 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
 
   it.each(acciones.map(relativo))("%s repite el guardia de host en cada acción", (f) => {
     const funciones = funcionesExportadas(leer(path.join(process.cwd(), f)));
-    for (const { nombre, cuerpo } of funciones) expect(cuerpo, nombre).toMatch(/esHostLocal\(/);
+    for (const { nombre, cuerpo } of funciones) expect(cuerpo, nombre).toMatch(/hostAutorizado\(/);
+  });
+
+  // esHostLocal solo conoce los hosts locales: usarlo directo en un punto de
+  // entrada se saltaría HOSTS_PERMITIDOS. Todos pasan por src/servidor/guardiaHost.ts.
+  it("ningún archivo de src fuera de aplicacion/host.ts usa esHostLocal ni esHostPermitido", () => {
+    const SRC = path.join(process.cwd(), "src");
+    const usan = readdirSync(SRC, { recursive: true, withFileTypes: true })
+      .filter((d) => d.isFile() && /\.(ts|tsx)$/.test(d.name))
+      .map((d) => path.join(d.parentPath, d.name))
+      .filter((f) => !["src/aplicacion/host.ts", "src/servidor/guardiaHost.ts"].includes(relativo(f)))
+      .filter((f) => /\besHost(Local|Permitido)\b/.test(leer(f)))
+      .map(relativo);
+    expect(usan).toEqual([]);
   });
 
   // Las 5 acciones de la Biblioteca (Sprint 7c suma las de carpetas): cada una
@@ -87,7 +100,7 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
     const funciones = funcionesExportadas(leer(path.join(RAIZ, "biblioteca", "acciones.ts")));
     expect(funciones.map((f) => f.nombre).sort()).toEqual(["agregarEnlace", "archivar", "archivarCarpeta", "crearCarpeta", "moverElemento"]);
     for (const { nombre, cuerpo } of funciones) {
-      const host = cuerpo.indexOf("esHostLocal(");
+      const host = cuerpo.indexOf("hostAutorizado(");
       const usuario = cuerpo.indexOf("await usuarioActual()");
       const rol = cuerpo.indexOf("puedeAdministrar(");
       const cliente = cuerpo.indexOf("crearClienteServidor()");

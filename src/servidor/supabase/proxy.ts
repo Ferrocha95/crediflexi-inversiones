@@ -1,4 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { RUTA_ACCESO, rutaSinRefresco } from "../../aplicacion/acceso/rutas";
 import { MENSAJE_SESION_EXPIRADA } from "../../componentes/acceso/textos";
@@ -21,11 +21,38 @@ import { configSupabase } from "./config";
  * El proxy no basta como autorización: cada acción y cada página vuelve a
  * revisar la sesión (src/servidor/sesion.ts).
  */
+/**
+ * true si la petición llegó por HTTPS: el protocolo de la URL o, detrás de un
+ * proxy que termina TLS (Vercel), el primer valor de x-forwarded-proto. Según
+ * la documentación de Vercel (Request headers), ese encabezado trae el
+ * protocolo con que llegó la petición ("https" en producción). Next lo pone
+ * en local si no viene (http). Un cliente que lo falsee solo cambia las
+ * cookies que recibe su propio navegador.
+ */
+export function llegaPorHttps(protocoloUrl: string, reenviado: string | null): boolean {
+  if (protocoloUrl === "https:") return true;
+  return reenviado?.split(",")[0]?.trim().toLowerCase() === "https";
+}
+
+/**
+ * Opciones fijas de las cookies de sesión. @supabase/ssr 0.12.7 trae por
+ * omisión path "/", sameSite "lax", httpOnly false y maxAge de 400 días
+ * (DEFAULT_COOKIE_OPTIONS), y para borrar manda maxAge 0. Aquí se conserva
+ * maxAge (y expires, si viene), así siguen funcionando el refresco y el
+ * cierre de sesión, y se fijan httpOnly (el navegador nunca lee la sesión: no
+ * hay cliente de navegador), sameSite "lax", path "/" y Secure solo con HTTPS
+ * (con http://127.0.0.1 una cookie Secure no regresaría).
+ */
+export function opcionesDeCookie(opciones: CookieOptions | undefined, https: boolean): CookieOptions {
+  return { ...opciones, httpOnly: true, sameSite: "lax", path: "/", secure: https };
+}
+
 export async function actualizarSesion(request: NextRequest): Promise<NextResponse> {
   if (rutaSinRefresco(request.nextUrl.pathname)) return NextResponse.next();
 
   const { url, llavePublicable } = configSupabase();
   let respuesta = NextResponse.next({ request });
+  const https = llegaPorHttps(request.nextUrl.protocol, request.headers.get("x-forwarded-proto"));
   const encabezadosDeCache: Record<string, string> = {};
 
   const supabase = createServerClient(url, llavePublicable, {
@@ -36,7 +63,7 @@ export async function actualizarSesion(request: NextRequest): Promise<NextRespon
       setAll(porGuardar, encabezados) {
         for (const { name, value } of porGuardar) request.cookies.set(name, value);
         respuesta = NextResponse.next({ request });
-        for (const { name, value, options } of porGuardar) respuesta.cookies.set(name, value, options);
+        for (const { name, value, options } of porGuardar) respuesta.cookies.set(name, value, opcionesDeCookie(options, https));
         Object.assign(encabezadosDeCache, encabezados);
         for (const [clave, valor] of Object.entries(encabezadosDeCache)) respuesta.headers.set(clave, valor);
       },

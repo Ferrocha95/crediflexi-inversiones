@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { esHostLocal } from "../../../../aplicacion/host";
+import { hostAutorizado } from "../../../../servidor/guardiaHost";
 import { MENSAJE_SESION_EXPIRADA } from "../../../../componentes/acceso/textos";
 import { simularReclutamientoCon, type RespuestaReclutamiento } from "../../../../servidor/reclutamiento";
 import { usuarioActual } from "../../../../servidor/sesion";
@@ -14,7 +14,7 @@ import { usuarioActual } from "../../../../servidor/sesion";
 export async function simularReclutamiento(campos: unknown): Promise<RespuestaReclutamiento> {
   const host = (await headers()).get("host");
   // Con Host no local, simularReclutamientoCon responde el mensaje del guardia sin leer la sesión.
-  if (esHostLocal(host) && (await usuarioActual()) === null) {
+  if (hostAutorizado(host) && (await usuarioActual()) === null) {
     return { peticion: numeroDePeticion(campos), resultado: { tipo: "error", mensaje: MENSAJE_SESION_EXPIRADA, detalles: [] } };
   }
   return simularReclutamientoCon(campos, host);

@@ -45,6 +45,7 @@ vi.mock("../../../src/servidor/supabase/servidor", () => ({
 
 const { iniciarSesion, cerrarSesion } = await import("../../../src/app/acceso/acciones");
 const { MENSAJES_ACCESO } = await import("../../../src/aplicacion/acceso/mensajes");
+const { MENSAJE_HOST_NO_AUTORIZADO } = await import("../../../src/servidor/guardiaHost");
 
 const FILA = { id: "u-1", nombre: "Ejecutivo Sintético", rol: "EJECUTIVO", sucursal: { id: "s-1", nombre: "Sucursal Ficticia" } };
 
@@ -65,10 +66,10 @@ beforeEach(() => {
 });
 
 describe("iniciarSesion", () => {
-  it("con Host no local no intenta entrar", async () => {
+  it("con Host no permitido no intenta entrar", async () => {
     estado.host = "ejemplo.com";
     const r = await iniciarSesion({ error: null }, formulario(DATOS));
-    expect(r.error).toMatch(/localhost/);
+    expect(r.error).toBe(MENSAJE_HOST_NO_AUTORIZADO);
     expect(estado.llamadas).not.toContain("signIn");
   });
 
@@ -135,10 +136,10 @@ describe("cerrarSesion", () => {
     expect(estado.llamadas).toEqual(["getClaims"]);
   });
 
-  it("con Host no local no hace nada", async () => {
+  it("con Host no permitido no hace nada", async () => {
     estado.host = "ejemplo.com";
     estado.claims = { sub: "x" };
-    await expect(cerrarSesion()).rejects.toThrow(/localhost/);
+    await expect(cerrarSesion()).rejects.toThrow(MENSAJE_HOST_NO_AUTORIZADO);
     expect(estado.llamadas).toEqual([]);
   });
 });

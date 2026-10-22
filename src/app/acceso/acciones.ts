@@ -4,8 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { MENSAJES_ACCESO, mensajeDeErrorAuth } from "../../aplicacion/acceso/mensajes";
 import { siguienteSeguro } from "../../aplicacion/acceso/siguiente";
-import { esHostLocal } from "../../aplicacion/host";
-import { MENSAJE_HOST_NO_LOCAL } from "../../servidor/guardiaHost";
+import { hostAutorizado, MENSAJE_HOST_NO_AUTORIZADO } from "../../servidor/guardiaHost";
 import { leerUsuario, MENSAJE_ERROR_LECTURA } from "../../servidor/sesion";
 import { crearClienteServidor } from "../../servidor/supabase/servidor";
 
@@ -30,7 +29,7 @@ function texto(datos: FormData, campo: string): string {
  * recibido.
  */
 export async function iniciarSesion(_previo: EstadoAcceso, datos: FormData): Promise<EstadoAcceso> {
-  if (!esHostLocal((await headers()).get("host"))) return { error: MENSAJE_HOST_NO_LOCAL };
+  if (!hostAutorizado((await headers()).get("host"))) return { error: MENSAJE_HOST_NO_AUTORIZADO };
 
   const correo = texto(datos, "correo").trim();
   const contrasena = texto(datos, "contrasena");
@@ -68,7 +67,7 @@ export async function iniciarSesion(_previo: EstadoAcceso, datos: FormData): Pro
  * en memoria, y lo hace aunque esta acción falle porque la sesión ya expiró.
  */
 export async function cerrarSesion(): Promise<void> {
-  if (!esHostLocal((await headers()).get("host"))) throw new Error(MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado((await headers()).get("host"))) throw new Error(MENSAJE_HOST_NO_AUTORIZADO);
 
   const cliente = await crearClienteServidor();
   const { data } = await cliente.auth.getClaims();

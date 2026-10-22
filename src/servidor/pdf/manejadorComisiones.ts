@@ -1,16 +1,15 @@
 import "server-only";
 import { modeloComisiones, type ModeloPdfComisiones } from "../../aplicacion/comisiones";
 import { fechaEnMexico, fechaIsoEnMexico } from "../../aplicacion/fecha";
-import { esHostLocal } from "../../aplicacion/host";
 import type { ResultadoApp } from "../../aplicacion/resultado";
 import { esquemaCamposComisiones, MENSAJE_FORMA_COMISIONES } from "../comisiones";
-import { MENSAJE_HOST_NO_LOCAL } from "../guardiaHost";
+import { hostAutorizado, MENSAJE_HOST_NO_AUTORIZADO } from "../guardiaHost";
 import type { ParametrosComisiones } from "../parametros";
 import { json, leerCuerpo, origenCoincide } from "./manejador";
 
 export const MENSAJES_PDF_COMISIONES = {
   origenAjeno:
-    "La petición del PDF no viene de esta misma página. Abre el simulador de comisiones con la dirección localhost y descarga el PDF desde ahí.",
+    "La petición del PDF no viene de esta misma página. Abre el simulador de comisiones desde la dirección de la app y descarga el PDF desde ahí.",
   soloInternos: "El PDF de comisiones es para el perfil Interno (Ejecutivo o Gerente). Cambia el perfil y el rol para descargarlo.",
   sinInversiones: "Agrega al menos una inversión del mes para descargar el PDF.",
   fallaRender: "No se pudo generar el PDF. Vuelve a intentarlo; si sigue fallando, reinicia la app.",
@@ -30,7 +29,7 @@ export interface DependenciasPdfComisiones {
 export async function manejarPdfComisiones(request: Request, deps: DependenciasPdfComisiones): Promise<Response> {
   // Seguro contra un despliegue accidental (no es seguridad real): ver guardiaHost.ts.
   const host = request.headers.get("host");
-  if (host === null || !esHostLocal(host)) return json(403, MENSAJE_HOST_NO_LOCAL);
+  if (host === null || !hostAutorizado(host)) return json(403, MENSAJE_HOST_NO_AUTORIZADO);
   if (!origenCoincide(request.headers.get("origin"), host)) return json(403, MENSAJES_PDF_COMISIONES.origenAjeno);
 
   const forma = esquemaCamposComisiones.safeParse(await leerCuerpo(request));

@@ -8,8 +8,7 @@ import { cotizarConAjuste } from "../domain/interes/ajustes";
 import { validarFechaInicio } from "../domain/interes/diasNaturales";
 import { fechaIsoEnMexico } from "../aplicacion/fecha";
 import { ESQUEMAS, MONEDAS } from "../domain/tasas/semilla.esquema";
-import { MENSAJE_HOST_NO_LOCAL } from "./guardiaHost";
-import { esHostLocal } from "../aplicacion/host";
+import { hostAutorizado, MENSAJE_HOST_NO_AUTORIZADO } from "./guardiaHost";
 import { leerParametrosCotizacion, type ParametrosCotizacion } from "./parametros";
 import type { ResultadoApp } from "../aplicacion/resultado";
 
@@ -74,7 +73,7 @@ export async function previsualizarCon(
   ahora: () => Date = () => new Date(),
 ): Promise<RespuestaVistaPrevia> {
   // Seguro contra un despliegue accidental (no es seguridad real): ver guardiaHost.ts.
-  if (!esHostLocal(host)) return fallo(null, MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado(host)) return fallo(null, MENSAJE_HOST_NO_AUTORIZADO);
 
   const forma = esquemaCampos.safeParse(campos);
   if (!forma.success) return fallo(null, MENSAJE_FORMA_INVALIDA);

@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { esHostLocal } from "../../../aplicacion/host";
+import { hostAutorizado } from "../../../servidor/guardiaHost";
 import { MENSAJE_SESION_EXPIRADA } from "../../../componentes/acceso/textos";
 import { usuarioActual } from "../../../servidor/sesion";
 import { previsualizarCon, type RespuestaVistaPrevia } from "../../../servidor/vistaPrevia";
@@ -16,7 +16,7 @@ import { previsualizarCon, type RespuestaVistaPrevia } from "../../../servidor/v
 export async function previsualizar(campos: unknown): Promise<RespuestaVistaPrevia> {
   const host = (await headers()).get("host");
   // Con Host no local, previsualizarCon responde el mensaje del guardia sin leer la sesión.
-  if (esHostLocal(host) && (await usuarioActual()) === null) {
+  if (hostAutorizado(host) && (await usuarioActual()) === null) {
     return { peticion: numeroDePeticion(campos), plazos: null, resultado: { tipo: "error", mensaje: MENSAJE_SESION_EXPIRADA, detalles: [] } };
   }
   return previsualizarCon(campos, host);

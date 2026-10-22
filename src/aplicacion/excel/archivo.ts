@@ -39,7 +39,7 @@ export const MENSAJES_ARCHIVO = {
 
 /** Errores de las rutas del Excel. */
 export const MENSAJES_EXCEL = {
-  origenAjeno: "La petición no viene de esta misma página. Abre el pipeline con la dirección localhost e importa desde ahí.",
+  origenAjeno: "La petición no viene de esta misma página. Abre el pipeline desde la dirección de la app e importa desde ahí.",
   incompleto: "El archivo llegó incompleto. Vuelve a intentar; si sigue pasando, revisa que pese menos de 5 MB.",
   eligeEjecutivo: "Elige un ejecutivo en el filtro Ejecutivo para descargar su Excel: cada archivo lleva a un solo ejecutivo.",
   soloElPropio: "Solo puedes descargar tu propio pipeline.",

@@ -1,9 +1,8 @@
 import "server-only";
 import * as z from "zod";
-import { esHostLocal } from "../aplicacion/host";
 import { modeloReclutamiento, type ModeloReclutamiento } from "../aplicacion/reclutamiento";
 import type { ResultadoApp } from "../aplicacion/resultado";
-import { MENSAJE_HOST_NO_LOCAL } from "./guardiaHost";
+import { hostAutorizado, MENSAJE_HOST_NO_AUTORIZADO } from "./guardiaHost";
 import { leerParametrosReclutamiento, type ParametrosReclutamiento } from "./parametros";
 
 export const MENSAJE_FORMA_RECLUTAMIENTO =
@@ -52,7 +51,7 @@ export async function simularReclutamientoCon(
   ahora: () => Date = () => new Date(),
 ): Promise<RespuestaReclutamiento> {
   // Seguro contra un despliegue accidental (no es seguridad real): ver guardiaHost.ts.
-  if (!esHostLocal(host)) return fallo(null, MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado(host)) return fallo(null, MENSAJE_HOST_NO_AUTORIZADO);
 
   const forma = esquemaPeticion.safeParse(campos);
   if (!forma.success) return fallo(null, MENSAJE_FORMA_RECLUTAMIENTO);

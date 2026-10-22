@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
+import { MENSAJE_HOST_NO_AUTORIZADO } from "../../../src/servidor/guardiaHost";
 import { MENSAJE_FORMA_COMISIONES } from "../../../src/servidor/comisiones";
 import { leerParametrosComisiones } from "../../../src/servidor/parametros";
 import { manejarPdfComisiones, MENSAJES_PDF_COMISIONES } from "../../../src/servidor/pdf/manejadorComisiones";
@@ -57,7 +57,7 @@ describe("PDF de comisiones (manejador)", () => {
   it("Host no local: 403 con el mensaje del guardia", async () => {
     const r = await manejarPdfComisiones(peticion(EJECUTIVO, { host: "crediflexi.example.com" }), deps);
     expect(r.status).toBe(403);
-    expect((await r.json()).error).toBe(MENSAJE_HOST_NO_LOCAL);
+    expect((await r.json()).error).toBe(MENSAJE_HOST_NO_AUTORIZADO);
   });
 
   it("Origin ajeno: 403", async () => {

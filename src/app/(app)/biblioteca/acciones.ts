@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
-import { esHostLocal } from "../../../aplicacion/host";
 import {
   CATEGORIAS,
   MENSAJES_BIBLIOTECA,
@@ -26,7 +25,7 @@ import {
   insertarElemento,
   leerElementoParaMover,
 } from "../../../servidor/biblioteca/consultas";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../servidor/guardiaHost";
+import { hostAutorizado, MENSAJE_HOST_NO_AUTORIZADO } from "../../../servidor/guardiaHost";
 import { usuarioActual } from "../../../servidor/sesion";
 import { crearClienteServidor } from "../../../servidor/supabase/servidor";
 
@@ -56,7 +55,7 @@ const CLAVES_MOVER = ["carpeta_id", "id"];
 const fallo = (mensaje: string, errores: ErroresBiblioteca = {}): RespuestaBiblioteca => ({ ok: false, mensaje, errores });
 
 export async function agregarEnlace(entrada: unknown): Promise<RespuestaBiblioteca> {
-  if (!esHostLocal((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_AUTORIZADO);
   const usuario = await usuarioActual();
   if (usuario === null) return fallo(MENSAJE_SESION_EXPIRADA);
   if (!puedeAdministrar(usuario.rol)) return fallo(MENSAJES_BIBLIOTECA.soloDirectorOGerente);
@@ -90,7 +89,7 @@ export async function agregarEnlace(entrada: unknown): Promise<RespuestaBibliote
 }
 
 export async function archivar(id: unknown): Promise<RespuestaBiblioteca> {
-  if (!esHostLocal((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_AUTORIZADO);
   const usuario = await usuarioActual();
   if (usuario === null) return fallo(MENSAJE_SESION_EXPIRADA);
   if (!puedeAdministrar(usuario.rol)) return fallo(MENSAJES_BIBLIOTECA.soloDirectorOGerente);
@@ -102,7 +101,7 @@ export async function archivar(id: unknown): Promise<RespuestaBiblioteca> {
 }
 
 export async function crearCarpeta(entrada: unknown): Promise<RespuestaBiblioteca> {
-  if (!esHostLocal((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_AUTORIZADO);
   const usuario = await usuarioActual();
   if (usuario === null) return fallo(MENSAJE_SESION_EXPIRADA);
   if (!puedeAdministrar(usuario.rol)) return fallo(MENSAJES_BIBLIOTECA.soloDirectorOGerente);
@@ -132,7 +131,7 @@ export async function crearCarpeta(entrada: unknown): Promise<RespuestaBibliotec
 }
 
 export async function archivarCarpeta(id: unknown): Promise<RespuestaBiblioteca> {
-  if (!esHostLocal((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_AUTORIZADO);
   const usuario = await usuarioActual();
   if (usuario === null) return fallo(MENSAJE_SESION_EXPIRADA);
   if (!puedeAdministrar(usuario.rol)) return fallo(MENSAJES_BIBLIOTECA.soloDirectorOGerente);
@@ -146,7 +145,7 @@ export async function archivarCarpeta(id: unknown): Promise<RespuestaBiblioteca>
 
 /** Mueve un elemento activo a otra carpeta de su misma sección, o a Sin carpeta (carpeta_id null). */
 export async function moverElemento(entrada: unknown): Promise<RespuestaBiblioteca> {
-  if (!esHostLocal((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_AUTORIZADO);
   const usuario = await usuarioActual();
   if (usuario === null) return fallo(MENSAJE_SESION_EXPIRADA);
   if (!puedeAdministrar(usuario.rol)) return fallo(MENSAJES_BIBLIOTECA.soloDirectorOGerente);

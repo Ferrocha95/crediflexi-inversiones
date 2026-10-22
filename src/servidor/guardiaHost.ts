@@ -1,25 +1,35 @@
-import { esHostLocal } from "../aplicacion/host";
+import { esHostPermitido } from "../aplicacion/host";
+import { hostsPermitidos } from "./supabase/config";
 
 /**
- * Seguro contra un despliegue accidental: esta versión es solo local (sin
- * login y sin base de datos), así que solo atiende peticiones cuyo encabezado
- * Host sea localhost, 127.0.0.1 o [::1].
+ * Guardia de Host: la app solo atiende peticiones cuyo encabezado Host esté
+ * permitido. Sin HOSTS_PERMITIDOS, solo localhost, 127.0.0.1 o [::1] (con
+ * cualquier puerto); con ella, solo los hosts exactos de la lista, que
+ * REEMPLAZA a los locales.
  *
- * NO es seguridad real. El encabezado Host lo manda el cliente y cualquiera
- * puede falsearlo. Solo evita que la app conteste si alguien la sube a un
- * servidor por error.
+ * NO es seguridad real: el encabezado Host lo manda el cliente. Es un seguro
+ * contra un despliegue accidental o bajo una dirección no prevista. Con una
+ * lista mal formada falla cerrado (rechaza todo); next.config.ts además la
+ * valida al arrancar.
  *
  * No importa server-only: también lo usa src/proxy.ts, que no corre como
  * componente de servidor de React.
  */
-export const MENSAJE_HOST_NO_LOCAL =
-  "Esta versión del cotizador solo funciona en la computadora donde se ejecuta: ábrela con la dirección localhost " +
-  "desde ese mismo equipo. Si ves este mensaje en un servidor, la app se desplegó por accidente y hay que detenerla.";
+export const MENSAJE_HOST_NO_AUTORIZADO = "Esta dirección no está autorizada para esta aplicación.";
 
-/** Respuesta 403 si el Host no es local; null si la petición puede seguir. */
+/** true si el Host está permitido; false también si HOSTS_PERMITIDOS está mal formada. */
+export function hostAutorizado(host: string | null | undefined): boolean {
+  try {
+    return esHostPermitido(host, hostsPermitidos());
+  } catch {
+    return false;
+  }
+}
+
+/** Respuesta 403 si el Host no está permitido; null si la petición puede seguir. */
 export function rechazoPorHost(host: string | null): Response | null {
-  if (esHostLocal(host)) return null;
-  return new Response(MENSAJE_HOST_NO_LOCAL, {
+  if (hostAutorizado(host)) return null;
+  return new Response(MENSAJE_HOST_NO_AUTORIZADO, {
     status: 403,
     headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
   });

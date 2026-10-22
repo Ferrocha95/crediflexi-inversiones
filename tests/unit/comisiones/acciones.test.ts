@@ -18,7 +18,7 @@ vi.mock("../../../src/servidor/sesion", () => ({
 import { simular } from "../../../src/app/(app)/comisiones/acciones";
 import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
 import { MENSAJE_FORMA_COMISIONES, simularCon, type RespuestaComisiones } from "../../../src/servidor/comisiones";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
+import { MENSAJE_HOST_NO_AUTORIZADO } from "../../../src/servidor/guardiaHost";
 
 const base = {
   peticion: 3,
@@ -67,7 +67,7 @@ describe("acción simular (/comisiones)", () => {
 
   it("con Host no local responde el mensaje del guardia sin leer la sesión", async () => {
     encabezados.host = "crediflexi.example.com";
-    expect(error(await simular(base)).mensaje).toBe(MENSAJE_HOST_NO_LOCAL);
+    expect(error(await simular(base)).mensaje).toBe(MENSAJE_HOST_NO_AUTORIZADO);
     expect(sesion.llamadas).toBe(0);
   });
 

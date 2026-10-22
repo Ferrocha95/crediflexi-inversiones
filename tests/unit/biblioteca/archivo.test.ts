@@ -32,7 +32,7 @@ vi.mock("../../../src/servidor/biblioteca/consultas", () => ({
 import { MENSAJES_BIBLIOTECA } from "../../../src/aplicacion/biblioteca/reglas";
 import { GET } from "../../../src/app/(app)/biblioteca/[id]/archivo/route";
 import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
+import { MENSAJE_HOST_NO_AUTORIZADO } from "../../../src/servidor/guardiaHost";
 
 const HOST = "127.0.0.1:3000";
 const ID = "0b6c7d2e-1f3a-4b5c-8d9e-0a1b2c3d4e5f";
@@ -82,7 +82,7 @@ describe("GET /biblioteca/[id]/archivo: guardias", () => {
   it("con Host no local responde 403 sin leer nada", async () => {
     const r = await pedir({ host: "crediflexi.example" });
     expect(r.status).toBe(403);
-    expect(await r.text()).toBe(MENSAJE_HOST_NO_LOCAL);
+    expect(await r.text()).toBe(MENSAJE_HOST_NO_AUTORIZADO);
     expect(base.firmadas).toEqual([]);
   });
 

@@ -5,12 +5,11 @@ import { z } from "zod";
 import { headers } from "next/headers";
 import { TOPES_IMPORTACION } from "../../../aplicacion/excel/archivo";
 import { fechaIsoEnMexico } from "../../../aplicacion/fecha";
-import { esHostLocal } from "../../../aplicacion/host";
 import { avisosProspecto } from "../../../aplicacion/pipeline/avisos";
 import { MENSAJE_FORMA_INVALIDA, validarId, validarProspecto, type ErroresProspecto, type ProspectoValido } from "../../../aplicacion/pipeline/entrada";
 import { MENSAJE_ERROR_DESCONOCIDO, mensajeDeErrorBase } from "../../../aplicacion/pipeline/errores";
 import { MENSAJE_SESION_EXPIRADA } from "../../../componentes/acceso/textos";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../servidor/guardiaHost";
+import { hostAutorizado, MENSAJE_HOST_NO_AUTORIZADO } from "../../../servidor/guardiaHost";
 import { leerDueno, listarProspectos } from "../../../servidor/pipeline/consultas";
 import { usuarioActual } from "../../../servidor/sesion";
 import { crearClienteServidor } from "../../../servidor/supabase/servidor";
@@ -74,7 +73,7 @@ async function revisarDueno(
 }
 
 export async function crearProspecto(entrada: unknown): Promise<RespuestaPipeline> {
-  if (!esHostLocal((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_AUTORIZADO);
   const usuario = await usuarioActual();
   if (usuario === null) return fallo(MENSAJE_SESION_EXPIRADA);
   const v = validarProspecto(entrada);
@@ -88,7 +87,7 @@ export async function crearProspecto(entrada: unknown): Promise<RespuestaPipelin
 }
 
 export async function editarProspecto(id: unknown, entrada: unknown): Promise<RespuestaPipeline> {
-  if (!esHostLocal((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_AUTORIZADO);
   const usuario = await usuarioActual();
   if (usuario === null) return fallo(MENSAJE_SESION_EXPIRADA);
   const prospectoId = validarId(id);
@@ -109,7 +108,7 @@ export async function editarProspecto(id: unknown, entrada: unknown): Promise<Re
 }
 
 export async function archivarProspecto(id: unknown): Promise<RespuestaPipeline> {
-  if (!esHostLocal((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_AUTORIZADO);
   const usuario = await usuarioActual();
   if (usuario === null) return fallo(MENSAJE_SESION_EXPIRADA);
   const prospectoId = validarId(id);
@@ -134,7 +133,7 @@ export async function archivarProspecto(id: unknown): Promise<RespuestaPipeline>
 }
 
 export async function restaurarProspecto(id: unknown): Promise<RespuestaPipeline> {
-  if (!esHostLocal((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado((await headers()).get("host"))) return fallo(MENSAJE_HOST_NO_AUTORIZADO);
   const usuario = await usuarioActual();
   if (usuario === null) return fallo(MENSAJE_SESION_EXPIRADA);
   const prospectoId = validarId(id);
@@ -170,7 +169,7 @@ const ESQUEMA_IMPORTACION = z
  */
 export async function confirmarImportacion(filas: unknown): Promise<RespuestaImportacion> {
   const sinFilas = (mensaje: string): RespuestaImportacion => ({ ok: false, mensaje, filas: [] });
-  if (!esHostLocal((await headers()).get("host"))) return sinFilas(MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado((await headers()).get("host"))) return sinFilas(MENSAJE_HOST_NO_AUTORIZADO);
   const usuario = await usuarioActual();
   if (usuario === null) return sinFilas(MENSAJE_SESION_EXPIRADA);
   const forma = ESQUEMA_IMPORTACION.safeParse(filas);

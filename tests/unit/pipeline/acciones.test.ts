@@ -25,7 +25,7 @@ vi.mock("../../../src/servidor/supabase/servidor", () => ({
 import { archivarProspecto, confirmarImportacion, crearProspecto, editarProspecto, restaurarProspecto } from "../../../src/app/(app)/pipeline/acciones";
 import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
 import { MENSAJE_FORMA_INVALIDA } from "../../../src/aplicacion/pipeline/entrada";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
+import { MENSAJE_HOST_NO_AUTORIZADO } from "../../../src/servidor/guardiaHost";
 
 const ID = "0b6c7d2e-1f3a-4b5c-8d9e-0a1b2c3d4e5f";
 const valido = { nombre: "Prospecto Sintético", contacto: "5512345678", comentarios: "", estatus: "INTERESADO", seguimiento: "" };
@@ -47,7 +47,7 @@ beforeEach(() => {
 describe.each(Object.entries(llamadas))("acción %s", (_nombre, llamar) => {
   it("con un Host que no es local responde el mensaje del guardia sin tocar la base", async () => {
     encabezados.host = "crediflexi.example";
-    expect(await llamar()).toMatchObject({ ok: false, mensaje: MENSAJE_HOST_NO_LOCAL });
+    expect(await llamar()).toMatchObject({ ok: false, mensaje: MENSAJE_HOST_NO_AUTORIZADO });
     expect(base.llamadas).toBe(0);
   });
 

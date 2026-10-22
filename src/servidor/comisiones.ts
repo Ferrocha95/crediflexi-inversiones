@@ -1,10 +1,9 @@
 import "server-only";
 import * as z from "zod";
 import { modeloComisiones, type ModeloComisiones } from "../aplicacion/comisiones";
-import { esHostLocal } from "../aplicacion/host";
 import type { ResultadoApp } from "../aplicacion/resultado";
 import { ROLES_CON_META, TIPOS_INVERSION, type SemillaComisiones } from "../domain/comisiones/semilla";
-import { MENSAJE_HOST_NO_LOCAL } from "./guardiaHost";
+import { hostAutorizado, MENSAJE_HOST_NO_AUTORIZADO } from "./guardiaHost";
 import { leerSemillaComisiones } from "./parametros";
 
 export const MENSAJE_FORMA_COMISIONES =
@@ -75,7 +74,7 @@ export async function simularCon(
   leer: () => Promise<ResultadoApp<SemillaComisiones>> = leerSemillaComisiones,
 ): Promise<RespuestaComisiones> {
   // Seguro contra un despliegue accidental (no es seguridad real): ver guardiaHost.ts.
-  if (!esHostLocal(host)) return fallo(null, MENSAJE_HOST_NO_LOCAL);
+  if (!hostAutorizado(host)) return fallo(null, MENSAJE_HOST_NO_AUTORIZADO);
 
   const forma = esquemaCampos.safeParse(campos);
   if (!forma.success) return fallo(null, MENSAJE_FORMA_COMISIONES);

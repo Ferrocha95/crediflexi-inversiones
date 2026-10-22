@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import { validarConfiguracionDeArranque } from "./src/servidor/supabase/config";
+
+// HOSTS_PERMITIDOS o ENTORNO mal formadas hacen fallar next build, next start
+// y next dev con un mensaje en español, en vez de abrir la app por accidente.
+validarConfiguracionDeArranque();
 
 const nextConfig: NextConfig = {
   experimental: {

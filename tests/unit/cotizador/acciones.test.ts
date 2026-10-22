@@ -20,7 +20,7 @@ import { MENSAJE_MONTO_CERO, MENSAJE_MONTO_ILEGIBLE } from "../../../src/aplicac
 import { previsualizar } from "../../../src/app/(app)/cotizador/acciones";
 import { cotizar } from "../../../src/domain/interes/cotizar";
 import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
+import { MENSAJE_HOST_NO_AUTORIZADO } from "../../../src/servidor/guardiaHost";
 import type { RespuestaVistaPrevia } from "../../../src/servidor/vistaPrevia";
 import { MENSAJE_FORMA_INVALIDA } from "../../../src/servidor/vistaPrevia";
 import { semillaReal } from "../oro/ayudas";
@@ -178,7 +178,7 @@ describe("previsualizar: guardia de host", () => {
       expect(r).toEqual({
         peticion: null,
         plazos: null,
-        resultado: { tipo: "error", mensaje: MENSAJE_HOST_NO_LOCAL, detalles: [] },
+        resultado: { tipo: "error", mensaje: MENSAJE_HOST_NO_AUTORIZADO, detalles: [] },
       });
     },
   );

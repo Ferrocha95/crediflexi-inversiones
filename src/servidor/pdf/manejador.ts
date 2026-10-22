@@ -1,7 +1,6 @@
 import "server-only";
 import * as z from "zod";
 import { fechaIsoEnMexico } from "../../aplicacion/fecha";
-import { esHostLocal } from "../../aplicacion/host";
 import { modeloPdf, TOPES, type ModeloPdf } from "../../aplicacion/modelo";
 import { normalizarMonto } from "../../aplicacion/monto";
 import { datosPagina2 } from "../../aplicacion/pagina2";
@@ -10,12 +9,12 @@ import { ajusteDesdeCampos } from "../../aplicacion/ajustes";
 import { cotizarConAjuste } from "../../domain/interes/ajustes";
 import { validarFechaInicio } from "../../domain/interes/diasNaturales";
 import { ESQUEMAS, MONEDAS } from "../../domain/tasas/semilla.esquema";
-import { MENSAJE_HOST_NO_LOCAL } from "../guardiaHost";
+import { hostAutorizado, MENSAJE_HOST_NO_AUTORIZADO } from "../guardiaHost";
 import type { ParametrosCotizacion } from "../parametros";
 
 export const MENSAJES_PDF = {
   origenAjeno:
-    "La petición del PDF no viene de esta misma página. Abre el cotizador con la dirección localhost y genera el PDF desde ahí.",
+    "La petición del PDF no viene de esta misma página. Abre el cotizador desde la dirección de la app y genera el PDF desde ahí.",
   formaInvalida: "La solicitud del PDF no tiene la forma esperada. Recarga la página y vuelve a intentarlo.",
   sinConfirmar:
     'Antes de generar el PDF, revisa la vista previa y marca la casilla "Confirmo que los datos capturados son correctos".',
@@ -102,7 +101,7 @@ export async function leerCuerpo(request: Request): Promise<unknown> {
 export async function manejarPdf(request: Request, deps: DependenciasPdf): Promise<Response> {
   // Seguro contra un despliegue accidental (no es seguridad real): ver guardiaHost.ts.
   const host = request.headers.get("host");
-  if (host === null || !esHostLocal(host)) return json(403, MENSAJE_HOST_NO_LOCAL);
+  if (host === null || !hostAutorizado(host)) return json(403, MENSAJE_HOST_NO_AUTORIZADO);
   if (!origenCoincide(request.headers.get("origin"), host)) return json(403, MENSAJES_PDF.origenAjeno);
 
   const forma = esquemaCuerpo.safeParse(await leerCuerpo(request));

@@ -27,7 +27,7 @@ import { MENSAJES_ARCHIVO, MENSAJES_EXCEL, TOPES_IMPORTACION } from "../../../sr
 import { GET } from "../../../src/app/(app)/pipeline/excel/route";
 import { POST } from "../../../src/app/(app)/pipeline/importar/route";
 import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
+import { MENSAJE_HOST_NO_AUTORIZADO } from "../../../src/servidor/guardiaHost";
 import { leerLibro, libroSintetico, prospecto } from "./ayudas";
 
 const EJECUTIVO = { id: "0b6c7d2e-1f3a-4b5c-8d9e-0a1b2c3d4e51", nombre: "Ejecutiva Sintética", rol: "EJECUTIVO" };
@@ -52,7 +52,7 @@ describe("GET /pipeline/excel", () => {
   it("con Host no local responde 403 sin leer nada", async () => {
     const r = await pedirExcel("", "crediflexi.example");
     expect(r.status).toBe(403);
-    expect(await r.text()).toBe(MENSAJE_HOST_NO_LOCAL);
+    expect(await r.text()).toBe(MENSAJE_HOST_NO_AUTORIZADO);
     expect(datos.llamadas).toBe(0);
   });
 

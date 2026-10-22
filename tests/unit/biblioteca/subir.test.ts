@@ -34,7 +34,7 @@ vi.mock("../../../src/servidor/biblioteca/consultas", () => ({
 import { MENSAJES_BIBLIOTECA, TOPE_BYTES, TOPE_CUERPO } from "../../../src/aplicacion/biblioteca/reglas";
 import { POST } from "../../../src/app/(app)/biblioteca/subir/route";
 import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
+import { MENSAJE_HOST_NO_AUTORIZADO } from "../../../src/servidor/guardiaHost";
 
 const HOST = "127.0.0.1:3000";
 const GERENTE = { id: "g-1", nombre: "Gerente Sintético", rol: "GERENTE" };
@@ -147,7 +147,7 @@ describe("POST /biblioteca/subir: guardias en orden y sin leer el cuerpo", () =>
     const { stream, estado } = enStream(pdf(1000));
     const r = await POST(peticion(stream, { host: "crediflexi.example" }));
     expect(r.status).toBe(403);
-    expect(await r.text()).toBe(MENSAJE_HOST_NO_LOCAL);
+    expect(await r.text()).toBe(MENSAJE_HOST_NO_AUTORIZADO);
     expect(estado.leidos).toBe(0);
   });
 

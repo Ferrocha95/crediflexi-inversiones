@@ -10,7 +10,7 @@ import { error, type ResultadoApp } from "../../../../src/aplicacion/resultado";
 import { cargarTextos } from "../../../../src/aplicacion/textos";
 import { cotizar } from "../../../../src/domain/interes/cotizar";
 import type { SolicitudTasa } from "../../../../src/domain/tasas/resolver";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../../src/servidor/guardiaHost";
+import { MENSAJE_HOST_NO_AUTORIZADO } from "../../../../src/servidor/guardiaHost";
 import type { ParametrosCotizacion } from "../../../../src/servidor/parametros";
 import { manejarPdf, MENSAJES_PDF, type DependenciasPdf } from "../../../../src/servidor/pdf/manejador";
 import { semillaReal } from "../../oro/ayudas";
@@ -199,7 +199,7 @@ describe("manejarPdf: host y origen", () => {
     const r = await manejarPdf(peticion(VALIDO, encabezados), deps);
     expect(r.status).toBe(403);
     const e = await errorJson(r);
-    expect(e.error).toBe("host" in encabezados ? MENSAJE_HOST_NO_LOCAL : MENSAJES_PDF.origenAjeno);
+    expect(e.error).toBe("host" in encabezados ? MENSAJE_HOST_NO_AUTORIZADO : MENSAJES_PDF.origenAjeno);
     expect(modelos).toHaveLength(0);
   });
 

@@ -70,7 +70,7 @@ const CARPETA_NUEVA = "cccccccc-0000-4000-8000-000000000000";
 import { agregarEnlace, archivar, archivarCarpeta, crearCarpeta, moverElemento } from "../../../src/app/(app)/biblioteca/acciones";
 import { MENSAJES_BIBLIOTECA } from "../../../src/aplicacion/biblioteca/reglas";
 import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
+import { MENSAJE_HOST_NO_AUTORIZADO } from "../../../src/servidor/guardiaHost";
 
 const ID = "0b6c7d2e-1f3a-4b5c-8d9e-0a1b2c3d4e5f";
 const GERENTE = { id: "g-1", nombre: "Gerente Sintético", rol: "GERENTE" };
@@ -124,7 +124,7 @@ const llamadas = {
 describe.each(Object.entries(llamadas))("acción %s", (_nombre, llamar) => {
   it("con un Host que no es local responde el mensaje del guardia sin tocar la base", async () => {
     encabezados.host = "crediflexi.example";
-    expect(await llamar()).toMatchObject({ ok: false, mensaje: MENSAJE_HOST_NO_LOCAL });
+    expect(await llamar()).toMatchObject({ ok: false, mensaje: MENSAJE_HOST_NO_AUTORIZADO });
     expect(base.clientes).toBe(0);
   });
 

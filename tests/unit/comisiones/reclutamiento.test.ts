@@ -16,7 +16,7 @@ vi.mock("../../../src/servidor/sesion", () => ({
 
 import { simularReclutamiento } from "../../../src/app/(app)/comisiones/reclutamiento/acciones";
 import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
-import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
+import { MENSAJE_HOST_NO_AUTORIZADO } from "../../../src/servidor/guardiaHost";
 import { leerParametrosReclutamiento } from "../../../src/servidor/parametros";
 import { manejarPdfReclutamiento, MENSAJES_PDF_RECLUTAMIENTO } from "../../../src/servidor/pdf/manejadorReclutamiento";
 import { renderizarReclutamiento } from "../../../src/servidor/pdf/renderizar";
@@ -72,7 +72,7 @@ describe("acción simularReclutamiento", () => {
 
   it("con Host no local responde el mensaje del guardia sin leer la sesión", async () => {
     encabezados.host = "crediflexi.example.com";
-    expect(error(await simularReclutamiento(base)).mensaje).toBe(MENSAJE_HOST_NO_LOCAL);
+    expect(error(await simularReclutamiento(base)).mensaje).toBe(MENSAJE_HOST_NO_AUTORIZADO);
     expect(sesion.llamadas).toBe(0);
   });
 
@@ -116,7 +116,7 @@ describe("PDF de reclutamiento (manejador)", () => {
       { leer: () => leerParametrosReclutamiento(), renderizar: renderizarReclutamiento, ahora: () => AHORA },
     );
     expect(r.status).toBe(403);
-    expect((await r.json()).error).toBe(MENSAJE_HOST_NO_LOCAL);
+    expect((await r.json()).error).toBe(MENSAJE_HOST_NO_AUTORIZADO);
   });
 
   it("Origin ajeno: 403", async () => {
