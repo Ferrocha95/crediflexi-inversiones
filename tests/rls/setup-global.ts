@@ -93,8 +93,11 @@ async function limpiar(admin: SupabaseClient): Promise<void> {
   }
 
   // biblioteca.organizacion_id y biblioteca.subido_por son "on delete
-  // restrict": sus filas y sus objetos del bucket se borran antes.
+  // restrict": sus filas y sus objetos del bucket se borran antes. Luego las
+  // carpetas (biblioteca.carpeta_id, biblioteca_carpetas.organizacion_id y
+  // biblioteca_carpetas.creado_por también son "on delete restrict").
   await limpiarBiblioteca(admin, idsOrganizaciones);
+  await limpiarCarpetas(admin, idsOrganizaciones);
 
   // prospectos.ejecutivo_id es "on delete restrict": los prospectos de los
   // usuarios de prueba se borran antes que ellos.
@@ -169,6 +172,14 @@ async function limpiarBiblioteca(admin: SupabaseClient, idsOrganizaciones: strin
       if (borrar.data.length === 0) falla("borrar los objetos de prueba del bucket", "no se borró ninguno");
     }
   }
+}
+
+// Carpetas de la Biblioteca de cada organización de prueba, después de sus
+// elementos.
+async function limpiarCarpetas(admin: SupabaseClient, idsOrganizaciones: string[]): Promise<void> {
+  if (idsOrganizaciones.length === 0) return;
+  const { error } = await admin.from("biblioteca_carpetas").delete().in("organizacion_id", idsOrganizaciones);
+  if (error) falla("borrar las carpetas de biblioteca de prueba", error.message);
 }
 
 async function verificarLimpio(admin: SupabaseClient): Promise<void> {

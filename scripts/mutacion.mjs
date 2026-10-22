@@ -73,6 +73,21 @@ const BIBLIOTECA_CREAR = '"biblioteca: crear Director y Gerente"';
 const politicaDeBiblioteca = (nombre) =>
   `from pg_policies where schemaname = 'public' and tablename = 'biblioteca' and policyname = '${nombre}'`;
 
+const CARPETAS_LEER = '"biblioteca_carpetas: leer las de mi organización"';
+const CARPETAS_CREAR = '"biblioteca_carpetas: crear Director y Gerente"';
+
+// Filtro de pg_policies para una política de carpetas (nombre sin comillas).
+const politicaDeCarpetas = (nombre) =>
+  `from pg_policies where schemaname = 'public' and tablename = 'biblioteca_carpetas' and policyname = '${nombre}'`;
+
+// Columnas, en orden, de la llave foránea de biblioteca hacia carpetas.
+const COLUMNAS_LLAVE_CARPETA = `(select array_agg(a.attname::text order by k.n)
+           from pg_constraint c
+           cross join lateral unnest(c.conkey) with ordinality k (attnum, n)
+           join pg_attribute a on a.attrelid = c.conrelid and a.attnum = k.attnum
+           where c.conrelid = 'public.biblioteca'::regclass and c.contype = 'f'
+             and c.confrelid = 'public.biblioteca_carpetas'::regclass)`;
+
 // Filtro de pg_policies para una política del bucket (nombre sin comillas).
 const politicaDelBucket = (nombre) =>
   `from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = '${nombre}'`;
@@ -335,19 +350,50 @@ $$;`,
     comprobar: `select has_table_privilege('authenticated', 'public.biblioteca', 'DELETE')
                    and exists (select 1 ${politicaDeBiblioteca("mutacion: borrar biblioteca")}) as ok`,
   },
+  {
+    id: "22",
+    nombre: "22. Lectura de carpetas sin el filtro de organización",
+    sql: `alter policy ${CARPETAS_LEER} on public.biblioteca_carpetas using (archivado_en is null or ${RAMA_DIRECTOR_O_GERENTE});`,
+    comprobar: `select position('organizacion_actual_id' in qual) = 0 as ok ${politicaDeCarpetas("biblioteca_carpetas: leer las de mi organización")}`,
+  },
+  {
+    id: "23",
+    nombre: "23. Crear carpeta sin comprobar el rol",
+    sql: `alter policy ${CARPETAS_CREAR} on public.biblioteca_carpetas
+            with check (
+              creado_por = (select privado.usuario_actual_id())
+              and organizacion_id = (select privado.organizacion_actual_id())
+            );`,
+    comprobar: `select position('GERENTE' in with_check) = 0 as ok ${politicaDeCarpetas("biblioteca_carpetas: crear Director y Gerente")}`,
+  },
+  {
+    id: "24",
+    nombre: "24. Llave de biblioteca a carpetas sin la categoría (carpeta_id, organizacion_id)",
+    sql: [
+      `alter table public.biblioteca drop constraint biblioteca_carpeta_misma_seccion_y_organizacion`,
+      `alter table public.biblioteca_carpetas add constraint mutacion_carpetas_id_organizacion_unico unique (id, organizacion_id)`,
+      `alter table public.biblioteca add constraint mutacion_carpeta_sin_categoria
+         foreign key (carpeta_id, organizacion_id)
+         references public.biblioteca_carpetas (id, organizacion_id) on delete restrict`,
+    ],
+    comprobar: `select ${COLUMNAS_LLAVE_CARPETA} = array['carpeta_id', 'organizacion_id'] as ok`,
+  },
 ];
 
 // Estado normal esperado después de db:reset.
 const COMPROBACIONES_FINALES = [
   {
-    nombre: "1 política de lectura en cada tabla de organización y 3 en prospectos y en biblioteca (leer, crear, editar o archivar)",
-    sql: `select count(*) = 9
-                 and count(*) filter (where tablename not in ('prospectos', 'biblioteca') and cmd = 'SELECT') = 3
-                 and count(distinct tablename) filter (where tablename not in ('prospectos', 'biblioteca')) = 3
+    nombre: "1 política de lectura en cada tabla de organización y 3 en prospectos, biblioteca y biblioteca_carpetas (leer, crear, editar o archivar)",
+    sql: `select count(*) = 12
+                 and count(*) filter (where tablename not in ('prospectos', 'biblioteca', 'biblioteca_carpetas') and cmd = 'SELECT') = 3
+                 and count(distinct tablename) filter (where tablename not in ('prospectos', 'biblioteca', 'biblioteca_carpetas')) = 3
                  and array_agg(cmd::text order by cmd::text) filter (where tablename = 'prospectos')
                      = array['INSERT', 'SELECT', 'UPDATE']
                  and array_agg(cmd::text order by cmd::text) filter (where tablename = 'biblioteca')
                      = array['INSERT', 'SELECT', 'UPDATE']
+                 and array_agg(cmd::text order by cmd::text) filter (where tablename = 'biblioteca_carpetas')
+                     = array['INSERT', 'SELECT', 'UPDATE']
+                 and bool_and(roles = '{authenticated}') filter (where tablename = 'biblioteca_carpetas')
                  and bool_and(permissive = 'PERMISSIVE') as ok
           from pg_policies where schemaname = 'public'`,
   },
@@ -378,22 +424,54 @@ const COMPROBACIONES_FINALES = [
           where a.attrelid = 'public.prospectos'::regclass and a.attnum > 0 and not a.attisdropped`,
   },
   {
-    nombre: "biblioteca: authenticated lee, inserta solo las columnas de contenido y actualiza solo archivado_en, sin borrar; anon nada",
+    nombre: "biblioteca: authenticated lee, inserta solo las columnas de contenido y carpeta_id y actualiza solo archivado_en y carpeta_id, sin borrar; anon nada",
     sql: `select has_table_privilege('authenticated', 'public.biblioteca', 'SELECT')
                  and not has_table_privilege('authenticated', 'public.biblioteca', 'INSERT')
                  and not has_table_privilege('authenticated', 'public.biblioteca', 'UPDATE')
                  and not has_table_privilege('authenticated', 'public.biblioteca', 'DELETE')
                  and array_agg(a.attname::text order by a.attname)
                        filter (where has_column_privilege('authenticated', 'public.biblioteca', a.attname, 'INSERT'))
-                     = array['categoria', 'descripcion', 'enlace', 'nombre', 'ruta', 'tamano_bytes', 'tipo', 'tipo_mime']
+                     = array['carpeta_id', 'categoria', 'descripcion', 'enlace', 'nombre', 'ruta', 'tamano_bytes', 'tipo', 'tipo_mime']
                  and array_agg(a.attname::text order by a.attname)
                        filter (where has_column_privilege('authenticated', 'public.biblioteca', a.attname, 'UPDATE'))
-                     = array['archivado_en']
+                     = array['archivado_en', 'carpeta_id']
                  and not has_any_column_privilege('anon', 'public.biblioteca', 'SELECT, INSERT, UPDATE')
                  and not has_table_privilege('anon', 'public.biblioteca', 'DELETE')
                  and (select relrowsecurity from pg_class where oid = 'public.biblioteca'::regclass) as ok
           from pg_attribute a
           where a.attrelid = 'public.biblioteca'::regclass and a.attnum > 0 and not a.attisdropped`,
+  },
+  {
+    nombre: "biblioteca_carpetas: authenticated lee, inserta solo categoria y nombre y actualiza solo archivado_en, sin borrar; anon nada",
+    sql: `select has_table_privilege('authenticated', 'public.biblioteca_carpetas', 'SELECT')
+                 and not has_table_privilege('authenticated', 'public.biblioteca_carpetas', 'INSERT')
+                 and not has_table_privilege('authenticated', 'public.biblioteca_carpetas', 'UPDATE')
+                 and not has_table_privilege('authenticated', 'public.biblioteca_carpetas', 'DELETE')
+                 and array_agg(a.attname::text order by a.attname)
+                       filter (where has_column_privilege('authenticated', 'public.biblioteca_carpetas', a.attname, 'INSERT'))
+                     = array['categoria', 'nombre']
+                 and array_agg(a.attname::text order by a.attname)
+                       filter (where has_column_privilege('authenticated', 'public.biblioteca_carpetas', a.attname, 'UPDATE'))
+                     = array['archivado_en']
+                 and not has_any_column_privilege('anon', 'public.biblioteca_carpetas', 'SELECT, INSERT, UPDATE')
+                 and not has_table_privilege('anon', 'public.biblioteca_carpetas', 'DELETE')
+                 and (select relrowsecurity from pg_class where oid = 'public.biblioteca_carpetas'::regclass) as ok
+          from pg_attribute a
+          where a.attrelid = 'public.biblioteca_carpetas'::regclass and a.attnum > 0 and not a.attisdropped`,
+  },
+  {
+    nombre: "la llave de biblioteca a carpetas es compuesta (carpeta_id, categoria, organizacion_id) y el nombre es único entre las activas",
+    sql: `select ${COLUMNAS_LLAVE_CARPETA} = array['carpeta_id', 'categoria', 'organizacion_id']
+                 and (select count(*) = 1 from pg_constraint
+                      where conrelid = 'public.biblioteca'::regclass and contype = 'f'
+                        and confrelid = 'public.biblioteca_carpetas'::regclass
+                        and conname = 'biblioteca_carpeta_misma_seccion_y_organizacion')
+                 and (select array_agg(conname::text order by conname) from pg_constraint
+                      where conrelid = 'public.biblioteca_carpetas'::regclass and contype = 'u')
+                     = array['biblioteca_carpetas_id_categoria_organizacion_unico']
+                 and (select indisunique and position('lower(nombre)' in pg_get_indexdef(indexrelid)) > 0
+                             and position('archivado_en IS NULL' in pg_get_expr(indpred, indrelid)) > 0
+                      from pg_index where indexrelid = 'public.biblioteca_carpetas_nombre_unico_activas'::regclass) as ok`,
   },
   {
     nombre: "bucket biblioteca privado, 26,214,400 bytes y 12 tipos; storage.objects solo con 2 políticas (leer y subir)",
@@ -418,7 +496,7 @@ const COMPROBACIONES_FINALES = [
           where n.nspname = 'privado'`,
   },
   {
-    nombre: "las definiciones de privado y las políticas de prospectos, biblioteca y el bucket son las originales",
+    nombre: "las definiciones de privado, las funciones de trigger de la biblioteca y las políticas de prospectos, biblioteca, carpetas y el bucket son las originales",
     sql: `select position('u.activo' in ${definicion("privado.usuario_actual()")}) > 0
                  and position('s.organizacion_id = mia.organizacion_id' in ${definicion("privado.sucursal_visible(uuid)")}) > 0
                  and position('join abajo' in ${definicion("privado.subordinados(uuid)")}) > 0
@@ -446,11 +524,32 @@ const COMPROBACIONES_FINALES = [
                          and position('biblioteca b' in qual) > 0
                       ${politicaDelBucket("biblioteca: leer objetos de mi organización")})
                  and (select position('organizacion_actual_id' in with_check) > 0 and position('GERENTE' in with_check) > 0
-                      ${politicaDelBucket("biblioteca: subir objetos Director y Gerente")}) as ok`,
+                      ${politicaDelBucket("biblioteca: subir objetos Director y Gerente")})
+                 and (select position('organizacion_actual_id' in qual) > 0 and position('GERENTE' in qual) > 0
+                      ${politicaDeCarpetas("biblioteca_carpetas: leer las de mi organización")})
+                 and (select position('usuario_actual_id' in with_check) > 0
+                         and position('organizacion_actual_id' in with_check) > 0 and position('GERENTE' in with_check) > 0
+                      ${politicaDeCarpetas("biblioteca_carpetas: crear Director y Gerente")})
+                 and (select position('organizacion_actual_id' in qual) > 0 and position('GERENTE' in qual) > 0
+                         and position('organizacion_actual_id' in with_check) > 0 and position('GERENTE' in with_check) > 0
+                      ${politicaDeCarpetas("biblioteca_carpetas: archivar Director y Gerente")})
+                 and position('biblioteca_carpetas_sin_elementos_activos' in ${definicion("public.impedir_archivar_carpeta_con_elementos()")}) > 0
+                 and position('for share' in ${definicion("public.exigir_carpeta_activa()")}) > 0
+                 and position('biblioteca_restaurar_en_carpeta_archivada' in ${definicion("public.exigir_carpeta_activa()")}) > 0
+                 and (select bool_and(prosecdef and proconfig = array['search_path=""'])
+                      from pg_proc where oid in ('public.impedir_archivar_carpeta_con_elementos()'::regprocedure,
+                                                 'public.exigir_carpeta_activa()'::regprocedure))
+                 and not has_function_privilege('authenticated', 'public.impedir_archivar_carpeta_con_elementos()', 'EXECUTE')
+                 and not has_function_privilege('authenticated', 'public.exigir_carpeta_activa()', 'EXECUTE')
+                 and not has_function_privilege('anon', 'public.impedir_archivar_carpeta_con_elementos()', 'EXECUTE')
+                 and not has_function_privilege('anon', 'public.exigir_carpeta_activa()', 'EXECUTE') as ok`,
   },
   {
     nombre: "los triggers",
     sql: `select array_agg(tgname::text order by tgname) = array[
+                   'biblioteca_carpetas_fijar_archivado_en',
+                   'biblioteca_carpetas_impedir_archivar_con_elementos',
+                   'biblioteca_exigir_carpeta_activa',
                    'biblioteca_fijar_archivado_en',
                    'biblioteca_fijar_subido_por_nombre',
                    'organizaciones_fijar_actualizado_en',
@@ -465,7 +564,7 @@ const COMPROBACIONES_FINALES = [
           where not tgisinternal
             and tgrelid in ('public.organizaciones'::regclass, 'public.sucursales'::regclass,
                             'public.usuarios'::regclass, 'public.prospectos'::regclass,
-                            'public.biblioteca'::regclass)`,
+                            'public.biblioteca'::regclass, 'public.biblioteca_carpetas'::regclass)`,
   },
   {
     nombre: "las restricciones de prospectos",
@@ -493,6 +592,17 @@ const COMPROBACIONES_FINALES = [
                    'biblioteca_tipo_mime_permitido'] as ok
           from pg_constraint
           where conrelid = 'public.biblioteca'::regclass and contype = 'c'`,
+  },
+  {
+    nombre: "las restricciones de biblioteca_carpetas",
+    sql: `select array_agg(conname::text order by conname) = array[
+                   'biblioteca_carpetas_nombre_largo_maximo',
+                   'biblioteca_carpetas_nombre_no_vacio',
+                   'biblioteca_carpetas_nombre_sin_espacios_extremos',
+                   'biblioteca_carpetas_nombre_sin_invisibles',
+                   'biblioteca_carpetas_sin_datos_sensibles'] as ok
+          from pg_constraint
+          where conrelid = 'public.biblioteca_carpetas'::regclass and contype = 'c'`,
   },
 ];
 
