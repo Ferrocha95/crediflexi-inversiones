@@ -133,7 +133,9 @@ create trigger biblioteca_carpetas_impedir_archivar_con_elementos
 -- restaura (archivado_en de no nulo a nulo) en una carpeta archivada. Bloquea
 -- la fila de la carpeta (for share) para que un archivado simultáneo espere o
 -- vea el elemento. security definer para leer la carpeta sin depender de su
--- política de lectura.
+-- política de lectura. La carpeta se busca SOLO en la sección y la
+-- organización del elemento: una carpeta ajena no revela si está archivada ni
+-- queda bloqueada; si no se encuentra, decide la llave compuesta (23503).
 create function public.exigir_carpeta_activa()
 returns trigger
 language plpgsql
@@ -156,9 +158,12 @@ begin
     into v_archivada
     from public.biblioteca_carpetas c
    where c.id = new.carpeta_id
+     and c.organizacion_id = new.organizacion_id
+     and c.categoria = new.categoria
      for share;
 
-  -- Si la carpeta no existe, decide la llave foránea.
+  -- Si no está en la sección y organización del elemento (o no existe), no se
+  -- hace nada: decide la llave compuesta.
   if v_archivada then
     if tg_op = 'UPDATE'
        and new.carpeta_id is not distinct from old.carpeta_id then

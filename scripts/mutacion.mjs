@@ -535,6 +535,8 @@ const COMPROBACIONES_FINALES = [
                       ${politicaDeCarpetas("biblioteca_carpetas: archivar Director y Gerente")})
                  and position('biblioteca_carpetas_sin_elementos_activos' in ${definicion("public.impedir_archivar_carpeta_con_elementos()")}) > 0
                  and position('for share' in ${definicion("public.exigir_carpeta_activa()")}) > 0
+                 and position('c.organizacion_id = new.organizacion_id' in ${definicion("public.exigir_carpeta_activa()")}) > 0
+                 and position('c.categoria = new.categoria' in ${definicion("public.exigir_carpeta_activa()")}) > 0
                  and position('biblioteca_restaurar_en_carpeta_archivada' in ${definicion("public.exigir_carpeta_activa()")}) > 0
                  and (select bool_and(prosecdef and proconfig = array['search_path=""'])
                       from pg_proc where oid in ('public.impedir_archivar_carpeta_con_elementos()'::regprocedure,

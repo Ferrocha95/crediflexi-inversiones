@@ -647,3 +647,50 @@ describe("RLS carpetas: restaurar un elemento", () => {
     expect(data?.archivado_en).not.toBeNull();
   });
 });
+
+// exigir_carpeta_activa() busca la carpeta solo en la sección y la
+// organización del elemento: una carpeta ajena no revela si está archivada
+// (decide la llave compuesta, 23503) ni queda bloqueada por el trigger.
+describe("RLS carpetas: una carpeta de otra organización o sección no revela su estado", () => {
+  it("(a) G1 con el uuid de una carpeta ARCHIVADA de la organización B recibe 23503 y no 23514, al agregar y al mover", async () => {
+    const ajena = await crearCarpeta({ organizacion: "B", archivada: true });
+    const fila = enlaceNuevo({ carpeta_id: ajena });
+    const agregar = await clientes.G1.from("biblioteca").insert(fila);
+    expect(agregar.error?.code).toBe(LLAVE_FORANEA_VIOLADA);
+    expect(agregar.error?.message).not.toContain("archivada");
+    expect(await elementosConNombre(fila.nombre as string)).toEqual([]);
+
+    const e = await crearElemento({ carpeta: null });
+    const mover = await clientes.G1.from("biblioteca").update({ carpeta_id: ajena }).eq("id", e);
+    expect(mover.error?.code).toBe(LLAVE_FORANEA_VIOLADA);
+    expect(mover.error?.message).not.toContain("archivada");
+    expect(await carpetaDe(e)).toBeNull();
+  });
+
+  it("(b) G1 con el uuid de una carpeta ACTIVA de otra organización recibe 23503", async () => {
+    const ajena = await crearCarpeta({ organizacion: "B" });
+    const fila = enlaceNuevo({ carpeta_id: ajena });
+    const { error } = await clientes.G1.from("biblioteca").insert(fila);
+    expect(error?.code).toBe(LLAVE_FORANEA_VIOLADA);
+    expect(await elementosConNombre(fila.nombre as string)).toEqual([]);
+  });
+
+  it("(c) G1 con una carpeta archivada de SU organización y sección sigue recibiendo 23514", async () => {
+    const propia = await crearCarpeta({ organizacion: "A", archivada: true });
+    const fila = enlaceNuevo({ carpeta_id: propia });
+    const { error } = await clientes.G1.from("biblioteca").insert(fila);
+    expect(error?.code).toBe(CHECK_VIOLADO);
+    expect(error?.message).toContain("biblioteca_carpeta_archivada");
+    expect(await elementosConNombre(fila.nombre as string)).toEqual([]);
+  });
+
+  it("(d) mover un elemento a una carpeta de otra sección da 23503, aunque esa carpeta esté archivada", async () => {
+    const e = await crearElemento({ carpeta: null, categoria: "CAPACITACION" });
+    for (const archivada of [false, true]) {
+      const otra = await crearCarpeta({ categoria: "EMPRESA", archivada });
+      const { error } = await clientes.G1.from("biblioteca").update({ carpeta_id: otra }).eq("id", e);
+      expect(error?.code, `archivada: ${archivada}`).toBe(LLAVE_FORANEA_VIOLADA);
+      expect(await carpetaDe(e)).toBeNull();
+    }
+  });
+});
