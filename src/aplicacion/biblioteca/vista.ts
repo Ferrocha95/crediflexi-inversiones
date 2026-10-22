@@ -126,6 +126,19 @@ export function agruparPorCategoria(elementos: readonly ElementoPantalla[]): Gru
   }));
 }
 
+/**
+ * Qué muestra la pantalla según haya algo o no. Vacía (sin elementos del modo
+ * y, en activos, sin carpetas activas): el aviso de vacía. Director y Gerente,
+ * fuera de "Ver archivados", ven además las 4 secciones, para poder crear la
+ * primera carpeta con "Nueva carpeta".
+ */
+export function queMostrar(o: { readonly vacia: boolean; readonly administra: boolean; readonly archivados: boolean }): {
+  readonly aviso: boolean;
+  readonly secciones: boolean;
+} {
+  return { aviso: o.vacia, secciones: !o.vacia || (o.administra && !o.archivados) };
+}
+
 export interface GrupoCarpeta {
   readonly carpeta: CarpetaPantalla;
   /** Los del modo (activos o archivados) que coinciden con la búsqueda, por nombre. */

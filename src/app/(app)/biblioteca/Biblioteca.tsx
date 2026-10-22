@@ -7,6 +7,7 @@ import type { Categoria } from "../../../aplicacion/biblioteca/reglas";
 import {
   agruparPorCategoriaYCarpeta,
   normalizarBusqueda,
+  queMostrar,
   type CarpetaPantalla,
   type ElementoPantalla,
   type GrupoCarpeta,
@@ -75,6 +76,8 @@ export function Biblioteca({
   const buscando = normalizarBusqueda(busqueda) !== "";
   const hayResultados = grupos.some((g) => g.sinCarpeta.length > 0 || g.carpetas.some((c) => c.elementos.length > 0));
   const vacia = delModo.length === 0 && (archivados || carpetasActivas.length === 0);
+  // Vacía: el aviso; Director y Gerente ven además las secciones para crear la primera carpeta.
+  const mostrar = queMostrar({ vacia, administra, archivados });
 
   /** Abierto si se está buscando; si no, lo que eligió la persona ("Sin carpeta" empieza abierta). */
   const estaAbierto = (clave: string) => buscando || (abiertos[clave] ?? clave.startsWith("sin:"));
@@ -181,12 +184,13 @@ export function Biblioteca({
         </div>
       </Campo>
 
-      {vacia ? (
+      {mostrar.aviso && (
         <EstadoVacio
           titulo={verArchivados ? textos.sinArchivados : textos.bibliotecaVacia}
           descripcion={verArchivados ? undefined : administra ? textos.bibliotecaVaciaAdministrador : textos.bibliotecaVaciaEjecutivo}
         />
-      ) : buscando && !hayResultados ? (
+      )}
+      {!mostrar.secciones ? null : buscando && !hayResultados ? (
         <p role="status" className="text-lg text-hielo">
           {textos.sinResultados}
         </p>

@@ -3,6 +3,7 @@ import {
   agruparPorCategoriaYCarpeta,
   carpetaParaPantalla,
   elementoParaPantalla,
+  queMostrar,
   type FilaBiblioteca,
   type FilaCarpeta,
 } from "../../../src/aplicacion/biblioteca/vista";
@@ -144,5 +145,30 @@ describe("agruparPorCategoriaYCarpeta: Ver archivados", () => {
       ["Activa", false, ["3"]],
       ["Vieja", true, ["2"]],
     ]);
+  });
+});
+
+// Una Biblioteca vacía (sin elementos ni carpetas activas) muestra el aviso de
+// vacía; para Director y Gerente, fuera de Ver archivados, muestra además las
+// 4 secciones, para que puedan crear la primera carpeta con Nueva carpeta.
+describe("queMostrar", () => {
+  it("vacía, como Director o Gerente en activos: el aviso y las secciones (para crear la primera carpeta)", () => {
+    expect(queMostrar({ vacia: true, administra: true, archivados: false })).toEqual({ aviso: true, secciones: true });
+  });
+
+  it("vacía, como ejecutivo: solo el aviso", () => {
+    expect(queMostrar({ vacia: true, administra: false, archivados: false })).toEqual({ aviso: true, secciones: false });
+  });
+
+  it("vacía, en Ver archivados: solo el aviso (ahí no se crean carpetas)", () => {
+    expect(queMostrar({ vacia: true, administra: true, archivados: true })).toEqual({ aviso: true, secciones: false });
+  });
+
+  it("con algo, para cualquiera: las secciones, sin aviso", () => {
+    for (const administra of [true, false]) {
+      for (const archivados of [true, false]) {
+        expect(queMostrar({ vacia: false, administra, archivados })).toEqual({ aviso: false, secciones: true });
+      }
+    }
   });
 });
