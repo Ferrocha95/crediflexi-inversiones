@@ -5,8 +5,8 @@ import { CATEGORIAS } from "../../../src/aplicacion/biblioteca/reglas";
 import { cargarTextos } from "../../../src/aplicacion/textos";
 import { leerTextosBiblioteca } from "../../../src/servidor/parametros";
 
-// Bloque "biblioteca" de seed/textos_cotizacion.json (0.15): los textos de la
-// pantalla /biblioteca. Sin marcadores.
+// Bloque "biblioteca" de seed/textos_cotizacion.json (0.16): los textos de la
+// pantalla /biblioteca, con los de las subcarpetas (Sprint 7c). Sin marcadores.
 
 const RUTA = path.join(process.cwd(), "seed", "textos_cotizacion.json");
 const json = () => JSON.parse(readFileSync(RUTA, "utf8")) as Record<string, unknown> & { biblioteca: Record<string, unknown> };
@@ -18,8 +18,8 @@ function cargar(j: unknown) {
 }
 
 describe("textos: bloque biblioteca", () => {
-  it("la versión es 0.15", () => {
-    expect(cargar(json()).version).toBe("0.15");
+  it("la versión es 0.16", () => {
+    expect(cargar(json()).version).toBe("0.16");
   });
 
   it("las 4 categorías llevan los nombres acordados, en el orden del enum", () => {
@@ -41,6 +41,13 @@ describe("textos: bloque biblioteca", () => {
   it("los botones de Director y Gerente", () => {
     const t = cargar(json()).biblioteca;
     expect([t.subirArchivo, t.agregarEnlace, t.archivar]).toEqual(["Subir archivo", "Agregar enlace", "Archivar"]);
+  });
+
+  it("los textos de las subcarpetas (Sprint 7c)", () => {
+    const t = cargar(json()).biblioteca;
+    expect([t.sinCarpeta, t.nuevaCarpeta, t.archivarCarpeta, t.moverA]).toEqual(["Sin carpeta", "Nueva carpeta", "Archivar carpeta", "Mover a…"]);
+    expect(t.explicacionCarpetaNoVacia).toMatch(/vacía/);
+    expect(t.textoArchivarCarpeta).toMatch(/No se borra/);
   });
 
   it("todas las claves traen texto", () => {

@@ -22,6 +22,14 @@ export const LARGO_NOMBRE = 150;
 export const LARGO_DESCRIPCION = 500;
 export const LARGO_ENLACE = 500;
 
+/** Tope del nombre de una subcarpeta (migración 20261022120000_biblioteca_carpetas.sql). */
+export const LARGO_NOMBRE_CARPETA = 80;
+/**
+ * Máximo de subcarpetas activas por sección. Solo lo revisa la app al crear
+ * (pendiente reforzarlo en la base y pasarlo a parámetros versionados).
+ */
+export const TOPE_CARPETAS = 30;
+
 export const CATEGORIAS = ["HERRAMIENTAS", "MULTIMEDIA", "EMPRESA", "CAPACITACION"] as const;
 export type Categoria = (typeof CATEGORIAS)[number];
 
@@ -121,6 +129,17 @@ export const MENSAJES_BIBLIOTECA = {
   idInvalido: "El elemento no es válido. Recarga la página y vuelve a intentar.",
   noSeArchivo: "No se archivó: el elemento no existe, ya estaba archivado o no es de tu organización. Recarga la página.",
   formaInvalida: "Los datos no llegaron completos. Recarga la página y vuelve a intentar.",
+  carpetaNombreVacio: "Escribe un nombre para la carpeta.",
+  carpetaNombreLargo: `El nombre de la carpeta pasa de ${LARGO_NOMBRE_CARPETA} caracteres. Acórtalo.`,
+  carpetaRepetida: "Ya hay una carpeta activa con ese nombre en esta sección (sin importar mayúsculas). Usa otro nombre.",
+  carpetaTope: `Esta sección ya tiene ${TOPE_CARPETAS} carpetas activas, el máximo. Archiva una vacía antes de crear otra.`,
+  carpetaConElementos: "La carpeta todavía tiene elementos activos. Muévelos a otra carpeta o archívalos y vuelve a intentar.",
+  carpetaArchivada: "Esa carpeta está archivada. Elige una carpeta activa o Sin carpeta.",
+  carpetaInvalida: "La carpeta no es válida o no es de esta sección. Recarga la página y elige otra.",
+  datoSensibleCarpeta:
+    "El nombre de la carpeta parece incluir un dato bancario o de identidad (CLABE, RFC o CURP). Esta app no guarda datos bancarios ni de identidad: quítalo y vuelve a intentar.",
+  noSeArchivoCarpeta: "No se archivó la carpeta: no existe, ya estaba archivada o no es de tu organización. Recarga la página.",
+  noSeMovio: "No se movió: el elemento no existe, está archivado o no es de tu organización. Recarga la página.",
 } as const;
 
 // --- Nombres -----------------------------------------------------------------
@@ -304,7 +323,7 @@ export interface Metadatos {
   readonly categoria: Categoria;
 }
 
-export type CampoBiblioteca = "nombre" | "descripcion" | "categoria" | "enlace" | "archivo" | "confirmacion";
+export type CampoBiblioteca = "nombre" | "descripcion" | "categoria" | "enlace" | "archivo" | "confirmacion" | "carpeta";
 export type ErroresBiblioteca = Partial<Record<CampoBiblioteca, string>>;
 
 export type ResultadoMetadatos = { readonly ok: true; readonly valor: Metadatos } | { readonly ok: false; readonly errores: ErroresBiblioteca };
@@ -350,12 +369,59 @@ export function validarMetadatos(entrada: unknown): ResultadoMetadatos {
 export function mensajeDeErrorBase(error: { code?: string; message?: string }): { mensaje: string; permisos: boolean; datos: boolean } {
   const texto = error.message ?? "";
   if (error.code === "42501") return { mensaje: MENSAJES_BIBLIOTECA.soloDirectorOGerente, permisos: true, datos: false };
+  // Carpetas (migración 20261022120000_biblioteca_carpetas.sql), antes que las
+  // de los elementos.
+  const carpeta = mensajeDeErrorCarpeta(texto);
+  if (carpeta !== null) return { mensaje: carpeta, permisos: false, datos: true };
   if (texto.includes("biblioteca_sin_datos_sensibles")) return { mensaje: MENSAJES_BIBLIOTECA.datoSensibleBase, permisos: false, datos: true };
   if (texto.includes("biblioteca_enlace_https")) return { mensaje: MENSAJES_BIBLIOTECA.enlaceInvalido, permisos: false, datos: true };
   if (texto.includes("biblioteca_nombre")) return { mensaje: MENSAJES_BIBLIOTECA.nombreLargo, permisos: false, datos: true };
   if (texto.includes("biblioteca_descripcion")) return { mensaje: MENSAJES_BIBLIOTECA.descripcionLarga, permisos: false, datos: true };
   if (texto.includes("biblioteca_tamano_maximo")) return { mensaje: MENSAJES_BIBLIOTECA.muyGrande, permisos: false, datos: true };
   return { mensaje: MENSAJES_BIBLIOTECA.fallaGuardar, permisos: false, datos: false };
+}
+
+/** Rechazos de la base propios de las carpetas, por nombre de restricción; null si no es uno de ellos. */
+function mensajeDeErrorCarpeta(texto: string): string | null {
+  if (texto.includes("biblioteca_carpetas_nombre_unico_activas")) return MENSAJES_BIBLIOTECA.carpetaRepetida;
+  if (texto.includes("biblioteca_carpetas_sin_elementos_activos")) return MENSAJES_BIBLIOTECA.carpetaConElementos;
+  if (texto.includes("biblioteca_restaurar_en_carpeta_archivada") || texto.includes("biblioteca_carpeta_archivada")) {
+    return MENSAJES_BIBLIOTECA.carpetaArchivada;
+  }
+  if (texto.includes("biblioteca_carpeta_misma_seccion_y_organizacion")) return MENSAJES_BIBLIOTECA.carpetaInvalida;
+  if (texto.includes("biblioteca_carpetas_sin_datos_sensibles")) return MENSAJES_BIBLIOTECA.datoSensibleCarpeta;
+  if (texto.includes("biblioteca_carpetas_nombre_largo_maximo")) return MENSAJES_BIBLIOTECA.carpetaNombreLargo;
+  if (texto.includes("biblioteca_carpetas_nombre")) return MENSAJES_BIBLIOTECA.carpetaNombreVacio;
+  return null;
+}
+
+// --- Carpetas ------------------------------------------------------------------
+
+export type ResultadoNombreCarpeta = { readonly ok: true; readonly nombre: string } | { readonly ok: false; readonly mensaje: string };
+
+/**
+ * Nombre de una subcarpeta, limpio y revisado como lo revisa la base: NFC, los
+ * saltos de línea y tabuladores como un espacio, sin controles ni invisibles,
+ * un solo espacio entre palabras, de 1 a 80 caracteres y sin datos sensibles.
+ */
+export function validarNombreCarpeta(entrada: unknown): ResultadoNombreCarpeta {
+  if (typeof entrada !== "string") return { ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaNombreVacio };
+  const nombre = limpiarTexto(entrada.replace(/[\t\n\r]+/g, " "));
+  if (nombre === "") return { ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaNombreVacio };
+  if (nombre.length > LARGO_NOMBRE_CARPETA) return { ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaNombreLargo };
+  if (pareceDatoSensible(nombre) !== null) return { ok: false, mensaje: MENSAJES_BIBLIOTECA.datoSensibleCarpeta };
+  return { ok: true, nombre };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export type ResultadoIdCarpeta = { readonly ok: true; readonly id: string | null } | { readonly ok: false; readonly mensaje: string };
+
+/** Carpeta elegida: ausente, null o "" es Sin carpeta; si no, un uuid (en minúsculas). */
+export function validarIdCarpeta(entrada: unknown): ResultadoIdCarpeta {
+  if (entrada === undefined || entrada === null || entrada === "") return { ok: true, id: null };
+  if (typeof entrada !== "string" || !UUID.test(entrada)) return { ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaInvalida };
+  return { ok: true, id: entrada.toLowerCase() };
 }
 
 /** Director regional o Gerente: los únicos que suben, agregan y archivan. */

@@ -26,6 +26,7 @@ const fila = (cambios: Partial<FilaBiblioteca> = {}): FilaBiblioteca => ({
   subido_por_nombre: "Gerente Sintético",
   creado_en: "2026-10-14T18:30:00Z",
   archivado_en: null,
+  carpeta_id: null,
   ...cambios,
 });
 
@@ -80,6 +81,7 @@ describe("elementoParaPantalla", () => {
       previsualiza: true,
       enlace: null,
       dominio: null,
+      carpetaId: null,
     });
   });
 

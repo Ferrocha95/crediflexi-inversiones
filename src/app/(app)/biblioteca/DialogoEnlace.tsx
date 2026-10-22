@@ -2,6 +2,7 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import { CATEGORIAS, MENSAJES_BIBLIOTECA, type ErroresBiblioteca } from "../../../aplicacion/biblioteca/reglas";
+import type { CarpetaPantalla } from "../../../aplicacion/biblioteca/vista";
 import type { TextosBiblioteca } from "../../../aplicacion/textos";
 import { errorEsSesionExpirada } from "../../../componentes/acceso/sesionExpirada";
 import { MENSAJE_SESION_EXPIRADA } from "../../../componentes/acceso/textos";
@@ -15,12 +16,15 @@ import { agregarEnlace } from "./acciones";
 /** Agregar un enlace https (solo Director regional y Gerente), con la acción agregarEnlace. */
 export function DialogoEnlace({
   abierto,
+  carpetas,
   textos,
   alCerrar,
   alAgregar,
   alSesionExpirada,
 }: {
   readonly abierto: boolean;
+  /** Carpetas activas: se ofrecen las de la categoría elegida. */
+  readonly carpetas: readonly CarpetaPantalla[];
   readonly textos: TextosBiblioteca;
   readonly alCerrar: () => void;
   readonly alAgregar: () => void;
@@ -29,6 +33,7 @@ export function DialogoEnlace({
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [categoria, setCategoria] = useState("");
+  const [carpeta, setCarpeta] = useState("");
   const [enlace, setEnlace] = useState("");
   const [errores, setErrores] = useState<ErroresBiblioteca>({});
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +43,7 @@ export function DialogoEnlace({
     setNombre("");
     setDescripcion("");
     setCategoria("");
+    setCarpeta("");
     setEnlace("");
     setErrores({});
     setError(null);
@@ -58,7 +64,7 @@ export function DialogoEnlace({
     }
     iniciar(async () => {
       try {
-        const r = await agregarEnlace({ nombre, descripcion, categoria, enlace });
+        const r = await agregarEnlace({ nombre, descripcion, categoria, enlace, carpeta_id: carpeta === "" ? null : carpeta });
         if (r.ok) {
           limpiar();
           alAgregar();
@@ -142,7 +148,10 @@ export function DialogoEnlace({
           <Selector
             id="enlace-categoria"
             value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
+            onChange={(e) => {
+              setCategoria(e.target.value);
+              setCarpeta("");
+            }}
             aria-describedby={describe("enlace-categoria", false, "categoria")}
             aria-invalid={errores.categoria !== undefined || undefined}
           >
@@ -154,6 +163,29 @@ export function DialogoEnlace({
                 {textos.categorias[c]}
               </option>
             ))}
+          </Selector>
+        </Campo>
+
+        <Campo id="enlace-carpeta" etiqueta={textos.campoCarpeta} ayuda={categoria === "" ? textos.eligeCategoriaPrimero : textos.ayudaCarpeta} error={errores.carpeta}>
+          <Selector
+            id="enlace-carpeta"
+            value={carpeta}
+            disabled={categoria === ""}
+            onChange={(e) => {
+              setCarpeta(e.target.value);
+              setErrores((v) => ({ ...v, carpeta: undefined }));
+            }}
+            aria-describedby={describe("enlace-carpeta", true, "carpeta")}
+            aria-invalid={errores.carpeta !== undefined || undefined}
+          >
+            <option value="">{textos.sinCarpeta}</option>
+            {carpetas
+              .filter((c) => c.categoria === categoria && !c.archivada)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
           </Selector>
         </Campo>
       </form>

@@ -81,6 +81,22 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
     for (const { nombre, cuerpo } of funciones) expect(cuerpo, nombre).toMatch(/esHostLocal\(/);
   });
 
+  // Las 5 acciones de la Biblioteca (Sprint 7c suma las de carpetas): cada una
+  // repite host y usuario activo (pruebas de arriba) y además el rol.
+  it("src/app/(app)/biblioteca/acciones.ts exporta exactamente sus 5 acciones y cada una exige Director o Gerente", () => {
+    const funciones = funcionesExportadas(leer(path.join(RAIZ, "biblioteca", "acciones.ts")));
+    expect(funciones.map((f) => f.nombre).sort()).toEqual(["agregarEnlace", "archivar", "archivarCarpeta", "crearCarpeta", "moverElemento"]);
+    for (const { nombre, cuerpo } of funciones) {
+      const host = cuerpo.indexOf("esHostLocal(");
+      const usuario = cuerpo.indexOf("await usuarioActual()");
+      const rol = cuerpo.indexOf("puedeAdministrar(");
+      const cliente = cuerpo.indexOf("crearClienteServidor()");
+      expect(rol, nombre).toBeGreaterThan(usuario);
+      expect(usuario, nombre).toBeGreaterThan(host);
+      expect(cliente, nombre).toBeGreaterThan(rol);
+    }
+  });
+
   // /biblioteca/subir no pasa por el proxy (ver src/proxy.ts): sus guardias van
   // en este orden y todos antes de leer el cuerpo.
   it("src/app/(app)/biblioteca/subir/route.ts revisa host, Origin, sesión, rol, tipo y tamaño antes de leer el cuerpo", () => {

@@ -21,6 +21,17 @@ const base = vi.hoisted(() => ({
   archivados: [] as string[],
   errorInsertar: null as { code?: string; message: string } | null,
   archivadoOk: true,
+  /** Carpetas visibles por RLS: id → sección y si está archivada. */
+  carpetas: {} as Record<string, { categoria: string; archivada: boolean }>,
+  /** Elementos visibles por RLS: id → sección y si está archivado. */
+  elementos: {} as Record<string, { categoria: string; archivado: boolean }>,
+  activasPorSeccion: 0 as number | null,
+  carpetasNuevas: [] as Record<string, unknown>[],
+  errorCarpeta: null as { code?: string; message: string } | null,
+  carpetasArchivadas: [] as string[],
+  resultadoArchivarCarpeta: { ok: true } as { ok: true } | { ok: false; error: { code?: string; message: string } | null },
+  movidos: [] as { id: string; carpeta: string | null }[],
+  resultadoMover: { ok: true } as { ok: true } | { ok: false; error: { code?: string; message: string } | null },
 }));
 vi.mock("../../../src/servidor/supabase/servidor", () => ({
   crearClienteServidor: async () => {
@@ -37,9 +48,26 @@ vi.mock("../../../src/servidor/biblioteca/consultas", () => ({
     base.archivados.push(id);
     return base.archivadoOk;
   },
+  leerCarpeta: async (_c: unknown, id: string) => base.carpetas[id] ?? null,
+  leerElementoParaMover: async (_c: unknown, id: string) => base.elementos[id] ?? null,
+  contarCarpetasActivas: async () => base.activasPorSeccion,
+  insertarCarpeta: async (_c: unknown, fila: Record<string, unknown>) => {
+    base.carpetasNuevas.push(fila);
+    return base.errorCarpeta === null ? { ok: true, id: CARPETA_NUEVA } : { ok: false, error: base.errorCarpeta };
+  },
+  archivarFilaCarpeta: async (_c: unknown, id: string) => {
+    base.carpetasArchivadas.push(id);
+    return base.resultadoArchivarCarpeta;
+  },
+  cambiarCarpeta: async (_c: unknown, id: string, carpeta: string | null) => {
+    base.movidos.push({ id, carpeta });
+    return base.resultadoMover;
+  },
 }));
 
-import { agregarEnlace, archivar } from "../../../src/app/(app)/biblioteca/acciones";
+const CARPETA_NUEVA = "cccccccc-0000-4000-8000-000000000000";
+
+import { agregarEnlace, archivar, archivarCarpeta, crearCarpeta, moverElemento } from "../../../src/app/(app)/biblioteca/acciones";
 import { MENSAJES_BIBLIOTECA } from "../../../src/aplicacion/biblioteca/reglas";
 import { MENSAJE_SESION_EXPIRADA } from "../../../src/componentes/acceso/textos";
 import { MENSAJE_HOST_NO_LOCAL } from "../../../src/servidor/guardiaHost";
@@ -63,11 +91,34 @@ beforeEach(() => {
   base.archivados = [];
   base.errorInsertar = null;
   base.archivadoOk = true;
+  base.carpetas = {
+    [CARPETA_MULTIMEDIA]: { categoria: "MULTIMEDIA", archivada: false },
+    [CARPETA_MULTIMEDIA_2]: { categoria: "MULTIMEDIA", archivada: false },
+    [CARPETA_EMPRESA]: { categoria: "EMPRESA", archivada: false },
+    [CARPETA_ARCHIVADA]: { categoria: "MULTIMEDIA", archivada: true },
+  };
+  base.elementos = { [ID]: { categoria: "MULTIMEDIA", archivado: false }, [ID_ARCHIVADO]: { categoria: "MULTIMEDIA", archivado: true } };
+  base.activasPorSeccion = 0;
+  base.carpetasNuevas = [];
+  base.errorCarpeta = null;
+  base.carpetasArchivadas = [];
+  base.resultadoArchivarCarpeta = { ok: true };
+  base.movidos = [];
+  base.resultadoMover = { ok: true };
 });
+
+const CARPETA_MULTIMEDIA = "1a1a1a1a-0000-4000-8000-000000000001";
+const CARPETA_MULTIMEDIA_2 = "2b2b2b2b-0000-4000-8000-000000000002";
+const CARPETA_EMPRESA = "3c3c3c3c-0000-4000-8000-000000000003";
+const CARPETA_ARCHIVADA = "4d4d4d4d-0000-4000-8000-000000000004";
+const ID_ARCHIVADO = "5e5e5e5e-0000-4000-8000-000000000005";
 
 const llamadas = {
   agregarEnlace: () => agregarEnlace(enlace),
   archivar: () => archivar(ID),
+  crearCarpeta: () => crearCarpeta({ categoria: "MULTIMEDIA", nombre: "Videos de bienvenida" }),
+  archivarCarpeta: () => archivarCarpeta(CARPETA_MULTIMEDIA),
+  moverElemento: () => moverElemento({ id: ID, carpeta_id: CARPETA_MULTIMEDIA }),
 };
 
 describe.each(Object.entries(llamadas))("acción %s", (_nombre, llamar) => {
@@ -167,5 +218,159 @@ describe("archivar", () => {
   it("si no se archivó ninguna fila (no existe, otra organización o ya archivado), lo dice", async () => {
     base.archivadoOk = false;
     expect(await archivar(ID)).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.noSeArchivo });
+  });
+});
+
+describe("agregarEnlace en una carpeta", () => {
+  it("sin carpeta_id, o con null, el enlace queda Sin carpeta", async () => {
+    await agregarEnlace(enlace);
+    await agregarEnlace({ ...enlace, carpeta_id: null });
+    expect(base.filas.map((f) => f.carpeta_id ?? null)).toEqual([null, null]);
+  });
+
+  it("con una carpeta activa de la misma sección, la manda en carpeta_id", async () => {
+    expect(await agregarEnlace({ ...enlace, carpeta_id: CARPETA_MULTIMEDIA })).toMatchObject({ ok: true });
+    expect(base.filas[0]).toMatchObject({ carpeta_id: CARPETA_MULTIMEDIA, categoria: "MULTIMEDIA" });
+  });
+
+  it.each([
+    ["que no es uuid", "carpeta"],
+    ["de otra sección", CARPETA_EMPRESA],
+    ["que no existe o no es visible", "9f9f9f9f-0000-4000-8000-00000000009f"],
+  ])("rechaza una carpeta %s sin insertar", async (_n, carpeta) => {
+    const r = await agregarEnlace({ ...enlace, carpeta_id: carpeta });
+    expect(r).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaInvalida });
+    if (!r.ok) expect(r.errores.carpeta).toBe(MENSAJES_BIBLIOTECA.carpetaInvalida);
+    expect(base.filas).toEqual([]);
+  });
+
+  it("rechaza una carpeta archivada sin insertar", async () => {
+    expect(await agregarEnlace({ ...enlace, carpeta_id: CARPETA_ARCHIVADA })).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaArchivada });
+    expect(base.filas).toEqual([]);
+  });
+});
+
+describe("crearCarpeta", () => {
+  it("inserta solo categoría y nombre limpio; la organización y quien la creó los pone la base", async () => {
+    expect(await crearCarpeta({ categoria: "MULTIMEDIA", nombre: "  Videos   de bienvenida " })).toEqual({ ok: true, id: CARPETA_NUEVA });
+    expect(base.carpetasNuevas).toEqual([{ categoria: "MULTIMEDIA", nombre: "Videos de bienvenida" }]);
+  });
+
+  it("rechaza claves de más (organizacion_id, creado_por, archivado_en, id) sin tocar la base", async () => {
+    for (const extra of [{ organizacion_id: ID }, { creado_por: ID }, { archivado_en: null }, { id: ID }]) {
+      const r = await crearCarpeta({ categoria: "MULTIMEDIA", nombre: "Videos", ...extra });
+      expect(r).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.formaInvalida });
+    }
+    expect(base.clientes).toBe(0);
+  });
+
+  it("rechaza lo que no es un objeto", async () => {
+    for (const entrada of [null, "Videos", ["Videos"]]) expect((await crearCarpeta(entrada)).ok).toBe(false);
+    expect(base.clientes).toBe(0);
+  });
+
+  it("rechaza una sección inválida, un nombre vacío, uno de 81 caracteres o con un dato sensible, sin tocar la base", async () => {
+    expect(await crearCarpeta({ categoria: "OTRA", nombre: "Videos" })).toMatchObject({ ok: false, errores: { categoria: MENSAJES_BIBLIOTECA.categoriaInvalida } });
+    expect(await crearCarpeta({ categoria: "MULTIMEDIA", nombre: "  " })).toMatchObject({ ok: false, errores: { nombre: MENSAJES_BIBLIOTECA.carpetaNombreVacio } });
+    expect(await crearCarpeta({ categoria: "MULTIMEDIA", nombre: "N".repeat(81) })).toMatchObject({ ok: false, errores: { nombre: MENSAJES_BIBLIOTECA.carpetaNombreLargo } });
+    const sensible = await crearCarpeta({ categoria: "MULTIMEDIA", nombre: "Cuenta 012180001234567891" });
+    expect(sensible.ok).toBe(false);
+    expect(base.clientes).toBe(0);
+  });
+
+  it("con 30 carpetas activas en la sección rechaza la 31 sin insertar; con 29 la acepta", async () => {
+    base.activasPorSeccion = 30;
+    expect(await crearCarpeta({ categoria: "MULTIMEDIA", nombre: "Otra" })).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaTope });
+    expect(base.carpetasNuevas).toEqual([]);
+    base.activasPorSeccion = 29;
+    expect(await crearCarpeta({ categoria: "MULTIMEDIA", nombre: "Otra" })).toMatchObject({ ok: true });
+  });
+
+  it("si no se pudo contar las carpetas, no inserta", async () => {
+    base.activasPorSeccion = null;
+    expect(await crearCarpeta({ categoria: "MULTIMEDIA", nombre: "Otra" })).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.fallaGuardar });
+    expect(base.carpetasNuevas).toEqual([]);
+  });
+
+  it("traduce el nombre repetido y el rechazo por permisos de la base", async () => {
+    base.errorCarpeta = { code: "23505", message: 'duplicate key value violates unique constraint "biblioteca_carpetas_nombre_unico_activas"' };
+    expect(await crearCarpeta({ categoria: "MULTIMEDIA", nombre: "Videos" })).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaRepetida });
+    base.errorCarpeta = { code: "42501", message: "new row violates row-level security policy" };
+    expect(await crearCarpeta({ categoria: "MULTIMEDIA", nombre: "Videos" })).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.soloDirectorOGerente });
+  });
+});
+
+describe("archivarCarpeta", () => {
+  it("archiva por id", async () => {
+    expect(await archivarCarpeta(CARPETA_MULTIMEDIA)).toEqual({ ok: true, id: CARPETA_MULTIMEDIA });
+    expect(base.carpetasArchivadas).toEqual([CARPETA_MULTIMEDIA]);
+  });
+
+  it("un id que no es uuid se rechaza sin tocar la base", async () => {
+    for (const id of ["x", "", 5, null, { id: CARPETA_MULTIMEDIA }]) expect((await archivarCarpeta(id)).ok).toBe(false);
+    expect(base.clientes).toBe(0);
+  });
+
+  it("si la carpeta tiene elementos activos, lo dice con el mensaje de la base traducido", async () => {
+    base.resultadoArchivarCarpeta = { ok: false, error: { code: "23514", message: "la carpeta tiene elementos activos (biblioteca_carpetas_sin_elementos_activos)" } };
+    expect(await archivarCarpeta(CARPETA_MULTIMEDIA)).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaConElementos });
+  });
+
+  it("si no se archivó ninguna fila, lo dice", async () => {
+    base.resultadoArchivarCarpeta = { ok: false, error: null };
+    expect(await archivarCarpeta(CARPETA_MULTIMEDIA)).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.noSeArchivoCarpeta });
+  });
+});
+
+describe("moverElemento", () => {
+  it("mueve a una carpeta activa de la misma sección y devuelve a Sin carpeta", async () => {
+    expect(await moverElemento({ id: ID, carpeta_id: CARPETA_MULTIMEDIA_2 })).toEqual({ ok: true, id: ID });
+    expect(await moverElemento({ id: ID, carpeta_id: null })).toEqual({ ok: true, id: ID });
+    expect(base.movidos).toEqual([
+      { id: ID, carpeta: CARPETA_MULTIMEDIA_2 },
+      { id: ID, carpeta: null },
+    ]);
+  });
+
+  it("no puede salir de la sección: una carpeta de otra sección se rechaza sin tocar el elemento", async () => {
+    expect(await moverElemento({ id: ID, carpeta_id: CARPETA_EMPRESA })).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaInvalida });
+    expect(base.movidos).toEqual([]);
+  });
+
+  it("una carpeta archivada se rechaza sin tocar el elemento", async () => {
+    expect(await moverElemento({ id: ID, carpeta_id: CARPETA_ARCHIVADA })).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaArchivada });
+    expect(base.movidos).toEqual([]);
+  });
+
+  it("un elemento que no existe, no es visible o está archivado no se mueve", async () => {
+    expect(await moverElemento({ id: "9f9f9f9f-0000-4000-8000-00000000009f", carpeta_id: null })).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.noEncontrado });
+    expect(await moverElemento({ id: ID_ARCHIVADO, carpeta_id: null })).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.noSeMovio });
+    expect(base.movidos).toEqual([]);
+  });
+
+  it("rechaza claves de más o de menos, y ids inválidos, sin tocar la base", async () => {
+    for (const entrada of [
+      { id: ID, carpeta_id: null, categoria: "EMPRESA" },
+      { id: ID, carpeta_id: null, organizacion_id: ID },
+      { id: ID },
+      { carpeta_id: null },
+      { id: "x", carpeta_id: null },
+      { id: ID, carpeta_id: "x" },
+      null,
+      ID,
+    ]) {
+      expect((await moverElemento(entrada)).ok).toBe(false);
+    }
+    expect(base.clientes).toBe(0);
+  });
+
+  it("traduce el rechazo de la llave compuesta y el de no mover ninguna fila", async () => {
+    base.resultadoMover = {
+      ok: false,
+      error: { code: "23503", message: 'violates foreign key constraint "biblioteca_carpeta_misma_seccion_y_organizacion"' },
+    };
+    expect(await moverElemento({ id: ID, carpeta_id: CARPETA_MULTIMEDIA })).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.carpetaInvalida });
+    base.resultadoMover = { ok: false, error: null };
+    expect(await moverElemento({ id: ID, carpeta_id: CARPETA_MULTIMEDIA })).toMatchObject({ ok: false, mensaje: MENSAJES_BIBLIOTECA.noSeMovio });
   });
 });

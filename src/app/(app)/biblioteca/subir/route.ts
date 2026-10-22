@@ -10,6 +10,7 @@ import {
 } from "../../../../aplicacion/biblioteca/reglas";
 import { MENSAJE_SESION_EXPIRADA } from "../../../../componentes/acceso/textos";
 import { validarArchivo } from "../../../../servidor/biblioteca/archivo";
+import { carpetaDestino } from "../../../../servidor/biblioteca/carpetas";
 import { insertarElemento, organizacionDelUsuario, subirObjeto } from "../../../../servidor/biblioteca/consultas";
 import { leerConTope } from "../../../../servidor/biblioteca/cuerpo";
 import { rechazoPorHost } from "../../../../servidor/guardiaHost";
@@ -19,7 +20,8 @@ import { crearClienteServidor } from "../../../../servidor/supabase/servidor";
 /**
  * POST /biblioteca/subir: sube un archivo a la Biblioteca (solo Director
  * regional y Gerente). El cuerpo es un formulario multipart con archivo,
- * nombre, descripcion, categoria y confirmacion ("si").
+ * nombre, descripcion, categoria, confirmacion ("si") y carpeta (opcional: el
+ * id de una carpeta activa de la misma sección; vacío es Sin carpeta).
  *
  * Esta ruta NO pasa por el proxy (matcher de src/proxy.ts): el proxy guardaría
  * el cuerpo en memoria y lo recortaría en proxyClientMaxBodySize (6 MB). Por
@@ -108,6 +110,9 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const cliente = await crearClienteServidor();
+  // La carpeta se revisa antes de subir el objeto, para no dejarlo sin fila.
+  const carpeta = await carpetaDestino(cliente, formulario.get("carpeta"), metadatos.valor.categoria);
+  if (!carpeta.ok) return error(400, carpeta.mensaje, { carpeta: carpeta.mensaje });
   const organizacion = await organizacionDelUsuario(cliente);
   if (organizacion === null) return error(500, MENSAJES_BIBLIOTECA.fallaLectura);
 
@@ -123,6 +128,7 @@ export async function POST(request: Request): Promise<Response> {
     ruta,
     tipo_mime: revision.mime,
     tamano_bytes: bytes.length,
+    ...(carpeta.id === null ? {} : { carpeta_id: carpeta.id }),
   });
   if (!guardado.ok) {
     const traducido = mensajeDeErrorBase(guardado.error);

@@ -39,7 +39,7 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 describe("cargarTextos: el archivo real", () => {
   it("carga seed/textos_cotizacion.json versión 0.9", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.15");
+    expect(t.version).toBe("0.16");
     expect(t.pieBase).toBe(
       "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual neta indicada " +
         "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +

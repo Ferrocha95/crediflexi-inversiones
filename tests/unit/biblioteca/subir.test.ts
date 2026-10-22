@@ -16,6 +16,7 @@ const base = vi.hoisted(() => ({
   filas: [] as Record<string, unknown>[],
   errorSubir: null as string | null,
   errorInsertar: null as { code?: string; message: string } | null,
+  carpetas: {} as Record<string, { categoria: string; archivada: boolean }>,
 }));
 vi.mock("../../../src/servidor/biblioteca/consultas", () => ({
   organizacionDelUsuario: async () => base.organizacion,
@@ -27,6 +28,7 @@ vi.mock("../../../src/servidor/biblioteca/consultas", () => ({
     base.filas.push(fila);
     return base.errorInsertar === null ? { ok: true, id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" } : { ok: false, error: base.errorInsertar };
   },
+  leerCarpeta: async (_c: unknown, id: string) => base.carpetas[id] ?? null,
 }));
 
 import { MENSAJES_BIBLIOTECA, TOPE_BYTES, TOPE_CUERPO } from "../../../src/aplicacion/biblioteca/reglas";
@@ -54,7 +56,16 @@ beforeEach(() => {
   base.filas = [];
   base.errorSubir = null;
   base.errorInsertar = null;
+  base.carpetas = {
+    [CARPETA_CAPACITACION]: { categoria: "CAPACITACION", archivada: false },
+    [CARPETA_EMPRESA]: { categoria: "EMPRESA", archivada: false },
+    [CARPETA_ARCHIVADA]: { categoria: "CAPACITACION", archivada: true },
+  };
 });
+
+const CARPETA_CAPACITACION = "1a1a1a1a-0000-4000-8000-000000000001";
+const CARPETA_EMPRESA = "3c3c3c3c-0000-4000-8000-000000000003";
+const CARPETA_ARCHIVADA = "4d4d4d4d-0000-4000-8000-000000000004";
 
 interface Campos {
   archivo?: { bytes: Uint8Array; nombre: string; tipo?: string } | null;
@@ -62,6 +73,7 @@ interface Campos {
   descripcion?: string;
   categoria?: string;
   confirmacion?: string | null;
+  carpeta?: string;
 }
 
 /** Cuerpo multipart real (lo arma undici) y su content-type con boundary. */
@@ -75,6 +87,7 @@ async function formulario(campos: Campos = {}): Promise<{ cuerpo: Uint8Array; ti
   datos.set("descripcion", campos.descripcion ?? "Guía de prueba.");
   datos.set("categoria", campos.categoria ?? "CAPACITACION");
   if (campos.confirmacion !== null) datos.set("confirmacion", campos.confirmacion ?? "si");
+  if (campos.carpeta !== undefined) datos.set("carpeta", campos.carpeta);
   const r = new Response(datos);
   return { cuerpo: new Uint8Array(await r.arrayBuffer()), tipo: r.headers.get("content-type")! };
 }
@@ -370,5 +383,41 @@ describe("POST /biblioteca/subir: guardar", () => {
   it("las respuestas no se guardan en caché", async () => {
     const r = await subir();
     expect(r.headers.get("cache-control")).toBe("no-store");
+  });
+});
+
+describe("POST /biblioteca/subir: carpeta opcional", () => {
+  it("sin carpeta, o con el campo vacío, el archivo queda Sin carpeta", async () => {
+    expect((await subir()).status).toBe(201);
+    expect((await subir({ carpeta: "" })).status).toBe(201);
+    expect(base.filas.map((f) => f.carpeta_id ?? null)).toEqual([null, null]);
+  });
+
+  it("con una carpeta activa de la misma sección, la fila lleva carpeta_id", async () => {
+    const r = await subir({ carpeta: CARPETA_CAPACITACION });
+    expect(r.status).toBe(201);
+    expect(base.filas[0]).toMatchObject({ carpeta_id: CARPETA_CAPACITACION, categoria: "CAPACITACION" });
+  });
+
+  it.each([
+    ["que no es uuid", "carpeta"],
+    ["de otra sección", CARPETA_EMPRESA],
+    ["que no existe o no es visible", "9f9f9f9f-0000-4000-8000-00000000009f"],
+  ])("una carpeta %s responde 400 sin subir el archivo ni insertar", async (_n, carpeta) => {
+    const r = await subir({ carpeta });
+    expect(r.status).toBe(400);
+    const cuerpo = await cuerpoDe(r);
+    expect(cuerpo.error).toBe(MENSAJES_BIBLIOTECA.carpetaInvalida);
+    expect(cuerpo.errores?.carpeta).toBe(MENSAJES_BIBLIOTECA.carpetaInvalida);
+    expect(base.subidas).toEqual([]);
+    expect(base.filas).toEqual([]);
+  });
+
+  it("una carpeta archivada responde 400 sin subir el archivo ni insertar", async () => {
+    const r = await subir({ carpeta: CARPETA_ARCHIVADA });
+    expect(r.status).toBe(400);
+    expect((await cuerpoDe(r)).error).toBe(MENSAJES_BIBLIOTECA.carpetaArchivada);
+    expect(base.subidas).toEqual([]);
+    expect(base.filas).toEqual([]);
   });
 });

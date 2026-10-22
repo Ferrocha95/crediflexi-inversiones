@@ -118,6 +118,8 @@ export async function crearElementoBibliotecaE2E(datos: {
   descripcion?: string;
   enlace?: string;
   archivado?: boolean;
+  /** Subcarpeta de la misma sección; sin ella, Sin carpeta. */
+  carpetaId?: string;
 }): Promise<string> {
   const org = await admin().from("organizaciones").select("id").eq("nombre", ORGANIZACION_E2E).single();
   if (org.error) falla("leer la organización E2E", org.error.message);
@@ -136,9 +138,52 @@ export async function crearElementoBibliotecaE2E(datos: {
     fila = { ...base, tipo: "ARCHIVO", ruta, tipo_mime: "application/pdf", tamano_bytes: bytes.length };
   }
   if (datos.archivado) fila.archivado_en = new Date().toISOString();
+  if (datos.carpetaId !== undefined) fila.carpeta_id = datos.carpetaId;
   const { data, error } = await admin().from("biblioteca").insert(fila).select("id").single();
   if (error) falla(`crear el elemento ${datos.nombre}`, error.message);
   return data.id as string;
+}
+
+/** Subcarpeta sintética de la Biblioteca en la organización E2E, creada por el administrador. */
+export async function crearCarpetaBibliotecaE2E(datos: {
+  creadoPor: string;
+  categoria: "HERRAMIENTAS" | "MULTIMEDIA" | "EMPRESA" | "CAPACITACION";
+  nombre: string;
+}): Promise<string> {
+  const org = await admin().from("organizaciones").select("id").eq("nombre", ORGANIZACION_E2E).single();
+  if (org.error) falla("leer la organización E2E", org.error.message);
+  const { data, error } = await admin()
+    .from("biblioteca_carpetas")
+    .insert({ organizacion_id: org.data.id, creado_por: datos.creadoPor, categoria: datos.categoria, nombre: datos.nombre })
+    .select("id")
+    .single();
+  if (error) falla(`crear la carpeta ${datos.nombre}`, error.message);
+  return data.id as string;
+}
+
+/** Ids de las filas de biblioteca o de biblioteca_carpetas con ese nombre (para limpiar lo creado desde la pantalla). */
+export async function idsConNombreE2E(tabla: "biblioteca" | "biblioteca_carpetas", nombre: string): Promise<string[]> {
+  const { data, error } = await admin().from(tabla).select("id").eq("nombre", nombre);
+  if (error) falla(`buscar ${nombre} en ${tabla}`, error.message);
+  return data.map((f) => f.id as string);
+}
+
+/**
+ * Borra, con el administrador, las carpetas con esos ids. Van DESPUÉS de sus
+ * elementos (biblioteca.carpeta_id es "on delete restrict").
+ */
+export async function borrarCarpetasBibliotecaE2E(ids: readonly string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await admin().from("biblioteca_carpetas").delete().in("id", [...ids]);
+  if (error) falla("borrar las carpetas de biblioteca E2E", error.message);
+}
+
+/** Cuántas de esas carpetas siguen existiendo. */
+export async function restosCarpetasE2E(ids: readonly string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const r = await admin().from("biblioteca_carpetas").select("id", { count: "exact", head: true }).in("id", [...ids]);
+  if (r.error) falla("contar las carpetas de biblioteca E2E", r.error.message);
+  return r.count ?? -1;
 }
 
 /** Rutas en el bucket de los elementos con esos ids (los enlaces no tienen). */
@@ -229,9 +274,11 @@ export async function idsUsuariosE2E(): Promise<string[]> {
 }
 
 /**
- * Filas de biblioteca y objetos del bucket de la organización E2E: van antes
- * que los usuarios y la organización (biblioteca.subido_por y
- * biblioteca.organizacion_id son "on delete restrict").
+ * Filas de biblioteca y objetos del bucket de la organización E2E, y luego sus
+ * carpetas: van antes que los usuarios y la organización (biblioteca.subido_por,
+ * biblioteca.organizacion_id, biblioteca.carpeta_id,
+ * biblioteca_carpetas.creado_por y biblioteca_carpetas.organizacion_id son
+ * "on delete restrict").
  */
 async function borrarBibliotecaE2E(): Promise<void> {
   const orgs = await admin().from("organizaciones").select("id").eq("nombre", ORGANIZACION_E2E);
@@ -247,6 +294,8 @@ async function borrarBibliotecaE2E(): Promise<void> {
       if (borrar.error) falla("borrar los archivos E2E", borrar.error.message);
       if (borrar.data.length === 0) falla("borrar los archivos E2E", "no se borró ninguno");
     }
+    const carpetas = await admin().from("biblioteca_carpetas").delete().eq("organizacion_id", id);
+    if (carpetas.error) falla("borrar las carpetas de biblioteca E2E", carpetas.error.message);
   }
 }
 
@@ -260,7 +309,11 @@ export async function contarBibliotecaE2E(): Promise<number> {
   return r.count ?? -1;
 }
 
-/** Borra todos los usuarios @e2e.test, sus prospectos, la biblioteca E2E, sus filas y la organización E2E. */
+/**
+ * Borra, en este orden: los elementos de la biblioteca E2E y sus objetos del
+ * bucket, luego sus carpetas, luego los usuarios @e2e.test (con sus prospectos)
+ * y la organización E2E.
+ */
 export async function borrarTodoE2E(): Promise<void> {
   await borrarBibliotecaE2E();
   const ids = await cuentasE2E();

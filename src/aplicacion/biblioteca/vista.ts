@@ -22,6 +22,23 @@ export interface FilaBiblioteca {
   readonly subido_por_nombre: string;
   readonly creado_en: string;
   readonly archivado_en: string | null;
+  /** Subcarpeta de la misma sección, o null: Sin carpeta. */
+  readonly carpeta_id: string | null;
+}
+
+/** Columnas de biblioteca_carpetas que lee la pantalla. */
+export interface FilaCarpeta {
+  readonly id: string;
+  readonly categoria: Categoria;
+  readonly nombre: string;
+  readonly archivado_en: string | null;
+}
+
+export interface CarpetaPantalla {
+  readonly id: string;
+  readonly categoria: Categoria;
+  readonly nombre: string;
+  readonly archivada: boolean;
 }
 
 export interface ElementoPantalla {
@@ -40,6 +57,7 @@ export interface ElementoPantalla {
   readonly previsualiza: boolean;
   readonly enlace: string | null;
   readonly dominio: string | null;
+  readonly carpetaId: string | null;
 }
 
 /** Sin mayúsculas, sin acentos (ni diéresis ni tilde de la ñ) y con un solo espacio. */
@@ -85,7 +103,12 @@ export function elementoParaPantalla(f: FilaBiblioteca, etiquetaEnlace = "Enlace
     previsualiza: !esEnlace && ext !== null && TIPOS[ext].previsualiza,
     enlace: esEnlace ? f.enlace : null,
     dominio: esEnlace && f.enlace !== null ? dominioDe(f.enlace) : null,
+    carpetaId: f.carpeta_id,
   };
+}
+
+export function carpetaParaPantalla(f: FilaCarpeta): CarpetaPantalla {
+  return { id: f.id, categoria: f.categoria, nombre: f.nombre, archivada: f.archivado_en !== null };
 }
 
 export interface GrupoCategoria {
@@ -101,4 +124,59 @@ export function agruparPorCategoria(elementos: readonly ElementoPantalla[]): Gru
     categoria,
     elementos: elementos.filter((e) => e.categoria === categoria).sort((a, b) => comparar(a.nombre, b.nombre)),
   }));
+}
+
+export interface GrupoCarpeta {
+  readonly carpeta: CarpetaPantalla;
+  /** Los del modo (activos o archivados) que coinciden con la búsqueda, por nombre. */
+  readonly elementos: readonly ElementoPantalla[];
+  /** Todos los elementos activos de la carpeta, sin importar la búsqueda: con 1 o más no se puede archivar. */
+  readonly activos: number;
+}
+
+export interface GrupoSeccion {
+  readonly categoria: Categoria;
+  /** "Sin carpeta" va siempre primero. */
+  readonly sinCarpeta: readonly ElementoPantalla[];
+  readonly carpetas: readonly GrupoCarpeta[];
+}
+
+const porNombre = <T extends { readonly nombre: string }>(a: T, b: T) => comparar(a.nombre, b.nombre);
+
+/**
+ * Las 4 secciones en el orden del enum; en cada una, "Sin carpeta" y luego sus
+ * carpetas por nombre. Con `archivados` falso: los elementos activos y las
+ * carpetas activas (también las vacías). Con `archivados` verdadero: los
+ * elementos archivados bajo su carpeta, aunque la carpeta esté archivada, y
+ * solo las carpetas que tienen alguno. La búsqueda recorre todas las carpetas;
+ * mientras se busca, las carpetas sin coincidencias no se devuelven. Un
+ * elemento cuya carpeta no llegó se muestra en "Sin carpeta" para no perderlo.
+ */
+export function agruparPorCategoriaYCarpeta(
+  elementos: readonly ElementoPantalla[],
+  carpetas: readonly CarpetaPantalla[],
+  opciones: { readonly archivados: boolean; readonly busqueda: string },
+): GrupoSeccion[] {
+  const buscando = normalizarBusqueda(opciones.busqueda) !== "";
+  const idsCarpetas = new Set(carpetas.map((c) => c.id));
+  const delModo = elementos.filter((e) => e.archivado === opciones.archivados);
+  const visibles = delModo.filter((e) => coincideBusqueda(e.nombre, opciones.busqueda));
+
+  return CATEGORIAS.map((categoria) => {
+    const deSeccion = visibles.filter((e) => e.categoria === categoria);
+    const sinCarpeta = deSeccion.filter((e) => e.carpetaId === null || !idsCarpetas.has(e.carpetaId)).sort(porNombre);
+    const grupos = carpetas
+      .filter((c) => c.categoria === categoria)
+      .map((carpeta) => ({
+        carpeta,
+        elementos: deSeccion.filter((e) => e.carpetaId === carpeta.id).sort(porNombre),
+        activos: elementos.filter((e) => !e.archivado && e.carpetaId === carpeta.id).length,
+        delModo: delModo.some((e) => e.carpetaId === carpeta.id),
+      }))
+      .filter((g) => (opciones.archivados ? g.delModo : !g.carpeta.archivada))
+      .filter((g) => !buscando || g.elementos.length > 0)
+      .sort((a, b) => porNombre(a.carpeta, b.carpeta))
+      .map(({ carpeta, elementos: es, activos }) => ({ carpeta, elementos: es, activos }));
+    return { categoria, sinCarpeta, carpetas: grupos };
+  });
 }

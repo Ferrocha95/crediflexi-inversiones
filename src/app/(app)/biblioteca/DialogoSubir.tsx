@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { CATEGORIAS, MENSAJES_BIBLIOTECA, TOPE_BYTES, type ErroresBiblioteca } from "../../../aplicacion/biblioteca/reglas";
+import type { CarpetaPantalla } from "../../../aplicacion/biblioteca/vista";
 import type { TextosBiblioteca } from "../../../aplicacion/textos";
 import { MENSAJE_SESION_EXPIRADA } from "../../../componentes/acceso/textos";
 import { Aviso } from "../../../componentes/ui/Aviso";
@@ -21,12 +22,15 @@ const ACEPTA = ".pdf,.png,.jpg,.jpeg,.webp,.gif,.mp4,.webm,.docx,.xlsx,.pptx,.tx
  */
 export function DialogoSubir({
   abierto,
+  carpetas,
   textos,
   alCerrar,
   alSubir,
   alSesionExpirada,
 }: {
   readonly abierto: boolean;
+  /** Carpetas activas: se ofrecen las de la categoría elegida. */
+  readonly carpetas: readonly CarpetaPantalla[];
   readonly textos: TextosBiblioteca;
   readonly alCerrar: () => void;
   readonly alSubir: () => void;
@@ -36,6 +40,7 @@ export function DialogoSubir({
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [categoria, setCategoria] = useState("");
+  const [carpeta, setCarpeta] = useState("");
   const [confirmado, setConfirmado] = useState(false);
   const [errores, setErrores] = useState<ErroresBiblioteca>({});
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +52,7 @@ export function DialogoSubir({
     setNombre("");
     setDescripcion("");
     setCategoria("");
+    setCarpeta("");
     setConfirmado(false);
     setErrores({});
     setError(null);
@@ -69,6 +75,7 @@ export function DialogoSubir({
     datos.set("nombre", nombre);
     datos.set("descripcion", descripcion);
     datos.set("categoria", categoria);
+    datos.set("carpeta", carpeta);
     datos.set("confirmacion", "si");
 
     setSubiendo(true);
@@ -90,6 +97,7 @@ export function DialogoSubir({
       setNombre("");
       setDescripcion("");
       setCategoria("");
+      setCarpeta("");
       setConfirmado(false);
       setErrores({});
       alSubir();
@@ -173,7 +181,10 @@ export function DialogoSubir({
           <Selector
             id="subir-categoria"
             value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
+            onChange={(e) => {
+              setCategoria(e.target.value);
+              setCarpeta("");
+            }}
             aria-describedby={describe("subir-categoria", false, "categoria")}
             aria-invalid={errores.categoria !== undefined || undefined}
           >
@@ -185,6 +196,29 @@ export function DialogoSubir({
                 {textos.categorias[c]}
               </option>
             ))}
+          </Selector>
+        </Campo>
+
+        <Campo id="subir-carpeta" etiqueta={textos.campoCarpeta} ayuda={categoria === "" ? textos.eligeCategoriaPrimero : textos.ayudaCarpeta} error={errores.carpeta}>
+          <Selector
+            id="subir-carpeta"
+            value={carpeta}
+            disabled={categoria === ""}
+            onChange={(e) => {
+              setCarpeta(e.target.value);
+              setErrores((v) => ({ ...v, carpeta: undefined }));
+            }}
+            aria-describedby={describe("subir-carpeta", true, "carpeta")}
+            aria-invalid={errores.carpeta !== undefined || undefined}
+          >
+            <option value="">{textos.sinCarpeta}</option>
+            {carpetas
+              .filter((c) => c.categoria === categoria && !c.archivada)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
           </Selector>
         </Campo>
 

@@ -1,5 +1,5 @@
 {
-  "version": "0.15",
+  "version": "0.16",
   "glosario": {
     "rendimiento_mensual": "Rendimiento mensual",
     "rendimiento_mensual_promedio": "Rendimiento mensual (promedio)",
@@ -291,6 +291,30 @@
     "notificacion_archivado": "Elemento archivado",
     "titulo_error": "No se pudo completar",
     "titulo_error_lectura": "No se pudo leer la Biblioteca",
-    "falla_red": "No se pudo conectar con la app. Revisa que siga abierta y vuelve a intentar."
+    "falla_red": "No se pudo conectar con la app. Revisa que siga abierta y vuelve a intentar.",
+    "sin_carpeta": "Sin carpeta",
+    "sin_carpeta_vacio": "No hay elementos sin carpeta.",
+    "carpeta_vacia": "Aún no hay elementos en esta carpeta.",
+    "etiqueta_numero_elementos": "Número de elementos:",
+    "etiqueta_carpeta_archivada": "Carpeta archivada",
+    "nueva_carpeta": "Nueva carpeta",
+    "etiqueta_seccion": "Sección",
+    "campo_nombre_carpeta": "Nombre de la carpeta",
+    "ayuda_nombre_carpeta": "Hasta 80 caracteres. El nombre no se puede cambiar después.",
+    "crear": "Crear",
+    "archivar_carpeta": "Archivar carpeta",
+    "explicacion_carpeta_no_vacia": "Solo se archiva una carpeta vacía: primero mueve o archiva sus elementos.",
+    "titulo_archivar_carpeta": "¿Archivar esta carpeta?",
+    "texto_archivar_carpeta": "Los ejecutivos dejarán de verla. No se borra: el Director regional y el Gerente la siguen viendo en Archivados.",
+    "mover_a": "Mover a…",
+    "titulo_mover": "Mover a otra carpeta",
+    "campo_carpeta": "Carpeta",
+    "ayuda_carpeta": "Opcional. Solo carpetas activas de la categoría elegida.",
+    "ayuda_carpeta_mover": "Solo carpetas activas de la misma sección.",
+    "elige_categoria_primero": "Elige primero la categoría para ver sus carpetas.",
+    "mover": "Mover",
+    "notificacion_carpeta_creada": "Carpeta creada",
+    "notificacion_carpeta_archivada": "Carpeta archivada",
+    "notificacion_movido": "Elemento movido"
   }
 }

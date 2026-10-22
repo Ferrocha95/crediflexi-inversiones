@@ -349,7 +349,8 @@ const CLAVES_COMISIONES = {
 type ClaveArchivoComisiones = keyof typeof CLAVES_COMISIONES;
 
 /**
- * Textos de la pantalla /biblioteca (Sprint 7b, textos 0.15). Sin marcadores.
+ * Textos de la pantalla /biblioteca (Sprint 7b, textos 0.15; subcarpetas en el
+ * Sprint 7c, textos 0.16). Sin marcadores.
  * Las cuatro categorías llegan juntas en `categorias`, con la clave del enum
  * de la base.
  */
@@ -407,6 +408,30 @@ export interface TextosBiblioteca {
   readonly tituloError: string;
   readonly tituloErrorLectura: string;
   readonly fallaRed: string;
+  readonly sinCarpeta: string;
+  readonly sinCarpetaVacio: string;
+  readonly carpetaVacia: string;
+  readonly etiquetaNumeroElementos: string;
+  readonly etiquetaCarpetaArchivada: string;
+  readonly nuevaCarpeta: string;
+  readonly etiquetaSeccion: string;
+  readonly campoNombreCarpeta: string;
+  readonly ayudaNombreCarpeta: string;
+  readonly crear: string;
+  readonly archivarCarpeta: string;
+  readonly explicacionCarpetaNoVacia: string;
+  readonly tituloArchivarCarpeta: string;
+  readonly textoArchivarCarpeta: string;
+  readonly moverA: string;
+  readonly tituloMover: string;
+  readonly campoCarpeta: string;
+  readonly ayudaCarpeta: string;
+  readonly ayudaCarpetaMover: string;
+  readonly eligeCategoriaPrimero: string;
+  readonly mover: string;
+  readonly notificacionCarpetaCreada: string;
+  readonly notificacionCarpetaArchivada: string;
+  readonly notificacionMovido: string;
 }
 
 const CLAVES_BIBLIOTECA = {
@@ -462,6 +487,30 @@ const CLAVES_BIBLIOTECA = {
   titulo_error: "tituloError",
   titulo_error_lectura: "tituloErrorLectura",
   falla_red: "fallaRed",
+  sin_carpeta: "sinCarpeta",
+  sin_carpeta_vacio: "sinCarpetaVacio",
+  carpeta_vacia: "carpetaVacia",
+  etiqueta_numero_elementos: "etiquetaNumeroElementos",
+  etiqueta_carpeta_archivada: "etiquetaCarpetaArchivada",
+  nueva_carpeta: "nuevaCarpeta",
+  etiqueta_seccion: "etiquetaSeccion",
+  campo_nombre_carpeta: "campoNombreCarpeta",
+  ayuda_nombre_carpeta: "ayudaNombreCarpeta",
+  crear: "crear",
+  archivar_carpeta: "archivarCarpeta",
+  explicacion_carpeta_no_vacia: "explicacionCarpetaNoVacia",
+  titulo_archivar_carpeta: "tituloArchivarCarpeta",
+  texto_archivar_carpeta: "textoArchivarCarpeta",
+  mover_a: "moverA",
+  titulo_mover: "tituloMover",
+  campo_carpeta: "campoCarpeta",
+  ayuda_carpeta: "ayudaCarpeta",
+  ayuda_carpeta_mover: "ayudaCarpetaMover",
+  elige_categoria_primero: "eligeCategoriaPrimero",
+  mover: "mover",
+  notificacion_carpeta_creada: "notificacionCarpetaCreada",
+  notificacion_carpeta_archivada: "notificacionCarpetaArchivada",
+  notificacion_movido: "notificacionMovido",
 } as const satisfies Readonly<Record<string, Exclude<keyof TextosBiblioteca, "categorias">>>;
 
 type ClaveArchivoBiblioteca = keyof typeof CLAVES_BIBLIOTECA;
