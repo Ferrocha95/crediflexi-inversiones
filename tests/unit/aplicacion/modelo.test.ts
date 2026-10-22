@@ -46,12 +46,6 @@ const ENTIDADES = [
   { clave: "RAMI_SISE", razonSocial: "RAMI SISE, S.A.P.I. DE C.V., SOFOM, E.N.R." },
 ] as const;
 
-const pieEsperado = (razonSocial: string) =>
-  `Cotización informativa para ${razonSocial}, calculada con interés simple sobre la tasa anual neta indicada ` +
-  `y con las tasas de la versión ${VERSION} del ${FECHA_SEMILLA}. El rendimiento anual es un equivalente a 12 meses; ` +
-  "el rendimiento total corresponde al plazo elegido. Esta cotización no es un contrato: las condiciones aplicables " +
-  "son las del contrato que se firme.";
-
 /** Textos reales con otros nombres de esquema, para probar que el nombre sale del archivo (esquema_corto). */
 const textosOtrosNombres: TextosCotizacion = {
   ...textos,
@@ -228,14 +222,16 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     expect(pdf(clave).encabezado.razonSocial).toBe(razonSocial);
   });
 
-  it("el pie base lleva la razón social de la entidad, la versión y la fecha de las tasas", () => {
-    expect(pdf(clave).pie.base).toBe(pieEsperado(razonSocial));
+  it("el pie ya no lleva el texto base (Sprint 7d); la versión y la fecha de las tasas siguen en lineaTasas", () => {
+    const m = pdf(clave);
+    expect(m.pie).not.toHaveProperty("base");
+    expect(m.lineaTasas).toBe(`Tasas versión ${VERSION} del ${FECHA_SEMILLA}.`);
   });
 
   it('el pie no contiene ".." en ningún lugar, con o sin las líneas opcionales', () => {
     for (const entrada of [{}, ENTRADA_COMPLETA]) {
       const { pie } = pdf(clave, entrada);
-      for (const linea of [pie.base, pie.preparadoPor, pie.vigencia, pie.notaAdicional]) {
+      for (const linea of [pie.preparadoPor, pie.vigencia, pie.notaAdicional]) {
         expect(linea ?? "").not.toContain("..");
       }
     }
@@ -249,21 +245,20 @@ describe.each(ENTIDADES)("modeloPdf ($clave)", ({ clave, razonSocial }) => {
     expect(sinError(modeloPdfConDatos(f, ctx, {}, AHORA)).solicitud.esquema).toBe("Esquema sintético B");
   });
 
-  it("la razón social solo aparece en el encabezado y en el pie (el PDF no dice que las tasas sean de la entidad)", () => {
-    expect(cuenta(JSON.stringify(pdf(clave, ENTRADA_COMPLETA)), razonSocial)).toBe(2);
+  it("la razón social solo aparece en el encabezado (el PDF no dice que las tasas sean de la entidad; Sprint 7d: ya no va en el pie)", () => {
+    expect(cuenta(JSON.stringify(pdf(clave, ENTRADA_COMPLETA)), razonSocial)).toBe(1);
   });
 
   it("sin los campos opcionales, el pie no trae las líneas opcionales", () => {
     const m = pdf(clave);
     expect(m.preparadoPara).toBeNull();
-    expect(m.pie).toMatchObject({ base: pieEsperado(razonSocial), preparadoPor: null, vigencia: null, notaAdicional: null });
+    expect(m.pie).toMatchObject({ preparadoPor: null, vigencia: null, notaAdicional: null });
   });
 
   it("con los campos opcionales, el pie trae las dos líneas y la nota después", () => {
     const m = pdf(clave, ENTRADA_COMPLETA);
     expect(m.preparadoPara).toBe("Persona Sintética Uno");
     expect(m.pie).toMatchObject({
-      base: pieEsperado(razonSocial),
       preparadoPor: "Preparado por Ejecutivo Prueba · ejecutivo.prueba@ejemplo.test.",
       vigencia: "Vigencia: 15 días naturales.",
       notaAdicional: "Nota sintética de prueba.",

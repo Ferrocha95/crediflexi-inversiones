@@ -132,7 +132,8 @@ const e = StyleSheet.create({
   },
   franjaIzquierda: { flex: 1, fontSize: 9, color: COLOR.blanco },
   franjaDerecha: { maxWidth: "45%", fontSize: 9, color: COLOR.blanco, fontWeight: "bold", textAlign: "right" },
-  pieBase: { marginTop: 5, fontSize: 8, color: COLOR.gris, lineHeight: 1.2 },
+  /** Con el marginTop de pieNota, el primer renglón del pie queda a 5 pt de la franja. */
+  pieTextos: { marginTop: 3 },
   pieNota: { marginTop: 2, fontSize: 8, color: COLOR.gris, lineHeight: 1.2 },
 
   /** En el margen inferior, fuera del flujo: no mueve nada del contenido de la página. */
@@ -276,12 +277,14 @@ export function DocumentoCotizacion({ modelo, logo }: { modelo: ModeloPdf; logo:
               {pie.vigencia !== null && <Text style={e.franjaDerecha}>{pie.vigencia}</Text>}
             </View>
           )}
-          <Text style={e.pieBase}>{pie.base}</Text>
-          {pie.notaAdicional !== null && <Text style={e.pieNota}>{pie.notaAdicional}</Text>}
-          {/* SIPRES (si la entidad lo lleva) y el aviso del fondo, en un solo párrafo para ahorrar renglones. */}
-          <Text style={e.pieNota}>{pie.sipres}</Text>
-          {/* La nota de la tasa neta va en el mismo párrafo del disclaimer, después de él. */}
-          <Text style={e.pieNota}>{pie.avisoFondo}</Text>
+          {/* Sprint 7d: sin el texto base; la versión y la fecha de las tasas siguen en "Cómo se calculó". */}
+          <View style={e.pieTextos}>
+            {pie.notaAdicional !== null && <Text style={e.pieNota}>{pie.notaAdicional}</Text>}
+            {/* SIPRES (si la entidad lo lleva) y el aviso del fondo, en un solo párrafo para ahorrar renglones. */}
+            <Text style={e.pieNota}>{pie.sipres}</Text>
+            {/* La nota de la tasa neta va en el mismo párrafo del disclaimer, después de él. */}
+            <Text style={e.pieNota}>{pie.avisoFondo}</Text>
+          </View>
         </View>
         {numero(1)}
       </Page>

@@ -39,13 +39,10 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 describe("cargarTextos: el archivo real", () => {
   it("carga seed/textos_cotizacion.json versión 0.9", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.16");
-    expect(t.pieBase).toBe(
-      "Cotización informativa para {razon_social}, calculada con interés simple sobre la tasa anual neta indicada " +
-        "y con las tasas de la versión {version_tasas} del {fecha_tasas}. El rendimiento anual es un equivalente " +
-        "a 12 meses; el rendimiento total corresponde al plazo elegido. Esta cotización no es un contrato: las " +
-        "condiciones aplicables son las del contrato que se firme.",
-    );
+    expect(t.version).toBe("0.17");
+    // Sprint 7d, textos 0.17: el texto base de la página 1 ya no existe.
+    expect(textosJson).not.toHaveProperty("pie_base");
+    expect(t).not.toHaveProperty("pieBase");
     expect(t.lineaPreparadoPor).toBe("Preparado por {ejecutivo}.");
     expect(t.lineaVigencia).toBe("Vigencia: {vigencia}.");
     expect(t.monedaDeshabilitada).toBe("Las tasas en {moneda} están por confirmar.");
@@ -265,7 +262,6 @@ describe("cargarTextos: el bloque pdf", () => {
 
 describe("cargarTextos: marcadores permitidos por campo", () => {
   it.each([
-    ["pie_base", "{razon_social} {version_tasas} {fecha_tasas}"],
     ["linea_preparado_por", "Preparado por {ejecutivo}."],
     ["linea_vigencia", "Vigencia: {vigencia}."],
     ["moneda_deshabilitada", "Sin tasas en {moneda}."],
@@ -276,9 +272,6 @@ describe("cargarTextos: marcadores permitidos por campo", () => {
   });
 
   it.each([
-    ["pie_base", "{ejecutivo}", "{razon_social}, {version_tasas} y {fecha_tasas}"],
-    ["pie_base", "{vigencia}", "{razon_social}, {version_tasas} y {fecha_tasas}"],
-    ["pie_base", "{moneda}", "{razon_social}, {version_tasas} y {fecha_tasas}"],
     ["linea_preparado_por", "{vigencia}", "{ejecutivo}"],
     ["linea_preparado_por", "{razon_social}", "{ejecutivo}"],
     ["linea_vigencia", "{ejecutivo}", "{vigencia}"],
@@ -315,11 +308,11 @@ describe("cargarTextos: marcadores permitidos por campo", () => {
 
   it("un marcador desconocido rompe la carga y el error dice el archivo, el campo y el marcador", () => {
     const j = copia();
-    j.pie_base = "Cotización para {cliente}.";
+    j.linea_vigencia = "Vigencia para {cliente}.";
     const e = errorDe(j);
     expect(e.mensaje).toContain(ARCHIVO);
     expect(e.todo).toContain("{cliente}");
-    expect(e.todo).toContain("pie_base");
+    expect(e.todo).toContain("linea_vigencia");
   });
 
   it("una llave sin cerrar rompe la carga", () => {
@@ -332,10 +325,20 @@ describe("cargarTextos: marcadores permitidos por campo", () => {
 
   it("reporta todos los marcadores no permitidos, no solo el primero", () => {
     const j = copia();
-    j.pie_base = "{uno} y {dos}";
+    j.linea_vigencia = "{uno} y {dos}";
     const { detalles } = errorDe(j);
     expect(detalles.some((d) => d.includes("{uno}"))).toBe(true);
     expect(detalles.some((d) => d.includes("{dos}"))).toBe(true);
+  });
+});
+
+describe("cargarTextos: pie_base retirado (Sprint 7d)", () => {
+  it("si alguien vuelve a poner pie_base, la carga lo rechaza como clave desconocida", () => {
+    const j: Record<string, unknown> = copia();
+    j.pie_base = "Cotización informativa para {razon_social}.";
+    const e = errorDe(j);
+    expect(e.mensaje).toContain(ARCHIVO);
+    expect(e.todo).toContain('Clave desconocida: "pie_base"');
   });
 });
 

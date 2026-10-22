@@ -172,7 +172,7 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
   it("la página 1 trae su texto, la línea de cuándo se paga la ganancia y nada de la página 2", { timeout: TIEMPO }, async () => {
     const m = modelo(caso.entidad, caso.esquema);
     const { porPagina } = await render(m);
-    for (const t of [caso.razonSocial, "Tu cotización de inversión", m.lineaTasas, m.pie.base, caso.lineaPago, ...caso.cifras]) {
+    for (const t of [caso.razonSocial, "Tu cotización de inversión", m.lineaTasas, caso.lineaPago, ...caso.cifras]) {
       expect(porPagina[0]).toContain(t);
     }
     // "Tasa anual neta" va en las dos páginas (glosario), así que ya no sirve para distinguirlas.
@@ -204,6 +204,18 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
       expect(p).not.toMatch(/supervis|todas las autoridades|CNBV/i);
       // CONDUSEF y SIPRES solo dentro de esos dos textos.
       expect(sinLineaSipres(p)).not.toMatch(/CONDUSEF|SIPRES/i);
+    }
+  });
+
+  it("la página 1 ya no trae el texto base (Sprint 7d); la línea SIPRES y el pie siguen exactos en las páginas 1 y 2", { timeout: TIEMPO }, async () => {
+    const { porPagina } = await render(modelo(caso.entidad, caso.esquema));
+    expect(porPagina).toHaveLength(2);
+    for (const quitado of ["Cotización informativa para", "calculada con interés simple", "las del contrato que se firme"]) {
+      expect(porPagina[0]).not.toContain(quitado);
+    }
+    for (const p of porPagina) {
+      expect(p).toContain(LINEA_SIPRES);
+      expect(p).toContain(DISCLAIMER);
     }
   });
 
@@ -280,10 +292,9 @@ describe.each(CASOS)("PDF real: $entidad ($esquema), 1,500,000 pesos a 12 meses"
     }
   });
 
-  it("trae el pie base completo, las líneas opcionales y la nota", { timeout: TIEMPO }, async () => {
+  it("trae las líneas opcionales y la nota", { timeout: TIEMPO }, async () => {
     const m = modelo(caso.entidad, caso.esquema);
     const { texto } = await render(m);
-    expect(texto).toContain(m.pie.base);
     expect(texto).toContain("Preparado para Persona Sintética Uno");
     expect(texto).toContain("Preparado por Ejecutivo Prueba · ejecutivo.prueba@ejemplo.test.");
     expect(texto).toContain("Vigencia: 15 días naturales.");
@@ -528,7 +539,6 @@ describe("PDF real: exactamente dos páginas en los extremos", () => {
     const { paginas, porPagina } = await render(m);
     expect(paginas).toBe(2);
     const texto = porPagina[0];
-    expect(texto).toContain(m.pie.base);
     expect(texto).toContain(`Preparado para ${m.preparadoPara}`);
     expect(texto).toContain(m.pie.preparadoPor);
     expect(texto).toContain(m.pie.vigencia);
@@ -586,7 +596,6 @@ describe("PDF real: exactamente dos páginas en los extremos", () => {
     expect(texto).not.toContain("Preparado para");
     expect(texto).not.toContain("Preparado por");
     expect(texto).not.toContain("Vigencia");
-    expect(texto).toContain(m.pie.base);
   });
 });
 

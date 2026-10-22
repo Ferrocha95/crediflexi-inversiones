@@ -209,7 +209,6 @@ export interface ModeloPdf {
   readonly lineaTasas: string;
   readonly preparadoPara: string | null;
   readonly pie: {
-    readonly base: string;
     readonly preparadoPor: string | null;
     readonly vigencia: string | null;
     readonly notaAdicional: string | null;
@@ -302,11 +301,6 @@ export function modeloPdf(
     lineaTasas: rellenar(lineaTasas, { version_tasas: tasas.version, fecha_tasas: tasas.fecha }),
     preparadoPara: oNulo(preparadoPara),
     pie: {
-      base: rellenar(textos.pieBase, {
-        razon_social: razonSocial,
-        version_tasas: tasas.version,
-        fecha_tasas: tasas.fecha,
-      }),
       preparadoPor: ejecutivo === "" ? null : rellenar(textos.lineaPreparadoPor, { ejecutivo }),
       vigencia: vigencia === "" ? null : rellenar(textos.lineaVigencia, { vigencia }),
       notaAdicional: oNulo(notaAdicional),

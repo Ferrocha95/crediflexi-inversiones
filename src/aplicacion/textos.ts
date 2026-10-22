@@ -5,7 +5,6 @@ import { validar, type ResultadoApp } from "./resultado";
 
 /** Marcadores que se pueden usar en seed/textos_cotizacion.json. */
 export const MARCADORES = [
-  "razon_social",
   "version_tasas",
   "fecha_tasas",
   "ejecutivo",
@@ -49,7 +48,6 @@ export type Marcador = (typeof MARCADORES)[number];
  * glosario, el resto del bloque pdf y el resto de pdf_pagina2 no admiten ninguno.
  */
 export const MARCADORES_POR_CAMPO = {
-  pie_base: ["razon_social", "version_tasas", "fecha_tasas"],
   linea_preparado_por: ["ejecutivo"],
   linea_vigencia: ["vigencia"],
   moneda_deshabilitada: ["moneda"],
@@ -138,7 +136,6 @@ const CLAVES_GLOSARIO = [
 export interface TextosCotizacion {
   readonly version: string;
   readonly glosario: Glosario;
-  readonly pieBase: string;
   readonly lineaPreparadoPor: string;
   readonly lineaVigencia: string;
   /** Explicación del estatus del tramo: solo se muestra en pantalla, nunca en el PDF. */
@@ -861,7 +858,7 @@ function texto(campo: string, permitidos: readonly Marcador[] = []) {
       if (/[{}]/.test(t.replace(RE_MARCADOR, ""))) {
         ctx.addIssue({
           code: "custom",
-          message: "Hay una llave { o } sin cerrar. Cada marcador se escribe entre llaves, por ejemplo {razon_social}.",
+          message: "Hay una llave { o } sin cerrar. Cada marcador se escribe entre llaves, por ejemplo {meses}.",
         });
       }
     });
@@ -893,7 +890,6 @@ const esquemaTextos = z
       ),
       detalle_pago_mensual: texto("detalle_pago_mensual", MARCADORES_POR_CAMPO.detalle_pago_mensual),
       nota_mensual_al_final: texto("nota_mensual_al_final"),
-      pie_base: texto("pie_base", MARCADORES_POR_CAMPO.pie_base),
       linea_preparado_por: texto("linea_preparado_por", MARCADORES_POR_CAMPO.linea_preparado_por),
       linea_vigencia: texto("linea_vigencia", MARCADORES_POR_CAMPO.linea_vigencia),
       estatus_tramo: z.strictObject(
@@ -985,7 +981,6 @@ const esquemaTextos = z
     return {
       version: t.version,
       glosario: g,
-      pieBase: t.pie_base,
       lineaPreparadoPor: t.linea_preparado_por,
       lineaVigencia: t.linea_vigencia,
       estatusTramo: t.estatus_tramo,
