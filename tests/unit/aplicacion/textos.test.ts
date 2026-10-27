@@ -39,13 +39,25 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 describe("cargarTextos: el archivo real", () => {
   it("carga seed/textos_cotizacion.json versión 0.9", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.18");
+    expect(t.version).toBe("0.19");
     // Sprint 7d, textos 0.17: el texto base de la página 1 ya no existe.
     expect(textosJson).not.toHaveProperty("pie_base");
     expect(t).not.toHaveProperty("pieBase");
     expect(t.lineaPreparadoPor).toBe("Preparado por {ejecutivo}.");
     expect(t.lineaVigencia).toBe("Vigencia: {vigencia}.");
     expect(t.monedaDeshabilitada).toBe("Las tasas en {moneda} están por confirmar.");
+  });
+
+  it("textos 0.19 (Sprint 8a): la franja del entorno de prueba, exacta", () => {
+    const t = cargarBien(textosJson);
+    expect(t.avisoEntornoPrueba).toBe("ENTORNO DE PRUEBA: no captures datos reales de clientes");
+  });
+
+  it("aviso_entorno_prueba es obligatorio y no admite marcadores", () => {
+    const sin = { ...(textosJson as Record<string, unknown>) };
+    delete sin.aviso_entorno_prueba;
+    expect(cargarTextos(sin, "textos_cotizacion.json").ok).toBe(false);
+    expect(cargarTextos({ ...(textosJson as Record<string, unknown>), aviso_entorno_prueba: "Prueba de {ejecutivo}" }, "textos_cotizacion.json").ok).toBe(false);
   });
 
   it("trae la explicación de los tres estatus", () => {

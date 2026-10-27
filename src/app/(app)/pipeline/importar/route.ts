@@ -7,6 +7,9 @@ import { listarProspectos } from "../../../../servidor/pipeline/consultas";
 import { usuarioActual } from "../../../../servidor/sesion";
 import { crearClienteServidor } from "../../../../servidor/supabase/servidor";
 
+/** Segundos máximos de la función en Vercel (genera un PDF o un Excel). */
+export const maxDuration = 60;
+
 /**
  * POST /pipeline/importar: vista previa de un .xlsx. El cuerpo es el archivo
  * tal cual (application/octet-stream) y su nombre va en el encabezado

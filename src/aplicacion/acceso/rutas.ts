@@ -10,6 +10,7 @@ export const ARCHIVOS_PUBLICOS: ReadonlySet<string> = new Set([
   "/logo-crediflexi.png",
   "/logo-encabezado-excel.png",
   "/logos-crediflexi-rami-sise.png",
+  "/robots.txt",
 ]);
 
 const PREFIJOS_ESTATICOS = ["/_next/static/", "/_next/image"];

@@ -5,6 +5,9 @@ import { manejarPdf } from "../../../../servidor/pdf/manejador";
 import { renderizarPdf } from "../../../../servidor/pdf/renderizar";
 import { usuarioActual } from "../../../../servidor/sesion";
 
+/** Segundos máximos de la función en Vercel (genera un PDF o un Excel). */
+export const maxDuration = 60;
+
 /**
  * POST /cotizador/pdf: genera el PDF de la cotización. Toda la lógica está en
  * manejarPdf, con sus dependencias inyectadas para probarla sin Next.

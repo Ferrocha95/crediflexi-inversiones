@@ -8,6 +8,9 @@ import { ejecutivosVisibles, listarProspectos } from "../../../../servidor/pipel
 import { usuarioActual } from "../../../../servidor/sesion";
 import { crearClienteServidor } from "../../../../servidor/supabase/servidor";
 
+/** Segundos máximos de la función en Vercel (genera un PDF o un Excel). */
+export const maxDuration = 60;
+
 /**
  * GET /pipeline/excel?semana=AAAA-MM-DD&ejecutivo=<id>: descarga
  * PIPELINE_{MES}.xlsx con los prospectos activos de UN ejecutivo. La semana

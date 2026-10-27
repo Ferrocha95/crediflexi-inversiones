@@ -1,5 +1,5 @@
 {
-  "version": "0.18",
+  "version": "0.19",
   "glosario": {
     "rendimiento_mensual": "Rendimiento mensual",
     "rendimiento_mensual_promedio": "Rendimiento mensual (promedio)",
@@ -16,6 +16,7 @@
   "detalle_pago_mensual": "cada mes, del mes 1 al mes {meses}",
   "nota_mensual_al_final": "se acumula y se paga al final del plazo",
   "pie_aviso_fondo": "Cotización de CREDIFLEXI, Fondo Privado de Inversión, operado por Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. Tasas sujetas a cambios. Para acceder al fondo privado se requiere la compra de una acción de $1,000.00 MXN. Cotización con tasas netas. La presente cotización no representa un contrato ni un documento con valor legal; es solo informativa.",
+  "aviso_entorno_prueba": "ENTORNO DE PRUEBA: no captures datos reales de clientes",
   "pie_sipres": "Rami Sise, S.A.P.I. de C.V., SOFOM, E.N.R. · Inscrita en el SIPRES de la CONDUSEF con clave de registro 696338 · webapps.condusef.gob.mx/SIPRES",
   "linea_preparado_por": "Preparado por {ejecutivo}.",
   "linea_vigencia": "Vigencia: {vigencia}.",

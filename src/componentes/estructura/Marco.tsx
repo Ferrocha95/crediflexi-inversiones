@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ProveedorNotificaciones } from "../ui/Notificaciones";
+import { AvisoEntorno } from "./AvisoEntorno";
 import { BarraInferior } from "./BarraInferior";
 import { MenuLateral } from "./MenuLateral";
 import { TEXTOS_ESTRUCTURA as T } from "./textos";
@@ -12,8 +13,17 @@ import { EncabezadoUsuario, type UsuarioMenu } from "./Usuario";
  * lateral (desde 768 px) o encabezado con logo y barra inferior (celular). El
  * usuario (nombre, rol y sucursal) aparece en el menú lateral, en el
  * encabezado del celular y en el diálogo "Más", con el botón para salir.
+ * Con aviso (entorno de prueba), una franja fija arriba de todo.
  */
-export function Marco({ usuario, children }: { readonly usuario: UsuarioMenu; readonly children: ReactNode }) {
+export function Marco({
+  usuario,
+  aviso,
+  children,
+}: {
+  readonly usuario: UsuarioMenu;
+  readonly aviso: string | null;
+  readonly children: ReactNode;
+}) {
   return (
     <ProveedorNotificaciones>
       <a
@@ -22,6 +32,7 @@ export function Marco({ usuario, children }: { readonly usuario: UsuarioMenu; re
       >
         {T.saltarContenido}
       </a>
+      <AvisoEntorno texto={aviso} />
       <div className="flex min-h-dvh">
         <MenuLateral usuario={usuario} />
         <div className="flex min-w-0 flex-1 flex-col">

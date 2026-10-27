@@ -18,8 +18,8 @@ function cargar(j: unknown) {
 }
 
 describe("textos: bloque biblioteca", () => {
-  it("la versión es 0.18", () => {
-    expect(cargar(json()).version).toBe("0.18");
+  it("la versión es 0.19", () => {
+    expect(cargar(json()).version).toBe("0.19");
   });
 
   it("las 4 categorías llevan los nombres acordados, en el orden del enum", () => {

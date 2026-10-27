@@ -149,6 +149,8 @@ export interface TextosCotizacion {
   readonly pieAvisoFondo: string;
   /** Línea SIPRES, en el pie de las dos páginas del PDF (las dos entidades). */
   readonly pieSipres: string;
+  /** Franja fija del marco y de /acceso con ENTORNO distinto de "produccion" (Sprint 8a). No va en los PDF. */
+  readonly avisoEntornoPrueba: string;
   /** Etiqueta de cada resultado, por esquema (pantalla y PDF), del glosario; la del rendimiento total lleva {meses}. */
   readonly etiquetasResultados: Readonly<Record<Esquema, Readonly<Record<Salida, string>>>>;
   /** Plantilla con {meses}, del glosario: cuándo se paga el rendimiento, por esquema (página 1, página 2 y vista previa). */
@@ -903,6 +905,7 @@ const esquemaTextos = z
       moneda_deshabilitada: texto("moneda_deshabilitada", MARCADORES_POR_CAMPO.moneda_deshabilitada),
       pie_aviso_fondo: texto("pie_aviso_fondo"),
       pie_sipres: texto("pie_sipres"),
+      aviso_entorno_prueba: texto("aviso_entorno_prueba"),
       pdf: z.strictObject(
         {
           titulo: texto("pdf.titulo"),
@@ -989,6 +992,7 @@ const esquemaTextos = z
       monedaDeshabilitada: t.moneda_deshabilitada,
       pieAvisoFondo: t.pie_aviso_fondo,
       pieSipres: t.pie_sipres,
+      avisoEntornoPrueba: t.aviso_entorno_prueba,
       etiquetasResultados: {
         mensual: etiquetas(g.rendimiento_mensual_promedio),
         final_del_plazo: etiquetas(`${g.rendimiento_mensual_promedio}, ${t.nota_mensual_al_final}`),

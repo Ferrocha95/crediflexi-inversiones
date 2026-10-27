@@ -5,6 +5,9 @@ import { manejarPdfComisiones } from "../../../../servidor/pdf/manejadorComision
 import { renderizarComisiones } from "../../../../servidor/pdf/renderizar";
 import { usuarioActual } from "../../../../servidor/sesion";
 
+/** Segundos máximos de la función en Vercel (genera un PDF o un Excel). */
+export const maxDuration = 60;
+
 /**
  * POST /comisiones/pdf: PDF de la simulación de comisiones del mes (Gerente y
  * Ejecutivo). Toda la lógica está en manejarPdfComisiones, con sus

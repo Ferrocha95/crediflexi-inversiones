@@ -9,6 +9,7 @@ import { cargarTextos, type TextosBiblioteca, type TextosComisiones, type Textos
 import { cargarSemillaComisiones, type SemillaComisiones } from "../domain/comisiones/semilla";
 import type { RangoFechaInicio } from "../domain/interes/diasNaturales";
 import { cargarSemilla } from "../domain/tasas/semilla";
+import { entornoActual } from "./supabase/config";
 import type { Semilla } from "../domain/tasas/semilla.esquema";
 
 export const RUTA_SEMILLA = path.join(process.cwd(), "seed", "parametros_iniciales.json");
@@ -139,6 +140,24 @@ export async function leerTextosBiblioteca(ruta: string = RUTA_TEXTOS): Promise<
   const textos = cargarTextos(json.valor, nombreVisible(ruta));
   if (!textos.ok) return textos;
   return ok(textos.valor.biblioteca);
+}
+
+/**
+ * Texto de la franja del entorno de prueba (aviso_entorno_prueba del archivo
+ * de textos), o null con ENTORNO="produccion". Se lee en cada llamada. Nunca
+ * oculta la franja por error: si el archivo de textos o ENTORNO fallan, devuelve
+ * el mensaje del error, que también se ve en la franja.
+ */
+export async function leerAvisoEntorno(ruta: string = RUTA_TEXTOS): Promise<string | null> {
+  try {
+    if (entornoActual() === "produccion") return null;
+  } catch (e) {
+    return (e as Error).message;
+  }
+  const json = await leerJson(ruta);
+  if (!json.ok) return json.error.mensaje;
+  const textos = cargarTextos(json.valor, nombreVisible(ruta));
+  return textos.ok ? textos.valor.avisoEntornoPrueba : textos.error.mensaje;
 }
 
 export interface ParametrosComisiones {

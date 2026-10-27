@@ -5,6 +5,9 @@ import { manejarPdfReclutamiento } from "../../../../../servidor/pdf/manejadorRe
 import { renderizarReclutamiento } from "../../../../../servidor/pdf/renderizar";
 import { usuarioActual } from "../../../../../servidor/sesion";
 
+/** Segundos máximos de la función en Vercel (genera un PDF o un Excel). */
+export const maxDuration = 60;
+
 /**
  * POST /comisiones/reclutamiento/pdf: "Propuesta de ingresos" de una página.
  * Toda la lógica está en manejarPdfReclutamiento, con sus dependencias
