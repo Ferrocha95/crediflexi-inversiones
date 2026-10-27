@@ -6,7 +6,6 @@
 export const TEXTOS = {
   tituloPagina: "Cotizador de inversiones",
   introduccion: "Calcula una cotización con las tasas vigentes. Nada de lo que escribes aquí se guarda.",
-  avisoLocal: "Versión solo local: sin login y sin base de datos.",
   volverInicio: "Volver al inicio",
 
   tituloFormulario: "Datos de la cotización",

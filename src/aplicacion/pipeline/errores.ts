@@ -14,7 +14,7 @@ export const MENSAJE_NOMBRE_LARGO = `El nombre admite hasta ${TOPE_NOMBRE} carac
 export const MENSAJE_COMENTARIOS_LARGO = `Los comentarios admiten hasta ${TOPE_COMENTARIOS} caracteres. Acórtalos y guarda de nuevo.`;
 export const MENSAJE_SIN_PERMISO = "No tienes permiso para hacer esto.";
 export const MENSAJE_ERROR_DESCONOCIDO =
-  "No se pudo guardar el cambio. Revisa que Supabase local esté corriendo y vuelve a intentar; si sigue fallando, avisa al administrador.";
+  "No se pudo guardar el cambio. Vuelve a intentar en unos minutos; si sigue igual, avisa a quien administra el sistema.";
 
 /** Restricción de la base -> mensaje para la persona. */
 const POR_RESTRICCION: Record<string, string> = {

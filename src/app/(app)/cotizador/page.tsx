@@ -38,7 +38,6 @@ export default async function PaginaCotizador() {
         </Link>
         <h1 className="text-4xl font-extrabold tracking-tight">{TEXTOS.tituloPagina}</h1>
         <p className="max-w-prose text-lg text-hielo">{TEXTOS.introduccion}</p>
-        <p className="text-sm text-hielo-tenue">{TEXTOS.avisoLocal}</p>
       </header>
 
       {parametros.ok ? (

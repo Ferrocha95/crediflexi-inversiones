@@ -11,7 +11,7 @@ import type { Estatus } from "../../aplicacion/pipeline/normalizar";
  */
 
 export const MENSAJE_ERROR_LECTURA_PIPELINE =
-  "No se pudo leer el pipeline. Revisa que Supabase local esté corriendo (npm run db:start) y recarga la página.";
+  "No se pudo leer el pipeline. Recarga la página en unos minutos; si sigue igual, avisa a quien administra el sistema.";
 
 /** Sin nombre visible (por ejemplo, un ejecutivo que ya no está activo). */
 export const EJECUTIVO_SIN_NOMBRE = "Sin nombre";

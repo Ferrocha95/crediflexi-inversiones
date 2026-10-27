@@ -26,7 +26,7 @@ type Cliente = Awaited<ReturnType<typeof crearClienteServidor>>;
 export const RUTA_SALIR = `${RUTA_ACCESO}/salir`;
 
 export const MENSAJE_ERROR_LECTURA =
-  "No se pudo leer tu usuario en la base de datos. Revisa que Supabase local esté corriendo (npm run db:start) y vuelve a intentar.";
+  "No se pudo leer tu usuario en la base de datos. Vuelve a intentar en unos minutos; si sigue igual, avisa a quien administra el sistema.";
 
 /**
  * Fila del usuario con la sesión del propio usuario, así que pasa por RLS:

@@ -6,7 +6,7 @@ export const MENSAJES_ACCESO = {
   credenciales: "Correo o contraseña incorrectos.",
   inactivo: "Tu usuario está inactivo; habla con tu gerente.",
   demasiadosIntentos: "Demasiados intentos; espera unos minutos.",
-  sinServicio: "No se pudo conectar con el servicio de acceso. Revisa que Supabase local esté corriendo (npm run db:start) e intenta de nuevo.",
+  sinServicio: "No se pudo conectar con el servicio de acceso. Vuelve a intentar en unos minutos; si sigue igual, avisa a quien administra el sistema.",
   faltanDatos: "Escribe tu correo y tu contraseña.",
 } as const;
 

@@ -196,8 +196,8 @@ export default async function PaginaDiseno() {
             La tasa de este tramo está por confirmar.
           </Aviso>
           <Aviso tono="exito" titulo="Listo: el PDF se descargó." />
-          <Aviso tono="info" titulo="Versión solo local">
-            Sin login y sin base de datos.
+          <Aviso tono="info" titulo="Para tu información">
+            Nada de lo que escribes en el cotizador se guarda.
           </Aviso>
         </div>
       </Seccion>

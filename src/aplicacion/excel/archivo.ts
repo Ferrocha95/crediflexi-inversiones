@@ -44,7 +44,7 @@ export const MENSAJES_EXCEL = {
   eligeEjecutivo: "Elige un ejecutivo en el filtro Ejecutivo para descargar su Excel: cada archivo lleva a un solo ejecutivo.",
   soloElPropio: "Solo puedes descargar tu propio pipeline.",
   ejecutivoNoVisible: "No encontramos a ese ejecutivo en tu equipo. Recarga la página y elige otro.",
-  fallaLectura: "No se pudo leer el pipeline. Revisa que Supabase local esté corriendo y vuelve a intentar.",
+  fallaLectura: "No se pudo leer el pipeline. Vuelve a intentar en unos minutos; si sigue igual, avisa a quien administra el sistema.",
 } as const;
 
 export interface ConteoImportacion {

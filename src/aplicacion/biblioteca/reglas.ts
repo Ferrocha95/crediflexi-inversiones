@@ -122,9 +122,9 @@ export const MENSAJES_BIBLIOTECA = {
   enlaceLargo: `El enlace pasa de ${LARGO_ENLACE} caracteres. Usa uno más corto.`,
   datoSensibleBase:
     "El nombre o la descripción parecen incluir un dato bancario o de identidad (CLABE, RFC o CURP). Esta app no los guarda: quítalo y vuelve a intentar.",
-  fallaAlmacenamiento: "No se pudo guardar el archivo en el almacenamiento. Revisa que Supabase local esté corriendo (npm run db:start) y vuelve a intentar.",
+  fallaAlmacenamiento: "No se pudo guardar el archivo en el almacenamiento. Vuelve a intentar en unos minutos; si sigue igual, avisa a quien administra el sistema.",
   fallaGuardar: "No se pudo guardar en la Biblioteca. Vuelve a intentar; si sigue fallando, avisa al administrador.",
-  fallaLectura: "No se pudo leer la Biblioteca. Revisa que Supabase local esté corriendo (npm run db:start) y recarga la página.",
+  fallaLectura: "No se pudo leer la Biblioteca. Recarga la página en unos minutos; si sigue igual, avisa a quien administra el sistema.",
   noEncontrado: "No se encontró el archivo. Puede que lo hayan archivado o que no tengas acceso; recarga la página.",
   idInvalido: "El elemento no es válido. Recarga la página y vuelve a intentar.",
   noSeArchivo: "No se archivó: el elemento no existe, ya estaba archivado o no es de tu organización. Recarga la página.",
