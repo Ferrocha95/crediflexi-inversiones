@@ -235,9 +235,9 @@ describe("POST /biblioteca/subir: guardias en orden y sin leer el cuerpo", () =>
     expect(base.subidas).toEqual([]);
   });
 
-  it("el tope del cuerpo es el del archivo más un margen para los campos del formulario", () => {
-    expect(TOPE_BYTES).toBe(26_214_400);
-    expect(TOPE_CUERPO).toBe(TOPE_BYTES + 64 * 1024);
+  it("el tope del cuerpo es el del archivo (4 MiB) más un margen de 64 KiB para los campos del formulario", () => {
+    expect(TOPE_BYTES).toBe(4_194_304);
+    expect(TOPE_CUERPO).toBe(4_194_304 + 65_536);
   });
 });
 

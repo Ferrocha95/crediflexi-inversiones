@@ -22,9 +22,9 @@ vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "llave-sintetica-de-prueba");
 
 const leer = (f: string) => readFileSync(path.join(process.cwd(), f), "utf8");
 
-describe("catálogo /diseno: solo local", () => {
-  it("el matcher del proxy solo excluye exactamente /biblioteca/subir, así que también cubre /diseno", () => {
-    expect(proxyModulo.config).toEqual({ matcher: ["/((?!biblioteca/subir$).*)"] });
+describe("catálogo /diseno: solo con host permitido y sesión", () => {
+  it("el matcher del proxy cubre todas las rutas, así que también /diseno", () => {
+    expect(proxyModulo.config).toEqual({ matcher: ["/(.*)"] });
     for (const url of ["/diseno", "/diseno/x"]) {
       expect(unstable_doesMiddlewareMatch({ config: proxyModulo.config, url }), url).toBe(true);
     }

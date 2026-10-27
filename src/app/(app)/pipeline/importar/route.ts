@@ -14,7 +14,7 @@ import { crearClienteServidor } from "../../../../servidor/supabase/servidor";
  * request.arrayBuffer() y nunca se escribe a disco. No guarda nada: guardar
  * es la acción confirmarImportacion, que vuelve a validar todo.
  *
- * Guardias: host local, Origin igual a Host, usuario activo y 5 MB como tope
+ * Guardias: host permitido, Origin igual a Host, usuario activo y 4 MiB como tope
  * (content-length y bytes reales). Si hay content-length y no coincide con
  * lo leído, se rechaza: el proxy RECORTA lo que pasa de proxyClientMaxBodySize
  * (next.config.ts), no lo rechaza.

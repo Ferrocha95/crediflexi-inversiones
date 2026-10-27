@@ -110,7 +110,7 @@ describe("cada punto de entrada bajo src/app/(app) comprueba al usuario", () => 
     }
   });
 
-  // /biblioteca/subir no pasa por el proxy (ver src/proxy.ts): sus guardias van
+  // /biblioteca/subir pasa por el proxy desde el Sprint 8a, pero conserva sus guardias:
   // en este orden y todos antes de leer el cuerpo.
   it("src/app/(app)/biblioteca/subir/route.ts revisa host, Origin, sesión, rol, tipo y tamaño antes de leer el cuerpo", () => {
     const codigo = leer(path.join(RAIZ, "biblioteca", "subir", "route.ts"));

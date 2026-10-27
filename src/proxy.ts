@@ -14,11 +14,12 @@ import { actualizarSesion } from "./servidor/supabase/proxy";
  * las dos revisiones, porque la documentación de Next advierte que una acción
  * puede invocarse fuera de la ruta que cubre el proxy.
  *
- * Única excepción: /biblioteca/subir (exacta). Cuando el proxy corre, Next
- * guarda el cuerpo en memoria y lo RECORTA en proxyClientMaxBodySize (6 MB,
- * next.config.ts); esa ruta recibe hasta 25 MiB. Por eso queda fuera, y repite
- * por su cuenta el guardia de host, el Origin, la sesión y el rol, y lee el
- * cuerpo con su propio tope (ver src/app/(app)/biblioteca/subir/route.ts).
+ * Corre en TODAS las rutas. Cuando el proxy corre, Next guarda el cuerpo en
+ * memoria y lo RECORTA en proxyClientMaxBodySize (6 MB, next.config.ts). Las
+ * subidas más grandes son la de la Biblioteca (4 MiB más 64 KiB del
+ * formulario) y la importación del Excel (4 MiB): caben, así que el proxy no
+ * recorta nada. Desde el Sprint 8a /biblioteca/subir ya no queda fuera y
+ * recupera el refresco de sesión; la ruta conserva sus propias guardias.
  */
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const rechazo = rechazoPorHost(request.headers.get("host"));
@@ -28,7 +29,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   return actualizarSesion(request);
 }
 
-// Todo, menos exactamente /biblioteca/subir (/biblioteca/subir/x sí pasa).
+// Todas las rutas.
 export const config = {
-  matcher: ["/((?!biblioteca/subir$).*)"],
+  matcher: ["/(.*)"],
 };

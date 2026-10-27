@@ -191,17 +191,35 @@ describe("proxy", () => {
   });
 });
 
-// El proxy corre en todo, salvo exactamente en /biblioteca/subir: ahí el proxy
-// guardaría el cuerpo en memoria y lo recortaría en proxyClientMaxBodySize
-// (6 MB, next.config.ts). Esa ruta repite por su cuenta el guardia de host,
-// el Origin, la sesión y el rol, y lee el cuerpo con su propio tope.
+// Sprint 8a: el proxy corre en TODO, también en /biblioteca/subir. Con el
+// archivo topado en 4 MiB (más 64 KiB del formulario), el cuerpo cabe en
+// proxyClientMaxBodySize (next.config.ts) y el proxy ya no lo recorta, así que
+// esa ruta recupera el refresco de sesión. La ruta conserva sus propias
+// guardias (host, Origin, sesión, rol, tipo y tamaño): ver guardias.test.ts.
 describe("proxy: matcher", () => {
-  it("exporta exactamente un matcher que excluye solo /biblioteca/subir", () => {
-    expect(proxyConfig).toEqual({ matcher: ["/((?!biblioteca/subir$).*)"] });
+  it("exporta exactamente un matcher que cubre todas las rutas", () => {
+    expect(proxyConfig).toEqual({ matcher: ["/(.*)"] });
   });
 
-  it("/biblioteca/subir queda fuera del proxy", () => {
-    expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url: "/biblioteca/subir" })).toBe(false);
+  it.each(["/biblioteca/subir", "/biblioteca/subir?x=1", "/biblioteca/subir/"])("%s SÍ pasa por el proxy", (url) => {
+    expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url })).toBe(true);
+  });
+
+  it("un POST sin sesión a /biblioteca/subir recibe el 401 del proxy (refresco de sesión recuperado)", async () => {
+    const r = await proxy(
+      new NextRequest("http://127.0.0.1:3000/biblioteca/subir", {
+        method: "POST",
+        headers: { host: "127.0.0.1:3000", "content-type": "multipart/form-data; boundary=x" },
+        body: "--x--",
+      }),
+    );
+    expect(r.status).toBe(401);
+    expect(crearCliente).toHaveBeenCalled();
+  });
+
+  it("/biblioteca/subir con Host no permitido recibe el 403 del proxy", async () => {
+    const r = await proxy(peticion("/biblioteca/subir", "ejemplo.com"));
+    expect(r.status).toBe(403);
   });
 
   it.each([
@@ -226,8 +244,29 @@ describe("proxy: matcher", () => {
     expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url })).toBe(true);
   });
 
-  it("con consulta, /biblioteca/subir?x=1 también queda fuera (la consulta no es parte de la ruta)", () => {
-    expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url: "/biblioteca/subir?x=1" })).toBe(false);
+  // Siguen como estaban: pasan por el proxy (guardia de host) pero sin refresco de sesión.
+  it.each(["/_next/static/chunks/app.js", "/favicon.ico", ...ARCHIVOS_PUBLICOS])("%s sigue sin refresco de sesión", (ruta) => {
+    expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url: ruta })).toBe(true);
+    expect(rutaSinRefresco(ruta)).toBe(true);
+  });
+});
+
+// Vercel limita a 4.5 MB el cuerpo de una petición a una función
+// (documentación de Vercel, Functions Limits). Los topes de la app caben bajo
+// ese límite y bajo proxyClientMaxBodySize, así el proxy no recorta nada.
+describe("topes de subida contra el proxy y Vercel", () => {
+  const LIMITE_VERCEL = 4_500_000; // 4.5 MB en base decimal, la lectura más estricta.
+
+  it("proxyClientMaxBodySize deja pasar la subida de la Biblioteca y la importación del Excel completas", async () => {
+    const { default: config } = await import("../../../next.config");
+    const { TOPE_CUERPO } = await import("../../../src/aplicacion/biblioteca/reglas");
+    const { TOPES_IMPORTACION } = await import("../../../src/aplicacion/excel/archivo");
+    expect(config.experimental?.proxyClientMaxBodySize).toBe("6mb");
+    const proxyBytes = 6 * 1024 * 1024;
+    expect(TOPE_CUERPO).toBeLessThan(proxyBytes);
+    expect(TOPES_IMPORTACION.bytes).toBeLessThan(proxyBytes);
+    expect(TOPE_CUERPO).toBeLessThan(LIMITE_VERCEL);
+    expect(TOPES_IMPORTACION.bytes).toBeLessThan(LIMITE_VERCEL);
   });
 });
 

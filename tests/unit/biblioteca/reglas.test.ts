@@ -9,6 +9,7 @@ import {
   MENSAJES_BIBLIOTECA,
   TIPOS,
   TOPE_BYTES,
+  TOPE_BYTES_BASE,
   extensionDe,
   firmaCoincide,
   limpiarNombreArchivo,
@@ -53,12 +54,16 @@ describe("Biblioteca: topes iguales a los de la migración", () => {
     "utf8",
   );
 
-  it("nombre 150, descripción 500, enlace 500 y 26,214,400 bytes", () => {
+  it("nombre 150, descripción 500, enlace 500 y 26,214,400 bytes en la base; la app topa en 4 MiB, por debajo", () => {
     expect(migracion).toContain(`char_length(nombre) <= ${LARGO_NOMBRE}`);
     expect(migracion).toContain(`char_length(descripcion) <= ${LARGO_DESCRIPCION}`);
     expect(migracion).toContain(`char_length(enlace) <= ${LARGO_ENLACE}`);
-    expect(migracion).toContain(`tamano_bytes between 1 and ${TOPE_BYTES}`);
-    expect(TOPE_BYTES).toBe(25 * 1024 * 1024);
+    expect(migracion).toContain(`tamano_bytes between 1 and ${TOPE_BYTES_BASE}`);
+    expect(TOPE_BYTES_BASE).toBe(25 * 1024 * 1024);
+    // Vercel limita el cuerpo de una petición a 4.5 MB: la app topa en 4 MiB,
+    // menor o igual que la base y el bucket (que no cambian).
+    expect(TOPE_BYTES).toBe(4 * 1024 * 1024);
+    expect(TOPE_BYTES).toBeLessThanOrEqual(TOPE_BYTES_BASE);
   });
 
   it("las 4 categorías del enum", () => {
@@ -205,13 +210,15 @@ describe("firmaCoincide: los primeros bytes, nunca el tipo que declara el navega
 });
 
 describe("revisarTamano: bytes reales", () => {
-  it("26,214,400 bytes se aceptan", () => {
-    expect(revisarTamano(26_214_400)).toBeNull();
+  it("4,194,304 bytes (4 MiB) se aceptan", () => {
+    expect(revisarTamano(4_194_304)).toBeNull();
   });
 
-  it("26,214,401 bytes se rechazan y el mensaje sugiere agregar los videos como enlace", () => {
-    expect(revisarTamano(26_214_401)).toBe(MENSAJES_BIBLIOTECA.muyGrande);
-    expect(MENSAJES_BIBLIOTECA.muyGrande).toMatch(/25 MB/);
+  it("4,194,305 bytes (4 MiB + 1) se rechazan y el mensaje dice hasta 4 MB y sugiere agregar los videos como enlace", () => {
+    expect(revisarTamano(4_194_305)).toBe(MENSAJES_BIBLIOTECA.muyGrande);
+    expect(revisarTamano(26_214_400)).toBe(MENSAJES_BIBLIOTECA.muyGrande);
+    expect(MENSAJES_BIBLIOTECA.muyGrande).toMatch(/4 MB/);
+    expect(MENSAJES_BIBLIOTECA.muyGrande).not.toMatch(/25 MB/);
     expect(MENSAJES_BIBLIOTECA.muyGrande).toMatch(/enlace/);
   });
 

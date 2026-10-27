@@ -39,7 +39,7 @@ function errorDe(json: unknown): { mensaje: string; detalles: readonly string[];
 describe("cargarTextos: el archivo real", () => {
   it("carga seed/textos_cotizacion.json versión 0.9", () => {
     const t = cargarBien(textosJson);
-    expect(t.version).toBe("0.17");
+    expect(t.version).toBe("0.18");
     // Sprint 7d, textos 0.17: el texto base de la página 1 ya no existe.
     expect(textosJson).not.toHaveProperty("pie_base");
     expect(t).not.toHaveProperty("pieBase");

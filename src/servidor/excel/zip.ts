@@ -34,7 +34,7 @@ export const MENSAJES_ZIP = {
     "El archivo trae un comentario en el índice del ZIP, algo que Excel no escribe. Por seguridad no se importa: guárdalo de nuevo desde Excel como .xlsx y vuelve a intentar.",
   variosFines:
     "El archivo trae más de un registro de fin del índice del ZIP. Por seguridad no se importa: guárdalo de nuevo desde Excel como .xlsx y vuelve a intentar.",
-  zip64: "El archivo usa el formato ZIP64, que un .xlsx de hasta 5 MB no necesita. Guárdalo de nuevo desde Excel como .xlsx y vuelve a intentar.",
+  zip64: "El archivo usa el formato ZIP64, que un .xlsx de hasta 4 MB no necesita. Guárdalo de nuevo desde Excel como .xlsx y vuelve a intentar.",
   demasiadasEntradas: `El archivo trae más de ${MAX_ENTRADAS} partes internas; un pipeline tiene muchas menos. Revisa que sea el archivo correcto.`,
   conteoEntradas:
     "El número de partes que declara el índice del ZIP no coincide con las que trae. El archivo está dañado o alterado: guárdalo de nuevo desde Excel.",

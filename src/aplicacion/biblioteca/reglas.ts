@@ -11,8 +11,17 @@ import { pareceDatoSensible, type DatoSensible } from "../pipeline/datosSensible
  * servidor (src/servidor/biblioteca/office.ts).
  */
 
-/** 25 MiB: tope del archivo, igual que el bucket y la restricción de la tabla. */
-export const TOPE_BYTES = 26_214_400;
+/**
+ * 25 MiB: tope del bucket y de la restricción de la tabla (migración
+ * 20261014120000_biblioteca.sql). No cambia: la app topa más abajo.
+ */
+export const TOPE_BYTES_BASE = 26_214_400;
+/**
+ * 4 MiB: tope del archivo en la app. Vercel limita el cuerpo de una petición a
+ * 4.5 MB; con el margen del formulario la subida cabe. Debe ser menor o igual
+ * que TOPE_BYTES_BASE (una prueba lo compara con la migración).
+ */
+export const TOPE_BYTES = 4_194_304;
 /** Margen para los campos y separadores del formulario multipart. */
 export const MARGEN_FORMULARIO = 64 * 1024;
 /** Tope del cuerpo de POST /biblioteca/subir. */
@@ -100,7 +109,7 @@ export const MENSAJES_BIBLIOTECA = {
   sinConfirmacion: "Marca la casilla para confirmar que el archivo no contiene datos personales de clientes ni datos bancarios.",
   vacio: "El archivo está vacío. Revisa que sea el correcto.",
   muyGrande:
-    "El archivo pasa de 25 MB. Redúcelo o, si es un video, súbelo a una plataforma de video y agrégalo aquí como enlace https.",
+    "El archivo pasa de 4 MB. Redúcelo o, si es un video u otro archivo grande, súbelo a una plataforma de video o de archivos y agrégalo aquí como enlace https.",
   sinExtension: `El archivo no tiene extensión. Solo se aceptan: ${LISTA_TIPOS}.`,
   tipoNoPermitido: (ext: string) => `Los archivos .${ext} no se permiten en la Biblioteca. Solo se aceptan: ${LISTA_TIPOS}.`,
   officeViejoOMacros:

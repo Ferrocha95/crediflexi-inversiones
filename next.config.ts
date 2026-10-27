@@ -8,9 +8,10 @@ validarConfiguracionDeArranque();
 const nextConfig: NextConfig = {
   experimental: {
     // El proxy guarda en memoria el cuerpo de cada petición hasta este tope y
-    // RECORTA lo que pase (no lo rechaza). La importación del Excel acepta
-    // hasta 5 MB y rechaza un cuerpo recortado (content-length distinto de lo
-    // leído): ver src/app/(app)/pipeline/importar/route.ts.
+    // RECORTA lo que pase (no lo rechaza). Las subidas más grandes caben: el
+    // Excel (4 MiB) y la Biblioteca (4 MiB más 64 KiB del formulario). Las dos
+    // rutas rechazan además un cuerpo recortado (content-length distinto de lo
+    // leído). Vercel limita el cuerpo a 4.5 MB antes de llegar aquí.
     proxyClientMaxBodySize: "6mb",
   },
 };

@@ -136,7 +136,7 @@ describe("analizarArchivo: hoja y encabezados", () => {
 });
 
 describe("analizarArchivo: rechazos del archivo", () => {
-  it("más de 5 MB", async () => {
+  it("más de 4 MiB (4 MiB + 1 byte)", async () => {
     const grande = new Uint8Array(TOPES_IMPORTACION.bytes + 1);
     grande.set([0x50, 0x4b, 0x03, 0x04]);
     expect(await analizarArchivo(grande, "pipeline.xlsx", CTX)).toEqual({ ok: false, mensaje: MENSAJES_ARCHIVO.muyGrande });

@@ -23,14 +23,15 @@ import { crearClienteServidor } from "../../../../servidor/supabase/servidor";
  * nombre, descripcion, categoria, confirmacion ("si") y carpeta (opcional: el
  * id de una carpeta activa de la misma sección; vacío es Sin carpeta).
  *
- * Esta ruta NO pasa por el proxy (matcher de src/proxy.ts): el proxy guardaría
- * el cuerpo en memoria y lo recortaría en proxyClientMaxBodySize (6 MB). Por
- * eso repite aquí, EN ESTE ORDEN y antes de leer el cuerpo: guardia de host,
+ * Esta ruta pasa por el proxy (guardia de host y refresco de sesión): con el
+ * archivo topado en 4 MiB, el cuerpo cabe en proxyClientMaxBodySize (6 MB) y
+ * el proxy no lo recorta. Aun así repite aquí, EN ESTE ORDEN y antes de leer
+ * el cuerpo, como defensa en profundidad: guardia de host,
  * Origin igual a Host, usuario activo, rol Director o Gerente, tipo
  * multipart/form-data y content-length. Luego lee el cuerpo en stream con
- * contador y corta al pasar TOPE_CUERPO (archivo de 25 MiB más el margen del
+ * contador y corta al pasar TOPE_CUERPO (archivo de 4 MiB más el margen del
  * formulario). El archivo se revisa por sus bytes reales (tipo, firma, tope de
- * 26,214,400 bytes y, en Office, el ZIP) y se guarda con un nombre generado
+ * 4,194,304 bytes y, en Office, el ZIP) y se guarda con un nombre generado
  * (uuid) y el tipo detectado, con la sesión del usuario.
  */
 

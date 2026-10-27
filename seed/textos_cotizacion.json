@@ -1,5 +1,5 @@
 {
-  "version": "0.17",
+  "version": "0.18",
   "glosario": {
     "rendimiento_mensual": "Rendimiento mensual",
     "rendimiento_mensual_promedio": "Rendimiento mensual (promedio)",
@@ -267,7 +267,7 @@
     "intro_archivados": "Solo el Director regional y el Gerente ven lo archivado. Nadie lo borra.",
     "sin_archivados": "No hay elementos archivados.",
     "campo_archivo": "Archivo",
-    "ayuda_archivo": "PDF, PNG, JPG, WEBP, GIF, MP4, WEBM, DOCX, XLSX, PPTX, TXT o CSV, de hasta 25 MB. Los videos más grandes se agregan como enlace.",
+    "ayuda_archivo": "PDF, PNG, JPG, WEBP, GIF, MP4, WEBM, DOCX, XLSX, PPTX, TXT o CSV, de hasta 4 MB. Los videos y archivos más grandes se agregan como enlace.",
     "campo_nombre": "Nombre",
     "ayuda_nombre_archivo": "Si lo dejas vacío, se usa el nombre del archivo.",
     "campo_descripcion": "Descripción (opcional)",

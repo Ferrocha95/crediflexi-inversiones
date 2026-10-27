@@ -12,7 +12,7 @@ export const TEXTOS = {
   elegirOtro: "Elegir otro archivo",
   importarN: (n: number) => (n === 1 ? "Importar 1 prospecto" : `Importar ${n} prospectos`),
   campoArchivo: "Archivo de Excel (.xlsx)",
-  ayudaArchivo: "Hasta 5 MB y 2,000 filas. Todo lo que importes queda a tu nombre. Primero verás una vista previa; nada se guarda hasta que confirmes.",
+  ayudaArchivo: "Hasta 4 MB y 2,000 filas. Todo lo que importes queda a tu nombre. Primero verás una vista previa; nada se guarda hasta que confirmes.",
   hojaLeida: (hoja: string) => `Hoja leída: ${hoja}.`,
   filasDelArchivo: "Filas del archivo",
   filaN: (n: number) => `Fila ${n}`,

@@ -9,7 +9,7 @@ import { mesDelViernes, type Semana } from "../pipeline/semana";
 /** Topes de la importación. Son límites de seguridad, no reglas de negocio. */
 export const TOPES_IMPORTACION = {
   /** Bytes del archivo (content-length y bytes reales). */
-  bytes: 5 * 1024 * 1024,
+  bytes: 4 * 1024 * 1024,
   /** Suma de los tamaños descomprimidos declarados en el índice del ZIP. */
   descomprimido: 50 * 1024 * 1024,
   /** Filas con datos debajo de los encabezados. */
@@ -26,7 +26,7 @@ export function nombreArchivoPipeline(semana: Semana): string {
 /** Por qué se rechaza un archivo completo. */
 export const MENSAJES_ARCHIVO = {
   noXlsx: 'El archivo debe ser un Excel .xlsx. Ábrelo en Excel, guárdalo como "Libro de Excel (.xlsx)" y vuelve a intentar.',
-  muyGrande: "El archivo pesa más de 5 MB. Quita las hojas o filas que no sean del pipeline y vuelve a intentar.",
+  muyGrande: "El archivo pesa más de 4 MB. Quita las hojas o filas que no sean del pipeline y vuelve a intentar.",
   noZip: "El archivo no tiene el formato de un .xlsx. Ábrelo en Excel, guárdalo de nuevo como .xlsx y vuelve a intentar.",
   indice: "No se pudo leer el índice del archivo .xlsx. Ábrelo en Excel, guárdalo de nuevo como .xlsx y vuelve a intentar.",
   macros: "El archivo trae macros (xl/vbaProject.bin). Por seguridad no se importan: guárdalo como .xlsx sin macros y vuelve a intentar.",
@@ -40,7 +40,7 @@ export const MENSAJES_ARCHIVO = {
 /** Errores de las rutas del Excel. */
 export const MENSAJES_EXCEL = {
   origenAjeno: "La petición no viene de esta misma página. Abre el pipeline desde la dirección de la app e importa desde ahí.",
-  incompleto: "El archivo llegó incompleto. Vuelve a intentar; si sigue pasando, revisa que pese menos de 5 MB.",
+  incompleto: "El archivo llegó incompleto. Vuelve a intentar; si sigue pasando, revisa que pese menos de 4 MB.",
   eligeEjecutivo: "Elige un ejecutivo en el filtro Ejecutivo para descargar su Excel: cada archivo lleva a un solo ejecutivo.",
   soloElPropio: "Solo puedes descargar tu propio pipeline.",
   ejecutivoNoVisible: "No encontramos a ese ejecutivo en tu equipo. Recarga la página y elige otro.",

@@ -15,7 +15,7 @@ import { revisarZip } from "./zip";
  * el motivo). No guarda nada: guardar es confirmarImportacion, que vuelve a
  * validar todo.
  *
- * Antes de abrir el archivo: extensión .xlsx, tope de 5 MB, firma ZIP y el
+ * Antes de abrir el archivo: extensión .xlsx, tope de 4 MiB, firma ZIP y el
  * índice del ZIP (sin macros y sin pasar de 50 MB descomprimido). Al leer:
  * nunca se evalúan fórmulas (una celda con fórmula rechaza su fila); un texto
  * que empieza con =, +, - o @ NO es fórmula y se importa como texto. Se

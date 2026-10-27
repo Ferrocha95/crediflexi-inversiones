@@ -59,6 +59,7 @@ describe("tamanoEnTexto", () => {
     [1024, "1 KB"],
     [1536, "1.5 KB"],
     [2_516_582, "2.4 MB"],
+    [4_194_304, "4 MB"],
     [26_214_400, "25 MB"],
   ])("%d bytes son %s", (bytes, texto) => {
     expect(tamanoEnTexto(bytes)).toBe(texto);

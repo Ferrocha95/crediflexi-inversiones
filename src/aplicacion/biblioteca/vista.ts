@@ -77,7 +77,7 @@ export function coincideBusqueda(nombre: string, busqueda: string): boolean {
 
 const numero = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 1 });
 
-/** Tamaño legible, en base 1024 (25 MB = 26,214,400 bytes, el tope). */
+/** Tamaño legible, en base 1024 (4 MB = 4,194,304 bytes, el tope de la app). */
 export function tamanoEnTexto(bytes: number): string {
   if (bytes < 1024) return `${bytes} bytes`;
   if (bytes < 1024 * 1024) return `${numero.format(bytes / 1024)} KB`;

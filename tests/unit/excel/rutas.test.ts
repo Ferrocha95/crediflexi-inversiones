@@ -152,13 +152,13 @@ describe("POST /pipeline/importar", () => {
     expect(await error(r)).toBe(MENSAJE_SESION_EXPIRADA);
   });
 
-  it("rechaza si content-length pasa de 5 MB, sin leer el cuerpo", async () => {
+  it("rechaza si content-length pasa de 4 MiB, sin leer el cuerpo", async () => {
     const r = await pedirImportacion(flujo(new Uint8Array(10)), { contentLength: String(TOPES_IMPORTACION.bytes + 1) });
     expect(r.status).toBe(413);
     expect(await error(r)).toBe(MENSAJES_ARCHIVO.muyGrande);
   });
 
-  it("rechaza si los bytes reales pasan de 5 MB aunque no haya content-length", async () => {
+  it("rechaza si los bytes reales pasan de 4 MiB aunque no haya content-length", async () => {
     const grande = new Uint8Array(TOPES_IMPORTACION.bytes + 1);
     grande.set([0x50, 0x4b, 0x03, 0x04]);
     const r = await pedirImportacion(flujo(grande), { contentLength: null });

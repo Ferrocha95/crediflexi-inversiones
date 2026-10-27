@@ -18,7 +18,7 @@ const ACEPTA = ".pdf,.png,.jpg,.jpeg,.webp,.gif,.mp4,.webm,.docx,.xlsx,.pptx,.tx
  * Subir un archivo (solo Director regional y Gerente). Manda un formulario
  * multipart a POST /biblioteca/subir, que revisa todo de nuevo con los bytes
  * reales; aquí solo se adelantan los avisos más comunes (falta el archivo, la
- * categoría o la casilla, o pasa de 25 MB).
+ * categoría o la casilla, o pasa de 4 MB).
  */
 export function DialogoSubir({
   abierto,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resumenImportacion, TOPES_IMPORTACION } from "../../../src/aplicacion/excel/archivo";
+import { MENSAJES_ARCHIVO, MENSAJES_EXCEL, resumenImportacion, TOPES_IMPORTACION } from "../../../src/aplicacion/excel/archivo";
 
 describe("resumenImportacion", () => {
   it.each([
@@ -15,7 +15,13 @@ describe("resumenImportacion", () => {
 });
 
 describe("TOPES_IMPORTACION", () => {
-  it("5 MB, 50 MB descomprimidos y 2,000 filas", () => {
-    expect(TOPES_IMPORTACION).toEqual({ bytes: 5 * 1024 * 1024, descomprimido: 50 * 1024 * 1024, filas: 2000 });
+  it("4 MiB, 50 MB descomprimidos y 2,000 filas", () => {
+    expect(TOPES_IMPORTACION).toEqual({ bytes: 4 * 1024 * 1024, descomprimido: 50 * 1024 * 1024, filas: 2000 });
+  });
+
+  it("los mensajes dicen 4 MB, no 5 MB", () => {
+    expect(MENSAJES_ARCHIVO.muyGrande).toMatch(/más de 4 MB/);
+    expect(MENSAJES_EXCEL.incompleto).toMatch(/menos de 4 MB/);
+    for (const m of [...Object.values(MENSAJES_ARCHIVO), ...Object.values(MENSAJES_EXCEL)]) expect(m).not.toMatch(/(^|[^0-9.])5 MB/);
   });
 });
