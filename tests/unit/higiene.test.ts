@@ -141,4 +141,23 @@ describe("higiene del proyecto", () => {
     expect(pendientes).toMatch(/^- \(jj\) .*estatus del tramo/m);
     expect(pendientes).toMatch(/^- \(kk\) .*aviso fabricado a mano/m);
   });
+
+  it("PENDIENTES_TECNICOS.md trae los pendientes del despliegue de prueba (Sprint 8a)", () => {
+    const pendientes = leer("PENDIENTES_TECNICOS.md");
+    for (const re of [
+      /^- \(jjjjjj\) .*Segundo factor \(MFA\)/m,
+      /^- \(kkkkkk\) .*Respaldos de la base y del almacenamiento/m,
+      /^- \(llllll\) .*Subida directa a Supabase/m,
+      /^- \(mmmmmm\) .*Dominio propio/m,
+      /^- \(nnnnnn\) .*Cuentas de la empresa/m,
+      /^- \(oooooo\) .*Pruebas en la nube/m,
+      /^- \(pppppp\) .*vista previa.*solo funcionará la dirección estable del proyecto/m,
+      /^- \(qqqqqq\) .*Contraseña sintética de pruebas/m,
+      /^- \(rrrrrr\) .*`MENSAJE_SIN_CONFIG`.*no llega al navegador/m,
+      /^- \(ssssss\) .*test:unit.*se interrumpió.*\(mm\)/m,
+      /^- \(tttttt\) .*trazado local no garantiza lo que Vercel empaqueta.*lista de humo/m,
+    ]) {
+      expect(pendientes).toMatch(re);
+    }
+  });
 });
