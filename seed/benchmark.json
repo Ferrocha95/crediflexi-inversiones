@@ -1,6 +1,6 @@
 {
-  "version": "0.5",
-  "actualizado_al": "2026-10-14",
+  "version": "0.6",
+  "actualizado_al": "2026-10-28",
   "tipo_de_dato": "Última tasa o rendimiento publicado de cada instrumento; la fecha de cada uno se muestra junto a él",
   "reglas": {
     "mostrar_fecha_por_instrumento": true,
@@ -91,20 +91,40 @@
     },
     {
       "id": "mercado_pago",
-      "nombre": "Mercado Pago, hasta 12%",
+      "nombre": "Mercado Pago · Apartados Meli+",
       "grupo": "Mercado Pago",
       "tipo_dato": "tasa_vigente",
-      "tasa_anual": "0.1200",
+      "tasa_anual": "0.1500",
       "moneda": "MXN",
       "periodo": null,
-      "fecha_dato": "2026-10-07",
+      "fecha_dato": "2026-10-28",
       "fecha_tipo": "publicacion",
-      "condiciones": "'Hasta' 12% anual, sujeto a las condiciones del producto (la página oficial no muestra fecha propia; consultada el 2026-10-07)",
-      "nota_asterisco": "Hasta 12% anual, sujeto a condiciones del producto.",
+      "condiciones": "Hasta 15% anual en Apartados con suscripción activa a Meli+ (la suscripción tiene costo); sin la suscripción, hasta 12% anual en saldo disponible con condiciones. El tope de $25,000 con rendimiento viene de fuentes secundarias (Tasas.mx, 19/10/2026): no se pudieron abrir los términos de Mercado Pago",
+      "nota_asterisco": "Hasta 15% solo en Apartados, con suscripción activa a Meli+ (tiene costo) y hasta $25,000; sin suscripción, hasta 12% con condiciones.",
       "fuente": {
-        "nombre": "Mercado Pago México, página oficial de la cuenta",
+        "nombre": "Mercado Pago México, página de la Cuenta Digital (consultada el 28/10/2026)",
         "nombre_corto": "Mercado Pago",
         "url": "https://www.mercadopago.com.mx/cuenta"
+      },
+      "verificacion": "OFICIAL",
+      "incluir_en_pdf": true
+    },
+    {
+      "id": "nu_turbo",
+      "nombre": "Nu · Cajita Turbo",
+      "grupo": "Nu",
+      "tipo_dato": "tasa_vigente",
+      "tasa_anual": "0.1300",
+      "moneda": "MXN",
+      "periodo": null,
+      "fecha_dato": "2026-11-18",
+      "fecha_tipo": "vigencia_hasta",
+      "condiciones": "Cajita Turbo: 13% anual antes de impuestos, solo sobre un saldo de hasta $25,000 y con al menos una transacción al mes con tarjeta Nu (crédito o débito); promoción del 8/10/2026 al 18/11/2026, o hasta que concluya la promoción; tasa calculada el 25/09/2026",
+      "nota_asterisco": "Máximo $25,000 y una compra al mes con tarjeta Nu; vigente del 8 de octubre al 18 de noviembre de 2026.",
+      "fuente": {
+        "nombre": "Blog Nu México, Cajita Turbo (actualizado en octubre de 2026)",
+        "nombre_corto": "Nu",
+        "url": "https://blog.nu.com.mx/productos-nu/cuenta-nu/cajita-turbo-nu-mexico-cuenta/"
       },
       "verificacion": "OFICIAL",
       "incluir_en_pdf": true
@@ -288,27 +308,6 @@
       "fecha_tipo": "vigencia_hasta",
       "condiciones": "Última vigencia publicada: del 20/08/2026 al 07/10/2026; no pude confirmar el periodo siguiente",
       "nota_asterisco": null,
-      "fuente": {
-        "nombre": "Nu México, página oficial de rendimientos",
-        "nombre_corto": "Nu México",
-        "url": "https://nubank.com.mx/cuenta/rendimientos/"
-      },
-      "verificacion": "OFICIAL",
-      "incluir_en_pdf": false,
-      "motivo_si_no_se_incluye": "El dueño pidió cambiar Nu por Caja Libertad (14 de octubre de 2026)"
-    },
-    {
-      "id": "nu_turbo",
-      "nombre": "Nu · Cajita Turbo (hasta $25,000)",
-      "grupo": "Nu",
-      "tipo_dato": "tasa_vigente",
-      "tasa_anual": "0.1300",
-      "moneda": "MXN",
-      "periodo": null,
-      "fecha_dato": "2026-10-07",
-      "fecha_tipo": "vigencia_hasta",
-      "condiciones": "Tope de $25,000 y una compra al mes con tarjeta Nu; última vigencia publicada hasta el 07/10/2026",
-      "nota_asterisco": "Hasta $25,000 y una compra al mes con tarjeta Nu.",
       "fuente": {
         "nombre": "Nu México, página oficial de rendimientos",
         "nombre_corto": "Nu México",

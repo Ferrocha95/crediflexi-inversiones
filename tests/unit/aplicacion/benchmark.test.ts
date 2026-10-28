@@ -5,11 +5,12 @@ import { cargarBenchmark, LIENZO_BENCHMARK, modeloBenchmark, type Benchmark, typ
 import { cargarTextos } from "../../../src/aplicacion/textos";
 
 // Comparativo de tasas (página 2 del PDF). Cifras, fechas y orden de
-// referencia escritos a mano sobre seed/benchmark.json 0.5 (actualizado al
-// 2026-10-14), sin pasar por el modelo. Cinco instrumentos en el PDF: CETES 1
-// año, Banamex (pagaré a 60 días, vigente hasta el 30/10/2026), Mercado Pago,
-// BlackRock (12 meses al 30/09/2026) y el S&P 500 a 2 años (cálculo propio con
-// los rendimientos de 2024 y 2025, fuentes secundarias).
+// referencia escritos a mano sobre seed/benchmark.json 0.6 (actualizado al
+// 2026-10-28), sin pasar por el modelo. Seis instrumentos en el PDF: CETES 1
+// año, Banamex (pagaré a 60 días, vigente hasta el 30/10/2026), Mercado Pago
+// (Apartados con Meli+, consultada el 28/10/2026), Nu Cajita Turbo (vigente
+// hasta el 18/11/2026), BlackRock (12 meses al 30/09/2026) y el S&P 500 a 2
+// años (cálculo propio con los rendimientos de 2024 y 2025, fuentes secundarias).
 
 const t = (() => {
   const r = cargarTextos(textosJson, "seed/textos_cotizacion.json");
@@ -27,7 +28,7 @@ const bench = (() => {
 const mx = (fecha: string, hora: string) => new Date(`${fecha}T${hora}:00-06:00`);
 
 const MXN_20 = { tasa: "0.20", moneda: "MXN" } as const;
-const HOY = mx("2026-10-08", "12:00");
+const HOY = mx("2026-10-28", "12:00");
 
 function grafica(b: BenchmarkPdf) {
   if (b.tipo !== "grafica") throw new Error(`Se esperaba la gráfica y llegó: ${b.texto}`);
@@ -43,14 +44,16 @@ const instrumento = (b: Benchmark, id: string) => {
 };
 
 const NOTA_BANAMEX = "Pagaré Banamex a 60 días, desde $2,500; no es a un año.";
-const NOTA_MERCADO_PAGO = "Hasta 12% anual, sujeto a condiciones del producto.";
+const NOTA_MERCADO_PAGO =
+  "Hasta 15% solo en Apartados, con suscripción activa a Meli+ (tiene costo) y hasta $25,000; sin suscripción, hasta 12% con condiciones.";
+const NOTA_NU = "Máximo $25,000 y una compra al mes con tarjeta Nu; vigente del 8 de octubre al 18 de noviembre de 2026.";
 const NOTA_SP500 = "Cálculo propio con rendimientos anuales de fuentes secundarias.";
-const FUENTES = "Fuentes: Banamex, BlackRock, Cetesdirecto, Mercado Pago y S&P 500 (cálculo propio)";
+const FUENTES = "Fuentes: Banamex, BlackRock, Cetesdirecto, Mercado Pago, Nu y S&P 500 (cálculo propio)";
 
 describe("cargarBenchmark (esquema 0.4)", () => {
-  it("lee la versión 0.5, las reglas, los dos grupos y los avisos por grupo", () => {
-    expect(bench.version).toBe("0.5");
-    expect(bench.actualizado_al).toBe("2026-10-14");
+  it("lee la versión 0.6, las reglas, los dos grupos y los avisos por grupo", () => {
+    expect(bench.version).toBe("0.6");
+    expect(bench.actualizado_al).toBe("2026-10-28");
     expect(bench.reglas.dias_maximos_de_antiguedad).toBeNull();
     expect(bench.reglas.omitir_si_vigente_hasta_ya_paso).toBe(false);
     expect(bench.reglas.grupos).toEqual({
@@ -68,23 +71,31 @@ describe("cargarBenchmark (esquema 0.4)", () => {
     expect(instrumento(bench, "caja_libertad_final").fecha_dato).toBeNull();
   });
 
-  it("en el PDF van exactamente cinco instrumentos, cada uno con su fecha", () => {
+  it("en el PDF van exactamente seis instrumentos, cada uno con su fecha", () => {
     const enPdf = bench.instrumentos.filter((i) => i.incluir_en_pdf);
     expect(enPdf.map((i) => [i.id, i.tasa_anual, i.fecha_dato, i.fecha_tipo])).toEqual([
       ["banamex_pagare_60", "0.0628", "2026-10-30", "vigencia_hasta"],
       ["blackrock_blkgub1", "0.0653", "2026-09-30", "corte"],
       ["cetes_364", "0.0744", "2026-10-08", "publicacion"],
-      ["mercado_pago", "0.1200", "2026-10-07", "publicacion"],
+      ["mercado_pago", "0.1500", "2026-10-28", "publicacion"],
+      ["nu_turbo", "0.1300", "2026-11-18", "vigencia_hasta"],
       ["sp500_2a", "0.2140", "2025-12-31", "corte"],
     ]);
   });
 
-  it("el banco es Banamex a 60 días (decisión del dueño); Inbursa, BBVA, Santander, Nu y el S&P a 10 años no van", () => {
+  it("el banco es Banamex a 60 días (decisión del dueño); Inbursa, BBVA, Santander, Nu Cajita 24/7 y el S&P a 10 años no van", () => {
     expect(instrumento(bench, "banamex_pagare_60").nota_asterisco).toBe(NOTA_BANAMEX);
     expect(instrumento(bench, "bancos").incluir_en_pdf).toBe(false);
     expect(instrumento(bench, "bancos").motivo_si_no_se_incluye).toMatch(/Banamex/);
-    for (const id of ["nu_cajita_247", "nu_turbo", "sp500", "nasdaq"]) expect(instrumento(bench, id).incluir_en_pdf).toBe(false);
+    for (const id of ["nu_cajita_247", "sp500", "nasdaq"]) expect(instrumento(bench, id).incluir_en_pdf).toBe(false);
     expect(bench.instrumentos.some((i) => /bbva|santander/i.test(i.id))).toBe(false);
+  });
+
+  it("Mercado Pago (15% en Apartados con Meli+) y Nu Cajita Turbo (13%, vigente hasta el 18/11/2026) llevan su nota exacta", () => {
+    const mp = instrumento(bench, "mercado_pago");
+    expect([mp.nombre, mp.tasa_anual, mp.nota_asterisco]).toEqual(["Mercado Pago · Apartados Meli+", "0.1500", NOTA_MERCADO_PAGO]);
+    const nu = instrumento(bench, "nu_turbo");
+    expect([nu.nombre, nu.tasa_anual, nu.incluir_en_pdf, nu.nota_asterisco]).toEqual(["Nu · Cajita Turbo", "0.1300", true, NOTA_NU]);
   });
 
   it("el S&P 500 es a 2 años, en dólares, en el grupo histórico, con su nota de cálculo propio", () => {
@@ -138,12 +149,13 @@ describe("modeloBenchmark con el archivo tal cual (interruptores apagados)", () 
     ]);
     expect(g.grupos[0].barras.map((b) => [b.nombre, b.tasa, b.tuya, b.fecha])).toEqual([
       [t.benchmarkTuTasa, "20.00%", true, null],
-      ["Mercado Pago, hasta 12% (2)", "12.00%", false, "publicada el 7 de octubre de 2026"],
+      ["Mercado Pago · Apartados Meli+ (2)", "15.00%", false, "publicada el 28 de octubre de 2026"],
+      ["Nu · Cajita Turbo (3)", "13.00%", false, "vigente hasta el 18 de noviembre de 2026"],
       ["CETES 1 año", "7.44%", false, "publicada el 8 de octubre de 2026"],
       ["Banamex · Pagaré 60 días (1)", "6.28%", false, "vigente hasta el 30 de octubre de 2026"],
     ]);
     expect(g.grupos[1].barras.map((b) => [b.nombre, b.tasa, b.fecha, b.periodo, b.moneda])).toEqual([
-      ["S&P 500 (2 años anualizado) (3)", "21.40%", "al corte del 31 de diciembre de 2025", "2 años al 31/12/2025", "USD"],
+      ["S&P 500 (2 años anualizado) (4)", "21.40%", "al corte del 31 de diciembre de 2025", "2 años al 31/12/2025", "USD"],
       ["BlackRock · BLKGUB1 (12 meses)", "6.53%", "al corte del 30 de septiembre de 2026", "12 meses al 30/09/2026", "MXN"],
     ]);
   });
@@ -152,7 +164,7 @@ describe("modeloBenchmark con el archivo tal cual (interruptores apagados)", () 
     const g = grafica(modeloBenchmark(bench, MXN_20, HOY, t));
     expect(g.grupos[1].barras[0].detalle).toBe("al corte del 31 de diciembre de 2025 · 2 años al 31/12/2025 · en dólares (USD)");
     expect(g.grupos[1].barras[1].detalle).toBe("al corte del 30 de septiembre de 2026 · 12 meses al 30/09/2026");
-    expect(g.grupos[0].barras[2].detalle).toBe("publicada el 8 de octubre de 2026");
+    expect(g.grupos[0].barras[3].detalle).toBe("publicada el 8 de octubre de 2026");
     expect(g.grupos[0].barras[0].detalle).toBeNull();
   });
 
@@ -164,7 +176,7 @@ describe("modeloBenchmark con el archivo tal cual (interruptores apagados)", () 
 
   it("notas numeradas en el orden del archivo, con su nota, y las fuentes por nombre corto", () => {
     const g = grafica(modeloBenchmark(bench, MXN_20, HOY, t));
-    expect(g.notas).toEqual([`(1) ${NOTA_BANAMEX}`, `(2) ${NOTA_MERCADO_PAGO}`, `(3) ${NOTA_SP500}`]);
+    expect(g.notas).toEqual([`(1) ${NOTA_BANAMEX}`, `(2) ${NOTA_MERCADO_PAGO}`, `(3) ${NOTA_NU}`, `(4) ${NOTA_SP500}`]);
     expect(g.fuentes).toBe(FUENTES);
   });
 
@@ -194,7 +206,7 @@ describe("modeloBenchmark con el archivo tal cual (interruptores apagados)", () 
 
   it("no dibuja lo que tiene incluir_en_pdf falso ni lo que tiene tasa nula", () => {
     const n = nombres(modeloBenchmark(bench, MXN_20, HOY, t));
-    for (const fuera of ["CETES 28 días", "CETES 91 días", "CETES 6 meses", "Caja Libertad"]) expect(n).not.toContain(fuera);
+    for (const fuera of ["CETES 28 días", "CETES 91 días", "CETES 6 meses", "Caja Libertad", "Nu · Cajita 24/7"]) expect(n).not.toContain(fuera);
     expect(n.some((x) => x.includes("Inbursa"))).toBe(false);
   });
 
@@ -210,10 +222,10 @@ describe("modeloBenchmark con el archivo tal cual (interruptores apagados)", () 
     expect(nombres(modeloBenchmark(b, MXN_20, HOY, t))).not.toContain("CETES 1 año");
   });
 
-  it("tu tasa entra en su lugar del orden (10.00% va después de Mercado Pago y antes de CETES)", () => {
+  it("tu tasa entra en su lugar del orden (10.00% va después de Nu y antes de CETES)", () => {
     const g = grafica(modeloBenchmark(bench, { tasa: "0.10", moneda: "MXN" }, HOY, t));
-    expect(g.grupos[0].barras.map((b) => b.tasa)).toEqual(["12.00%", "10.00%", "7.44%", "6.28%"]);
-    expect(g.grupos[0].barras[1].tuya).toBe(true);
+    expect(g.grupos[0].barras.map((b) => b.tasa)).toEqual(["15.00%", "13.00%", "10.00%", "7.44%", "6.28%"]);
+    expect(g.grupos[0].barras[2].tuya).toBe(true);
     expect(g.grupos.flatMap((x) => x.barras).filter((b) => b.tuya)).toHaveLength(1);
   });
 
@@ -259,10 +271,17 @@ describe("modeloBenchmark: interruptor omitir_si_vigente_hasta_ya_paso", () => {
 
   const DESPUES = mx("2026-10-31", "12:00");
 
-  it("encendido, el 31 de octubre omite Banamex (vigente hasta el 30) y deja lo publicado (CETES, Mercado Pago)", () => {
+  it("encendido, el 31 de octubre omite Banamex (vigente hasta el 30) y deja lo publicado (CETES, Mercado Pago) y Nu (vigente hasta el 18/11)", () => {
     const n = nombres(modeloBenchmark(encendido(), MXN_20, DESPUES, t));
     expect(n.some((x) => x.startsWith("Banamex"))).toBe(false);
     expect(n).toContain("CETES 1 año");
+    expect(n.some((x) => x.startsWith("Mercado Pago"))).toBe(true);
+    expect(n.some((x) => x.startsWith("Nu · Cajita Turbo"))).toBe(true);
+  });
+
+  it("encendido, el 19 de noviembre omite también Nu Cajita Turbo (vigente hasta el 18)", () => {
+    const n = nombres(modeloBenchmark(encendido(), MXN_20, mx("2026-11-19", "12:00"), t));
+    expect(n.some((x) => x.startsWith("Nu"))).toBe(false);
     expect(n.some((x) => x.startsWith("Mercado Pago"))).toBe(true);
   });
 
@@ -279,30 +298,30 @@ describe("modeloBenchmark: interruptor omitir_si_vigente_hasta_ya_paso", () => {
 
   it("encendido, las notas se renumeran con lo que sí se dibuja", () => {
     const g = grafica(modeloBenchmark(encendido(), MXN_20, DESPUES, t));
-    expect(g.notas).toEqual([`(1) ${NOTA_MERCADO_PAGO}`, `(2) ${NOTA_SP500}`]);
-    expect(g.fuentes).toBe("Fuentes: BlackRock, Cetesdirecto, Mercado Pago y S&P 500 (cálculo propio)");
+    expect(g.notas).toEqual([`(1) ${NOTA_MERCADO_PAGO}`, `(2) ${NOTA_NU}`, `(3) ${NOTA_SP500}`]);
+    expect(g.fuentes).toBe("Fuentes: BlackRock, Cetesdirecto, Mercado Pago, Nu y S&P 500 (cálculo propio)");
   });
 });
 
 describe("modeloBenchmark: interruptor dias_maximos_de_antiguedad", () => {
-  it("con 8 días, el 8 de octubre omite lo que tiene fecha de hace más de 8 días (por instrumento; BlackRock, del 30 de septiembre, entra justo)", () => {
+  it("con 20 días, el 28 de octubre omite lo que tiene fecha de hace más de 20 días (por instrumento; CETES, del 8 de octubre, entra justo; BlackRock y el S&P 500 salen)", () => {
     const b = copia();
-    b.reglas.dias_maximos_de_antiguedad = 8;
+    b.reglas.dias_maximos_de_antiguedad = 20;
     const n = nombres(modeloBenchmark(b, MXN_20, HOY, t));
     expect(n).toEqual([
       t.benchmarkTuTasa,
-      "Mercado Pago, hasta 12% (2)",
+      "Mercado Pago · Apartados Meli+ (2)",
+      "Nu · Cajita Turbo (3)",
       "CETES 1 año",
       "Banamex · Pagaré 60 días (1)",
-      "BlackRock · BLKGUB1 (12 meses)",
     ]);
   });
 
-  it("el tope es inclusivo: con 1 día, un dato del 7 vale el 8 y ya no el 9", () => {
+  it("el tope es inclusivo: con 1 día, un dato del 28 vale el 29 y ya no el 30", () => {
     const b = copia();
     b.reglas.dias_maximos_de_antiguedad = 1;
-    expect(nombres(modeloBenchmark(b, MXN_20, HOY, t))).toContain("Mercado Pago, hasta 12% (2)");
-    expect(nombres(modeloBenchmark(b, MXN_20, mx("2026-10-09", "12:00"), t)).some((x) => x.startsWith("Mercado Pago"))).toBe(false);
+    expect(nombres(modeloBenchmark(b, MXN_20, mx("2026-10-29", "12:00"), t))).toContain("Mercado Pago · Apartados Meli+ (2)");
+    expect(nombres(modeloBenchmark(b, MXN_20, mx("2026-10-30", "12:00"), t)).some((x) => x.startsWith("Mercado Pago"))).toBe(false);
   });
 
   it("si con el tope no queda ningún instrumento, el comparativo se omite como desactualizado", () => {
