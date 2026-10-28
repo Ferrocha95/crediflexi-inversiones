@@ -182,6 +182,15 @@ página de precios** de cada servicio antes de empezar.
   una función. Por eso la Biblioteca y la importación del Excel aceptan hasta
   4 MB, y los videos y archivos grandes van como enlace.
 
+Otros avisos (**verifícalo en el panel**):
+
+- La **región del proyecto de Supabase** y la **región de las funciones de
+  Vercel** deberían ser la misma o cercanas; si están lejos, cada petición
+  tarda más.
+- En proyectos antiguos de Supabase, la **llave publicable** puede llamarse
+  **"anon"**. Es la que va en `SUPABASE_PUBLISHABLE_KEY`; nunca la secreta ni
+  la de servicio.
+
 ### 1. Crear el proyecto de Supabase
 
 1. Crea un proyecto nuevo en Supabase. Guarda la contraseña de la base de datos
@@ -227,6 +236,11 @@ en `public.usuarios` (nombre, rol, sucursal y jefe).
    con correo y contraseña (**verifícalo en el panel**). Usa correos sintéticos
    (por ejemplo, `@ejemplo.test`) mientras sea un entorno de prueba. Copia el
    **uuid** de la cuenta.
+
+   Los correos `@ejemplo.test` no reciben mensajes, así que nadie puede
+   confirmarlos: crea cada cuenta **ya confirmada**, o desactiva la
+   confirmación de correo en este proyecto de prueba (**verifícalo en el
+   panel**). Si no, esa cuenta no podrá iniciar sesión.
 2. Genera el SQL de su fila. El script solo imprime SQL: no se conecta a nada
    ni lee el entorno ni llaves.
 
@@ -256,14 +270,17 @@ en `public.usuarios` (nombre, rol, sucursal y jefe).
    es Next.js y el comando de compilación es el de `package.json`
    (`next build`); **verifícalo en el panel**. Usa Node 24, como en local.
 2. Pon las variables de entorno del proyecto (**ninguna lleva el prefijo
-   `NEXT_PUBLIC_`**: así no llegan al navegador):
+   `NEXT_PUBLIC_`**: así no llegan al navegador). **Antes del primer
+   despliegue pon solo `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` y
+   `ENTORNO`**; `HOSTS_PERMITIDOS` se agrega en el paso 6, cuando ya conoces la
+   dirección de Vercel:
 
-   | Variable | Valor |
-   | --- | --- |
-   | `SUPABASE_URL` | `https://<referencia>.supabase.co` |
-   | `SUPABASE_PUBLISHABLE_KEY` | la llave **publicable** del proyecto de Supabase (nunca la secreta ni la de servicio) |
-   | `HOSTS_PERMITIDOS` | la dirección de Vercel, sin `https://` (ver el paso 6) |
-   | `ENTORNO` | `prueba` |
+   | Variable | Cuándo | Valor |
+   | --- | --- | --- |
+   | `SUPABASE_URL` | antes del primer despliegue | `https://<referencia>.supabase.co` |
+   | `SUPABASE_PUBLISHABLE_KEY` | antes del primer despliegue | la llave **publicable** del proyecto de Supabase (nunca la secreta ni la de servicio) |
+   | `ENTORNO` | antes del primer despliegue | `prueba` |
+   | `HOSTS_PERMITIDOS` | en el paso 6, no antes | la dirección de Vercel, sin `https://` |
 
    Si `HOSTS_PERMITIDOS` o `ENTORNO` están mal formadas, la compilación falla a
    propósito, con un mensaje que dice qué corregir.
@@ -297,6 +314,7 @@ Con un usuario sintético de cada rol, en la dirección de Vercel:
 - [ ] Reclutamiento con PDF.
 - [ ] Biblioteca con subcarpetas: crear una subcarpeta, subir un archivo, verlo y descargarlo.
 - [ ] La franja "ENTORNO DE PRUEBA" se ve en todas las pantallas y en `/acceso`.
+- [ ] El esquema `privado` no está expuesto en la API del proyecto: en la configuración de la API de Supabase, la lista de esquemas expuestos no lo incluye (**verifícalo en el panel**).
 
 Esta lista es la comprobación real de que Vercel empaqueta lo que necesitan los
 PDF y el Excel (archivos de `seed/`, fuentes y logos): el trazado de `next build`

@@ -55,6 +55,8 @@ describe("higiene del proyecto", () => {
       expect(avisos).toMatch(/pausa el proyecto\*\*\s+tras una semana sin uso/);
       expect(avisos).toMatch(/no incluye respaldos/);
       expect(avisos).toMatch(/4\.5 MB/);
+      expect(avisos).toMatch(/región del proyecto de Supabase\*\* y la \*\*región de las funciones de\s+Vercel\*\* deberían ser la misma o cercanas/);
+      expect(avisos).toMatch(/llave publicable\*\* puede llamarse\s+\*\*"anon"\*\*/);
     });
 
     it("migraciones con supabase link y db push, sin pegar contraseñas en ningún chat", () => {
@@ -75,6 +77,9 @@ describe("higiene del proyecto", () => {
       expect(usuarios).toContain("node scripts/sql-alta-usuario.mjs --auth-id");
       expect(usuarios).toContain("--crear-sucursal --organizacion");
       expect(usuarios).toContain("--jefe-id");
+      expect(usuarios).toMatch(/`@ejemplo\.test` no reciben mensajes/);
+      expect(usuarios).toMatch(/\*\*ya confirmada\*\*, o desactiva la\s+confirmación de correo/);
+      expect(usuarios).toMatch(/no podrá iniciar sesión/);
     });
 
     it("las cuatro variables, ninguna con NEXT_PUBLIC_, y solo la llave publicable", () => {
@@ -85,6 +90,11 @@ describe("higiene del proyecto", () => {
       expect(vercel).toMatch(/ninguna lleva el prefijo\s+`NEXT_PUBLIC_`/);
       expect(seccion).not.toMatch(/`NEXT_PUBLIC_[A-Z]/);
       expect(vercel).toMatch(/nunca la secreta ni la de servicio/);
+      expect(vercel).toMatch(/Antes del primer\s+despliegue pon solo `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` y\s+`ENTORNO`\*\*; `HOSTS_PERMITIDOS` se agrega en el paso 6/);
+      expect(vercel).toMatch(/\| `HOSTS_PERMITIDOS` \| en el paso 6, no antes \|/);
+      for (const v of ["SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "ENTORNO"]) {
+        expect(vercel).toMatch(new RegExp(`\\| \`${v}\` \\| antes del primer despliegue \\|`));
+      }
     });
 
     it("primer despliegue: 403 esperado, poner la dirección en HOSTS_PERMITIDOS y redesplegar", () => {
@@ -106,6 +116,7 @@ describe("higiene del proyecto", () => {
         /Comisiones con PDF/,
         /Reclutamiento con PDF/,
         /Biblioteca con subcarpetas: .*subir.*verlo y descargarlo/,
+        /esquema `privado` no está expuesto en la API del proyecto.*verifícalo en el panel/,
         /el trazado de `next build`\s+en local no lo garantiza/,
       ]) {
         expect(humo).toMatch(re);
@@ -156,6 +167,7 @@ describe("higiene del proyecto", () => {
       /^- \(rrrrrr\) .*`MENSAJE_SIN_CONFIG`.*no llega al navegador/m,
       /^- \(ssssss\) .*test:unit.*se interrumpió.*\(mm\)/m,
       /^- \(tttttt\) .*trazado local no garantiza lo que Vercel empaqueta.*lista de humo/m,
+      /^- \(uuuuuu\) `SUPABASE_URL` acepta `http:`.*Fuera de localhost conviene exigir `https:` y rechazar lo demás/m,
     ]) {
       expect(pendientes).toMatch(re);
     }
